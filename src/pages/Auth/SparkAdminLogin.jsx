@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
-import SparkAdminHeader from "../../components/layout/SparkAdminHeader/SparkAdminHeader";
+import SparkAdminHeader from "../../components/layout/SparkHeader/SparkAdminHeader";
 import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
 
 const SparkAdminLogin = ({ onLogin }) => {

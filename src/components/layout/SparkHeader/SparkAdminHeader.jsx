@@ -1,10 +1,10 @@
 import SparkLogo from "../../common/SparkLogo/sparklogo.png";
-
 const SparkAdminHeader = () => (
   <div style={{ background: "#ffffff", padding: "6px 28px", display: "flex", alignItems: "center" }}>
+    {/* Text block: SPARK + tagline */}
     <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
       <span style={{
-        color: "white",
+        color: "black",
         fontWeight: 600,
         fontSize: 40,
         letterSpacing: 2,
@@ -25,6 +25,7 @@ const SparkAdminHeader = () => (
       </span>
     </div>
 
+    {/* Spark logo image beside the text */}
     <img
       src={SparkLogo}
       alt="Spark Logo"
@@ -34,4 +35,3 @@ const SparkAdminHeader = () => (
 );
 
 export default SparkAdminHeader;
-;
