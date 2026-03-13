@@ -40,13 +40,12 @@ const StatCard = ({ label, value, icon: Icon, sub, subColor }) => {
   );
 };
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = ({ user, onLogout, activePage, onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activePage, setActivePage] = useState("Dashboard");
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
-      <Sidebar isOpen={sidebarOpen} activePage={activePage} onNavigate={setActivePage} user={user} onLogout={onLogout} />
+      <Sidebar isOpen={sidebarOpen} activePage={activePage} onNavigate={onNavigate} user={user} onLogout={onLogout} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
