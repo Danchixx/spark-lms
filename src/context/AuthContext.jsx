@@ -6,9 +6,16 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [company, setCompany] = useState(null);
 
-  const selectCompany = (selectedCompany) => setCompany(selectedCompany);
-  const login = (userData) => setUser(userData);
-  const logout = () => { setUser(null); setCompany(null); };
+  const selectCompany = (c) => setCompany(c);
+
+  const login = (userData) => {
+    setUser(userData);
+  };
+
+  const logout = () => {
+    setUser(null);
+    setCompany(null);
+  };
 
   return (
     <AuthContext.Provider value={{ user, company, selectCompany, login, logout }}>

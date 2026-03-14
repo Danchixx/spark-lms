@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BookOpen, BookMarked, CheckCircle, Award, ClipboardList, ChevronRight } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
+import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
 import ProgressBar from "../../components/ui/ProgressBar/ProgressBar";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import { RECENT_COURSES, PENDING_ASSESSMENTS, RECENT_ACTIVITY } from "../../utils/mockData";
@@ -20,14 +23,11 @@ const StatCard = ({ label, value, icon: Icon, sub, subColor }) => {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: "white",
-        borderRadius: 12,
-        padding: "18px 20px",
+        background: "white", borderRadius: 12, padding: "18px 20px",
         borderTop: "3px solid #FF6B00",
         boxShadow: hovered ? "0 8px 24px rgba(0,0,0,0.12)" : "0 2px 8px rgba(0,0,0,0.06)",
         transform: hovered ? "translateY(-4px)" : "translateY(0)",
-        transition: "all 0.2s ease",
-        cursor: "default",
+        transition: "all 0.2s ease", cursor: "default",
       }}
     >
       <div style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>{label}</div>
@@ -40,20 +40,22 @@ const StatCard = ({ label, value, icon: Icon, sub, subColor }) => {
   );
 };
 
-const Dashboard = ({ user, onLogout, activePage, onNavigate }) => {
+const Dashboard = () => {
+  const { user, company, logout } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  useSidebarAutoClose(setSidebarOpen);
+  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const onNavigate = (page) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
-      <Sidebar isOpen={sidebarOpen} activePage={activePage} onNavigate={onNavigate} user={user} onLogout={onLogout} />
+      <Sidebar isOpen={sidebarOpen} activePage="Dashboard" onNavigate={onNavigate} user={user} onLogout={logout}   onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
         <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, units ..." role="User" />
 
-        {/* Page Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 13, color: "#888" }}>Hello {user.name.split(" ")[0]},</div>
@@ -65,7 +67,6 @@ const Dashboard = ({ user, onLogout, activePage, onNavigate }) => {
             </button>
           </div>
 
-          {/* Stats Cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
             {STATS.map((s) => <StatCard key={s.label} {...s} />)}
           </div>

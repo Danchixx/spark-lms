@@ -1,16 +1,28 @@
 import { useState } from "react";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import SparkHeader from "../../components/layout/SparkHeader/SparkHeader";
 import LeftPanel from "../../components/layout/LeftPanel/LeftPanel";
 import { MOCK_USERS } from "../../utils/mockData";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 
-const Login = ({ company, onLogin, onBack }) => {
+const Login = () => {
+  const { company: authCompany, login, selectCompany } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Use company from navigation state (preferred) or fallback to context
+  const company = location.state?.company || authCompany;
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({ username: false, password: false });
+
+  // If no company, redirect back to landing
+  if (!company) return <Navigate to="/" replace />;
 
   const handleLogin = async () => {
     setTouched({ username: true, password: true });
@@ -23,79 +35,41 @@ const Login = ({ company, onLogin, onBack }) => {
     if (user.company !== company.id) { setError("not_in_company"); setLoading(false); return; }
     if (user.password !== password) { setError("wrong_credentials"); setLoading(false); return; }
     setLoading(false);
-    onLogin({ ...user, company });
+    login({ ...user, company });
+    const slug = company.name.toLowerCase().replace(/\s+/g, "-");
+    navigate(`/${slug}/dashboard`);
+  };
+
+  const handleBack = () => {
+    selectCompany(null);
+    navigate("/");
   };
 
   return (
     <>
       <style>{`
-        .login-page { 
-          min-height: 100vh; 
-          background: #e8e8e8; 
-          display: flex; 
-          flex-direction: column; 
-        }
-        .login-body { 
-          flex: 1; 
-          display: flex; 
-          flex-direction: row; 
-          align-items: stretch; 
-        }
-        .login-left-wrapper {
-          width: 50%;
-          flex-shrink: 0;
-          display: flex;
-          order: 1;
-        }
-        .login-form-area { 
-          flex: 1; 
-          display: flex; 
-          justify-content: center; 
-          align-items: center; 
-          padding: 40px; 
-          order: 2; 
-        }
-        
-        @media (max-width: 1024px) {
-          .login-left-wrapper {
-            width: 45%;
-          }
-        }
-        
+        .login-page { min-height: 100vh; background: #e8e8e8; display: flex; flex-direction: column; }
+        .login-body { flex: 1; display: flex; flex-direction: row; align-items: stretch; }
+        .login-left-wrapper { width: 50%; flex-shrink: 0; display: flex; order: 1; }
+        .login-form-area { flex: 1; display: flex; justify-content: center; align-items: center; padding: 40px; order: 2; }
+        @media (max-width: 1024px) { .login-left-wrapper { width: 45%; } }
         @media (max-width: 767px) {
-          .login-body { 
-            flex-direction: column; 
-          }
-          .login-left-wrapper {
-            width: 100%;
-            order: 2;
-          }
-          .login-form-area { 
-            order: 1; 
-            padding: 24px 16px; 
-          }
+          .login-body { flex-direction: column; }
+          .login-left-wrapper { width: 100%; order: 2; }
+          .login-form-area { order: 1; padding: 24px 16px; }
         }
-        
-        @keyframes spin { 
-          to { transform: rotate(360deg); } 
-        }
-        .spin { 
-          animation: spin 0.8s linear infinite; 
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 0.8s linear infinite; }
       `}</style>
 
       <div className="login-page">
         <SparkHeader />
 
         <div className="login-body">
-          {/* Left Panel Wrapper */}
           <div className="login-left-wrapper">
-            <LeftPanel 
-              subtitle={`Welcome to ${company.name} Learning Portal, powered by SPARK. Please sign in to access the LMS.`} 
-            />
+            <LeftPanel subtitle={`Welcome to ${company.name} Learning Portal, powered by SPARK. Please sign in to access the LMS.`} />
           </div>
 
-          {/* Login Form */}
           <div className="login-form-area">
             <div style={{ background: "white", borderRadius: 16, padding: "36px 32px", width: "100%", maxWidth: 340, boxShadow: "0 8px 40px rgba(0,0,0,0.12)" }}>
               <h2 style={{ textAlign: "center", fontWeight: 900, fontSize: 26, letterSpacing: 2, margin: "0 0 20px", fontFamily: "'Barlow Condensed', sans-serif" }}>LOGIN</h2>
@@ -117,7 +91,8 @@ const Login = ({ company, onLogin, onBack }) => {
                   </div>
                 )}
                 <div style={{ display: "flex", alignItems: "center", border: `1.5px solid ${touched.username && !username ? "#e74c3c" : "#ddd"}`, borderRadius: 8, overflow: "hidden" }}>
-                <span style={{ padding: "0 12px", background: "#f8f8f8", alignSelf: "stretch", display: "flex", alignItems: "center", flexShrink: 0 }}><User size={18} color="#555" /></span>                  <input value={username} onChange={(e) => { setUsername(e.target.value); setError(""); }} onBlur={() => setTouched((t) => ({ ...t, username: true }))} placeholder="Username" style={{ flex: 1, padding: "11px 12px", border: "none", outline: "none", fontSize: 14, fontFamily: "inherit" }} />
+                  <span style={{ padding: "0 12px", background: "#f8f8f8", alignSelf: "stretch", display: "flex", alignItems: "center", flexShrink: 0 }}><User size={18} color="#555" /></span>
+                  <input value={username} onChange={(e) => { setUsername(e.target.value); setError(""); }} onBlur={() => setTouched((t) => ({ ...t, username: true }))} placeholder="Username" style={{ flex: 1, padding: "11px 12px", border: "none", outline: "none", fontSize: 14, fontFamily: "inherit" }} />
                 </div>
               </div>
 
@@ -129,8 +104,12 @@ const Login = ({ company, onLogin, onBack }) => {
                   </div>
                 )}
                 <div style={{ display: "flex", alignItems: "center", border: `1.5px solid ${touched.password && !password ? "#e74c3c" : "#ddd"}`, borderRadius: 8, overflow: "hidden" }}>
-                <span style={{ padding: "0 12px", background: "#f8f8f8", alignSelf: "stretch", display: "flex", alignItems: "center", flexShrink: 0 }}><Lock size={18} color="#555" /></span>                  
-                <input type={showPass ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} onBlur={() => setTouched((t) => ({ ...t, password: true }))} placeholder="Password" style={{ flex: 1, minWidth: 0, padding: "11px 12px", border: "none", outline: "none", fontSize: 14, fontFamily: "inherit" }} /><span onClick={() => setShowPass(!showPass)} style={{ padding: "0 12px", cursor: "pointer", display: "flex", alignItems: "center", flexShrink: 0 }}>{showPass ? <EyeOff size={18} color="#777" /> : <Eye size={18} color="#777" />}</span>                </div>
+                  <span style={{ padding: "0 12px", background: "#f8f8f8", alignSelf: "stretch", display: "flex", alignItems: "center", flexShrink: 0 }}><Lock size={18} color="#555" /></span>
+                  <input type={showPass ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} onBlur={() => setTouched((t) => ({ ...t, password: true }))} placeholder="Password" style={{ flex: 1, minWidth: 0, padding: "11px 12px", border: "none", outline: "none", fontSize: 14, fontFamily: "inherit" }} />
+                  <span onClick={() => setShowPass(!showPass)} style={{ padding: "0 12px", cursor: "pointer", display: "flex", alignItems: "center", flexShrink: 0 }}>
+                    {showPass ? <EyeOff size={18} color="#777" /> : <Eye size={18} color="#777" />}
+                  </span>
+                </div>
               </div>
 
               {error === "wrong_credentials" && (
@@ -159,7 +138,7 @@ const Login = ({ company, onLogin, onBack }) => {
               </button>
 
               <div style={{ textAlign: "center", marginTop: 16 }}>
-                <span onClick={onBack} style={{ fontSize: 12, color: "#FF6B00", cursor: "pointer", textDecoration: "underline" }}>← Change company</span>
+                <span onClick={handleBack} style={{ fontSize: 12, color: "#FF6B00", cursor: "pointer", textDecoration: "underline" }}>← Change company</span>
               </div>
             </div>
           </div>

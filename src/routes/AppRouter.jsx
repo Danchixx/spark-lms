@@ -1,34 +1,60 @@
-import { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import Landing from "../pages/Landing/Landing";
-import Login from "../pages/Auth/Login";
-import Dashboard from "../pages/Dashboard/Dashboard";
-import Profile from "../pages/Profile/Profile";
 
-import SparkAdminLogin from "../pages/Auth/SparkAdminLogin";
+import Landing            from "../pages/Landing/Landing";
+import Login              from "../pages/Auth/Login";
+import SparkAdminLogin    from "../pages/Auth/SparkAdminLogin";
 
-// Access admin login directly via: yourapp.com/#/admin
-const isAdminRoute = window.location.hash === "#/admin";
+import UserDashboard      from "../pages/User/Dashboard";
+import UserProfile        from "../pages/User/Profile";
+// import AdminDashboard      from "../pages/Admin/Dashboard";
+// import ApproverDashboard   from "../pages/Approver/Dashboard";
+// import CreatorDashboard    from "../pages/CourseCreator/Dashboard";
+// import SparkAdminDashboard from "../pages/SparkAdmin/Dashboard";
 
+// ── Role → Dashboard map ─────────────────────────────────────
+const DashboardRouter = () => {
+  const { user, company } = useAuth();
+  if (!user) return <Navigate to="/" replace />;
+
+  switch (user.role) {
+    case "admin":       return <div>Admin Dashboard — coming soon</div>;
+    case "approver":    return <div>Approver Dashboard — coming soon</div>;
+    case "creator":     return <div>Creator Dashboard — coming soon</div>;
+    case "spark_admin": return <div>Spark Admin Dashboard — coming soon</div>;
+    default:            return <UserDashboard user={user} />;
+  }
+};
+
+// ── Protect routes ────────────────────────────────────────────
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/" replace />;
+};
+
+// ── App Router ────────────────────────────────────────────────
 const AppRouter = () => {
   const { user, company, selectCompany, login, logout } = useAuth();
-  const [currentPage, setCurrentPage] = useState("Dashboard");
+  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
 
-  // ── Admin route ──────────────────────────────────────────
-  if (isAdminRoute) {
-    return <SparkAdminLogin />;
-  }
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public */}
+        <Route path="/"      element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin" element={<SparkAdminLogin />} />
 
-  // ── User route (default) ─────────────────────────────────
-  if (!company) return <Landing onSelectCompany={selectCompany} />;
-  if (!user)    return <Login company={company} onLogin={login} onBack={() => selectCompany(null)} />;
+        {/* Protected — same URL, different component per role */}
+        <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
+        <Route path="/:company/profile"   element={<ProtectedRoute><UserProfile user={user} onLogout={logout} /></ProtectedRoute>} />
+        {/* Add more shared routes here e.g. /:company/courses, /:company/certificates */}
 
-  const pageProps = { user, onLogout: logout, activePage: currentPage, onNavigate: setCurrentPage };
-
-  switch (currentPage) {
-    case "Profile": return <Profile  {...pageProps} />;
-    default:        return <Dashboard {...pageProps} />;
-  }
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 };
 
 export default AppRouter;
