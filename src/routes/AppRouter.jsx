@@ -7,6 +7,7 @@ import SparkAdminLogin    from "../pages/Auth/SparkAdminLogin";
 
 import UserDashboard      from "../pages/User/Dashboard";
 import UserProfile        from "../pages/User/Profile";
+import UserCourses        from "../pages/User/Courses";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 // import CreatorDashboard    from "../pages/CourseCreator/Dashboard";
@@ -47,7 +48,8 @@ const AppRouter = () => {
 
         {/* Protected — same URL, different component per role */}
         <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
-        <Route path="/:company/profile"   element={<ProtectedRoute><UserProfile user={user} onLogout={logout} /></ProtectedRoute>} />
+        <Route path="/:company/profile"   element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+        <Route path="/:company/courses"   element={<ProtectedRoute><UserCourses /></ProtectedRoute>} />
         {/* Add more shared routes here e.g. /:company/courses, /:company/certificates */}
 
         {/* Catch-all */}
