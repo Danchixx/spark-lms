@@ -50,60 +50,137 @@ const Dashboard = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
-      <Sidebar isOpen={sidebarOpen} activePage="Dashboard" onNavigate={onNavigate} user={user} onLogout={logout}   onClose={() => setSidebarOpen(false)} />
+      <style>{`
+        /* ── Stats grid ── */
+        .dash-stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        /* ── Bottom grid: courses table + right panel ── */
+        .dash-bottom {
+          display: grid;
+          grid-template-columns: 1fr 340px;
+          gap: 20px;
+        }
+
+        /* ── Top header row ── */
+        .dash-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 24px;
+        }
+        .dash-top-greeting {
+          flex: 1;
+        }
+        .dash-top-title {
+          flex: 1;
+          font-size: 28px;
+          font-weight: 800;
+          margin: 0;
+          text-align: center;
+          white-space: nowrap;
+        }
+        .dash-top-btn-wrap {
+          flex: 1;
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        /* ── Courses table: hide Progress + Remark on small screens ── */
+        .col-progress, .col-remark { }
+
+        /* ── 1024px ── */
+        @media (max-width: 1024px) {
+          .dash-stats { grid-template-columns: repeat(2, 1fr); }
+          .dash-bottom { grid-template-columns: 1fr; }
+        }
+
+        /* ── 620px ── */
+        @media (max-width: 620px) {
+          .dash-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+          .dash-top { flex-wrap: wrap; }
+          .dash-top-greeting { display: none; }
+          .dash-top-title { order: 1; flex: 0 0 100%; text-align: center; margin-bottom: 10px; }
+          .dash-top-btn-wrap { order: 2; flex: 0 0 100%; justify-content: left; }
+          .col-progress, .col-remark { display: none; }
+          .dash-padding { padding: 16px 14px !important; }
+        }
+      `}</style>
+
+      <Sidebar isOpen={sidebarOpen} activePage="Dashboard" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, units ..." role="User" />
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
-            <div>
+        <div className="dash-padding" style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+
+          {/* Top row */}
+          <div className="dash-top">
+            <div className="dash-top-greeting">
               <div style={{ fontSize: 13, color: "#888" }}>Hello {user.name.split(" ")[0]},</div>
               <div style={{ fontSize: 13, color: "#888" }}>Welcome back!</div>
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, textAlign: "center", flex: 1 }}>Dashboard</h1>
-            <button style={{ background: "#FF6B00", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit" }}>
-              Continue Learning <ChevronRight size={16} />
-            </button>
+            <h1 className="dash-top-title">Dashboard</h1>
+            <div className="dash-top-btn-wrap">
+              <button
+                style={{ background: "#FF6B00", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit" }}
+              >
+                Continue Learning <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+          {/* Stats */}
+          <div className="dash-stats">
             {STATS.map((s) => <StatCard key={s.label} {...s} />)}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
+          {/* Bottom grid */}
+          <div className="dash-bottom">
+
+            {/* Recent Courses */}
             <div style={{ background: "white", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>My Recent Courses</div>
                 <span style={{ fontSize: 12, color: "#FF6B00", cursor: "pointer" }}>View All →</span>
               </div>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid #f0f0f0" }}>
-                    {["Course", "Status", "Progress", "Remark"].map((h) => (
-                      <th key={h} style={{ textAlign: "left", padding: "8px 10px", fontSize: 12, color: "#999", fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {RECENT_COURSES.map((c, i) => (
-                    <tr key={i} style={{ borderBottom: "1px solid #f8f8f8" }}>
-                      <td style={{ padding: "12px 10px", fontSize: 13, fontWeight: 500 }}>{c.name}</td>
-                      <td style={{ padding: "12px 10px" }}><StatusBadge status={c.status} /></td>
-                      <td style={{ padding: "12px 10px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          {c.progress > 0 && <ProgressBar value={c.progress} />}
-                          {c.progress > 0 && <span style={{ fontSize: 11, color: "#888" }}>{c.progress}%</span>}
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 10px", fontSize: 12, color: c.remark === "Passed" ? "#27ae60" : "#aaa", fontWeight: c.remark === "Passed" ? 700 : 400 }}>{c.remark}</td>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 280 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <th style={{ textAlign: "left", padding: "8px 10px", fontSize: 12, color: "#999", fontWeight: 600 }}>Course</th>
+                      <th style={{ textAlign: "left", padding: "8px 10px", fontSize: 12, color: "#999", fontWeight: 600 }}>Status</th>
+                      <th className="col-progress" style={{ textAlign: "left", padding: "8px 10px", fontSize: 12, color: "#999", fontWeight: 600 }}>Progress</th>
+                      <th className="col-remark" style={{ textAlign: "left", padding: "8px 10px", fontSize: 12, color: "#999", fontWeight: 600 }}>Remark</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {RECENT_COURSES.map((c, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #f8f8f8" }}>
+                        <td style={{ padding: "12px 10px", fontSize: 13, fontWeight: 500 }}>{c.name}</td>
+                        <td style={{ padding: "12px 10px" }}><StatusBadge status={c.status} /></td>
+                        <td className="col-progress" style={{ padding: "12px 10px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {c.progress > 0 && <ProgressBar value={c.progress} />}
+                            {c.progress > 0 && <span style={{ fontSize: 11, color: "#888" }}>{c.progress}%</span>}
+                          </div>
+                        </td>
+                        <td className="col-remark" style={{ padding: "12px 10px", fontSize: 12, color: c.remark === "Passed" ? "#27ae60" : "#aaa", fontWeight: c.remark === "Passed" ? 700 : 400 }}>{c.remark}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
+            {/* Right column */}
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+              {/* Pending Assessments */}
               <div style={{ background: "white", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>Pending Assessments</div>
@@ -122,6 +199,7 @@ const Dashboard = () => {
                 ))}
               </div>
 
+              {/* Recent Activity */}
               <div style={{ background: "white", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>Recent Activity</div>
                 {RECENT_ACTIVITY.map((a, i) => (
