@@ -2,9 +2,9 @@ import { Pin, Trophy } from "lucide-react";
 
 /* ── Status chip ── */
 const statusStyles = {
-  "Ongoing":     { label: "On Going",    color: "#FF6B00", bg: "#ffead6" },
-  "Completed":   { label: "Completed",   color: "#27ae60", bg: "#e0ffec" },
-  "Not Started": { label: "Not Started", color: "#888",    bg: "#ededed" },
+  "Ongoing": { label: "On Going", color: "#FF6B00", bg: "#ffead6" },
+  "Completed": { label: "Completed", color: "#27ae60", bg: "#e0ffec" },
+  "Not Started": { label: "Not Started", color: "#888", bg: "#ededed" },
 };
 
 const StatusChip = ({ status }) => {
@@ -32,9 +32,9 @@ const Bar = ({ value, color }) => (
  * Props: course { id, name, modules, units, status, progress, assignedBy, icon }
  */
 const CourseCard = ({ course }) => {
-  const isCompleted  = course.status === "Completed";
+  const isCompleted = course.status === "Completed";
   const isNotStarted = course.status === "Not Started";
-  const barColor     = isCompleted ? "#27ae60" : "#FF6B00";
+  const barColor = isCompleted ? "#27ae60" : "#FF6B00";
   const progressDisplay = isNotStarted ? "—%" : `${course.progress}%`;
 
   return (
@@ -46,7 +46,7 @@ const CourseCard = ({ course }) => {
       transition: "transform 0.2s, box-shadow 0.2s",
     }}
       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)";    e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.08)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.08)"; }}
     >
       {/* Orange image area */}
       <div style={{ position: "relative", height: 120, background: "linear-gradient(180deg, #ffb152, #FF8C00, #FF6B00)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -105,9 +105,9 @@ const CourseCard = ({ course }) => {
 /* ── Filter Nav ── */
 export const CourseFilterNav = ({ counts, active, onChange }) => {
   const filters = [
-    { key: "All",         label: `All (${counts.all})` },
-    { key: "Ongoing",     label: `Ongoing (${counts.ongoing})` },
-    { key: "Completed",   label: `Completed (${counts.completed})` },
+    { key: "All", label: `All (${counts.all})` },
+    { key: "Ongoing", label: `Ongoing (${counts.ongoing})` },
+    { key: "Completed", label: `Completed (${counts.completed})` },
     { key: "Not Started", label: `Not Started (${counts.notStarted})` },
   ];
 
@@ -132,7 +132,7 @@ export const CourseFilterNav = ({ counts, active, onChange }) => {
               fontSize: 13, fontWeight: 700,
               cursor: "pointer", fontFamily: "inherit",
               background: isActive ? "#FF6B00" : "white",
-              color:      isActive ? "white"    : "#666",
+              color: isActive ? "white" : "#666",
               border: isActive ? "none" : "1.5px solid #e0e0e0",
               borderRadius: 10,
               transition: "all 0.15s",

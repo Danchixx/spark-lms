@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import SparkHeader from "../../components/layout/SparkHeader/SparkHeader";
 import LeftPanel from "../../components/layout/LeftPanel/LeftPanel";
+import Button from "../../components/ui/Button/Button";
 import { MOCK_USERS } from "../../utils/mockData";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 
@@ -10,8 +11,6 @@ const Login = () => {
   const { company: authCompany, login, selectCompany } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Use company from navigation state (preferred) or fallback to context
   const company = location.state?.company || authCompany;
 
   const [username, setUsername] = useState("");
@@ -21,7 +20,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({ username: false, password: false });
 
-  // If no company, redirect back to landing
   if (!company) return <Navigate to="/" replace />;
 
   const handleLogin = async () => {
@@ -64,7 +62,6 @@ const Login = () => {
 
       <div className="login-page">
         <SparkHeader />
-
         <div className="login-body">
           <div className="login-left-wrapper">
             <LeftPanel subtitle={`Welcome to ${company.name} Learning Portal, powered by SPARK. Please sign in to access the LMS.`} />
@@ -83,6 +80,7 @@ const Login = () => {
                 </div>
               </div>
 
+              {/* Username */}
               <div style={{ marginBottom: 12 }}>
                 {touched.username && !username && (
                   <div style={{ fontSize: 11, color: "#e74c3c", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>
@@ -96,6 +94,7 @@ const Login = () => {
                 </div>
               </div>
 
+              {/* Password */}
               <div style={{ marginBottom: 16 }}>
                 {touched.password && !password && (
                   <div style={{ fontSize: 11, color: "#e74c3c", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>
@@ -112,20 +111,19 @@ const Login = () => {
                 </div>
               </div>
 
+              {/* Errors */}
               {error === "wrong_credentials" && (
                 <div style={{ background: "#fde8e8", border: "1px solid #f5c6c6", borderRadius: 7, padding: "9px 12px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ color: "#e74c3c" }}>⚠</span><span style={{ fontSize: 13, color: "#c0392b" }}>User credentials are not valid</span></div>
                   <span onClick={() => setError("")} style={{ cursor: "pointer", color: "#e74c3c", fontWeight: 700, fontSize: 14 }}>×</span>
                 </div>
               )}
-
               {error === "not_in_company" && (
                 <div style={{ background: "#fde8e8", border: "1px solid #f5c6c6", borderRadius: 7, padding: "9px 12px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ color: "#e74c3c" }}>⚠</span><span style={{ fontSize: 13, color: "#c0392b" }}>You do not belong to {company.name}</span></div>
                   <span onClick={() => setError("")} style={{ cursor: "pointer", color: "#e74c3c", fontWeight: 700, fontSize: 14 }}>×</span>
                 </div>
               )}
-
               {loading && (
                 <div style={{ background: "#e8f8f0", border: "1px solid #a8dfc0", borderRadius: 7, padding: "9px 12px", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
                   <div className="spin" style={{ width: 14, height: 14, border: "2px solid #27ae60", borderTop: "2px solid transparent", borderRadius: "50%", flexShrink: 0 }} />
@@ -133,11 +131,11 @@ const Login = () => {
                 </div>
               )}
 
-              <button onClick={handleLogin} disabled={loading} style={{ width: "100%", padding: "13px 0", background: loading ? "#ffb87a" : "#FF6B00", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "background 0.2s" }}>
+              <Button onClick={handleLogin} loading={loading} fullWidth size="lg" style={{ justifyContent: "center", marginBottom: 16 }}>
                 {loading ? "Logging in..." : "Login"}
-              </button>
+              </Button>
 
-              <div style={{ textAlign: "center", marginTop: 16 }}>
+              <div style={{ textAlign: "center" }}>
                 <span onClick={handleBack} style={{ fontSize: 12, color: "#FF6B00", cursor: "pointer", textDecoration: "underline" }}>← Change company</span>
               </div>
             </div>

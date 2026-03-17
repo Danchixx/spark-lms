@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import SparkHeader from "../../components/layout/SparkHeader/SparkHeader";
 import LeftPanel from "../../components/layout/LeftPanel/LeftPanel";
 import CompanyBadge from "../../components/common/CompanyLogo/CompanyBadge";
+import Button from "../../components/ui/Button/Button";
 import { COMPANIES } from "../../utils/mockData";
 
 const Landing = () => {
@@ -83,20 +84,15 @@ const Landing = () => {
               ))}
             </div>
 
-            <button
+            <Button
               onClick={handleContinue}
-              style={{
-                width: "100%", padding: "13px 0",
-                background: selected ? "#FF6B00" : "#ffb87a",
-                color: "white", border: "none", borderRadius: 8,
-                fontWeight: 700, fontSize: 15,
-                cursor: selected ? "pointer" : "default",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 10, transition: "background 0.2s", fontFamily: "inherit", boxSizing: "border-box",
-              }}
+              disabled={!selected}
+              fullWidth
+              size="lg"
+              style={{ justifyContent: "center" }}
             >
               Select a company to continue →
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -180,8 +180,8 @@ const ProfileCard = ({ profileData, editable = true, onSave }) => {
 
             <div style={{ width: "100%", borderTop: "1px solid #f0f0f0", paddingTop: 10 }}>
               <SideInfoRow icon={Building2} label="Department" value={profileData.department} />
-              <SideInfoRow icon={Briefcase} label="Job Title"  value={profileData.jobTitle} />
-              <SideInfoRow icon={BookOpen}  label="Courses"    value={`${profileData.coursesAssigned ?? 0} assigned`} />
+              <SideInfoRow icon={Briefcase} label="Job Title" value={profileData.jobTitle} />
+              <SideInfoRow icon={BookOpen} label="Courses" value={`${profileData.coursesAssigned ?? 0} assigned`} />
             </div>
 
             {editable && (
@@ -204,14 +204,14 @@ const ProfileCard = ({ profileData, editable = true, onSave }) => {
             <div style={{ border: "1px solid #f0f0f0", margin: "12px 16px 16px", borderRadius: 8, overflow: "hidden" }}>
               {editing ? (
                 <>
-                  <EditableFieldRow label="Full Name"     value={fullName}                    locked />
+                  <EditableFieldRow label="Full Name" value={fullName} locked />
                   <EditableFieldPair
-                    left={{  label: "Date of Birth", value: profileData.dateOfBirth, locked: true }}
-                    right={{ label: "Gender",        value: profileData.gender,      locked: true }}
+                    left={{ label: "Date of Birth", value: profileData.dateOfBirth, locked: true }}
+                    right={{ label: "Gender", value: profileData.gender, locked: true }}
                   />
                   <EditableFieldPair
-                    left={{  label: "Email Address", value: profileData.email,       locked: true }}
-                    right={{ label: "Contact No.",   value: contact, locked: false, onChange: setContact }}
+                    left={{ label: "Email Address", value: profileData.email, locked: true }}
+                    right={{ label: "Contact No.", value: contact, locked: false, onChange: setContact }}
                   />
                   <EditableFieldRow label="Address" value={address} locked={false} onChange={setAddress} />
                 </>
@@ -227,8 +227,8 @@ const ProfileCard = ({ profileData, editable = true, onSave }) => {
 
             <SectionTitle icon={Briefcase} title="Employment Details" />
             <div style={{ border: "1px solid #f0f0f0", margin: "12px 16px 16px", borderRadius: 8, overflow: "hidden" }}>
-              <FieldPair left={{ label: "Employee ID", value: profileData.employeeId }} right={{ label: "Job Title",   value: profileData.jobTitle }} />
-              <FieldPair left={{ label: "Department",  value: profileData.department }} right={{ label: "Date Hired",  value: profileData.dateHired }} />
+              <FieldPair left={{ label: "Employee ID", value: profileData.employeeId }} right={{ label: "Job Title", value: profileData.jobTitle }} />
+              <FieldPair left={{ label: "Department", value: profileData.department }} right={{ label: "Date Hired", value: profileData.dateHired }} />
               <FieldRow label="Member Since" value={profileData.memberSince} />
             </div>
           </div>

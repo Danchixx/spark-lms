@@ -5,31 +5,23 @@ import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import Button from "../../components/ui/Button/Button";
 import ProgressBar from "../../components/ui/ProgressBar/ProgressBar";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import { RECENT_COURSES, PENDING_ASSESSMENTS, RECENT_ACTIVITY } from "../../utils/mockData";
 
 const STATS = [
-  { label: "Enrolled Courses",  value: 10, icon: BookOpen,    sub: "↑ 2 this month", subColor: "#27ae60" },
-  { label: "Ongoing Courses",   value: 7,  icon: BookMarked,  sub: "2 not started",  subColor: "#888" },
-  { label: "Completed Courses", value: 3,  icon: CheckCircle, sub: "↑ 1 this week",  subColor: "#27ae60" },
-  { label: "Certificate Earned",value: 9,  icon: Award,       sub: "↑ 5 new",        subColor: "#27ae60" },
+  { label: "Enrolled Courses", value: 10, icon: BookOpen, sub: "↑ 2 this month", subColor: "#27ae60" },
+  { label: "Ongoing Courses", value: 7, icon: BookMarked, sub: "2 not started", subColor: "#888" },
+  { label: "Completed Courses", value: 3, icon: CheckCircle, sub: "↑ 1 this week", subColor: "#27ae60" },
+  { label: "Certificate Earned", value: 9, icon: Award, sub: "↑ 5 new", subColor: "#27ae60" },
 ];
 
 const StatCard = ({ label, value, icon: Icon, sub, subColor }) => {
   const [hovered, setHovered] = useState(false);
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: "white", borderRadius: 12, padding: "18px 20px",
-        borderTop: "3px solid #FF6B00",
-        boxShadow: hovered ? "0 8px 24px rgba(0,0,0,0.12)" : "0 2px 8px rgba(0,0,0,0.06)",
-        transform: hovered ? "translateY(-4px)" : "translateY(0)",
-        transition: "all 0.2s ease", cursor: "default",
-      }}
-    >
+    <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      style={{ background: "white", borderRadius: 12, padding: "18px 20px", borderTop: "3px solid #FF6B00", boxShadow: hovered ? "0 8px 24px rgba(0,0,0,0.12)" : "0 2px 8px rgba(0,0,0,0.06)", transform: hovered ? "translateY(-4px)" : "translateY(0)", transition: "all 0.2s ease", cursor: "default" }}>
       <div style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>{label}</div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: 36, fontWeight: 900 }}>{value}</div>
@@ -51,61 +43,23 @@ const Dashboard = () => {
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
       <style>{`
-        /* ── Stats grid ── */
-        .dash-stats {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        /* ── Bottom grid: courses table + right panel ── */
-        .dash-bottom {
-          display: grid;
-          grid-template-columns: 1fr 340px;
-          gap: 20px;
-        }
-
-        /* ── Top header row ── */
-        .dash-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 24px;
-        }
-        .dash-top-greeting {
-          flex: 1;
-        }
-        .dash-top-title {
-          flex: 1;
-          font-size: 28px;
-          font-weight: 800;
-          margin: 0;
-          text-align: center;
-          white-space: nowrap;
-        }
-        .dash-top-btn-wrap {
-          flex: 1;
-          display: flex;
-          justify-content: flex-end;
-        }
-
-        /* ── Courses table: hide Progress + Remark on small screens ── */
+        .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .dash-bottom { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+        .dash-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .dash-top-greeting { flex: 1; }
+        .dash-top-title { flex: 1; font-size: 28px; font-weight: 800; margin: 0; text-align: center; white-space: nowrap; }
+        .dash-top-btn-wrap { flex: 1; display: flex; justify-content: flex-end; }
         .col-progress, .col-remark { }
-
-        /* ── 1024px ── */
         @media (max-width: 1024px) {
           .dash-stats { grid-template-columns: repeat(2, 1fr); }
           .dash-bottom { grid-template-columns: 1fr; }
         }
-
-        /* ── 620px ── */
         @media (max-width: 620px) {
           .dash-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
           .dash-top { flex-wrap: wrap; }
           .dash-top-greeting { display: none; }
           .dash-top-title { order: 1; flex: 0 0 100%; text-align: center; margin-bottom: 10px; }
-          .dash-top-btn-wrap { order: 2; flex: 0 0 100%; justify-content: left; }
+          .dash-top-btn-wrap { order: 2; flex: 0 0 100%; justify-content: center; }
           .col-progress, .col-remark { display: none; }
           .dash-padding { padding: 16px 14px !important; }
         }
@@ -117,8 +71,6 @@ const Dashboard = () => {
         <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, units ..." role="User" />
 
         <div className="dash-padding" style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-
-          {/* Top row */}
           <div className="dash-top">
             <div className="dash-top-greeting">
               <div style={{ fontSize: 13, color: "#888" }}>Hello {user.name.split(" ")[0]},</div>
@@ -126,23 +78,15 @@ const Dashboard = () => {
             </div>
             <h1 className="dash-top-title">Dashboard</h1>
             <div className="dash-top-btn-wrap">
-              <button
-                style={{ background: "#FF6B00", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit" }}
-              >
-                Continue Learning <ChevronRight size={16} />
-              </button>
+              <Button rightIcon={<ChevronRight size={16} />}>Continue Learning</Button>
             </div>
           </div>
 
-          {/* Stats */}
           <div className="dash-stats">
             {STATS.map((s) => <StatCard key={s.label} {...s} />)}
           </div>
 
-          {/* Bottom grid */}
           <div className="dash-bottom">
-
-            {/* Recent Courses */}
             <div style={{ background: "white", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>My Recent Courses</div>
@@ -177,10 +121,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right column */}
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-              {/* Pending Assessments */}
               <div style={{ background: "white", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>Pending Assessments</div>
@@ -192,14 +133,11 @@ const Dashboard = () => {
                       <ClipboardList size={20} color="#FF6B00" />
                       <span style={{ fontSize: 13, fontWeight: 500 }}>{a.name}</span>
                     </div>
-                    <button style={{ background: "white", border: "1.5px solid #ddd", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}>
-                      Start <ChevronRight size={13} />
-                    </button>
+                    <Button variant="ghost" size="sm" rightIcon={<ChevronRight size={13} />}>Start</Button>
                   </div>
                 ))}
               </div>
 
-              {/* Recent Activity */}
               <div style={{ background: "white", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>Recent Activity</div>
                 {RECENT_ACTIVITY.map((a, i) => (

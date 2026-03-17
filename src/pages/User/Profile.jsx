@@ -37,7 +37,7 @@ const InputBox = ({ label, icon: Icon, value, type = "text", readOnly, rightEl }
     <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>{label}</label>
     <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", background: readOnly ? "#fafafa" : "white" }}>
       {Icon && <Icon size={16} color="#aaa" style={{ flexShrink: 0 }} />}
-      <input type={type} value={value} readOnly={readOnly} onChange={() => {}} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
+      <input type={type} value={value} readOnly={readOnly} onChange={() => { }} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
       {rightEl}
     </div>
   </div>
@@ -188,11 +188,11 @@ const Profile = () => {
                     )}
                     <div style={{ marginTop: 10, padding: "10px 12px", background: "#f9f9f9", borderRadius: 8, border: "1px solid #f0f0f0" }}>
                       <p style={{ fontSize: 11, fontWeight: 700, color: "#555", margin: "0 0 6px" }}>Password requirements:</p>
-                      <ReqRow met={checks.length}    label="At least 8 characters" />
-                      <ReqRow met={checks.letter}    label="Contains a letter" />
-                      <ReqRow met={checks.number}    label="Contains a number" />
+                      <ReqRow met={checks.length} label="At least 8 characters" />
+                      <ReqRow met={checks.letter} label="Contains a letter" />
+                      <ReqRow met={checks.number} label="Contains a number" />
                       <ReqRow met={checks.uppercase} label="One uppercase letter" />
-                      <ReqRow met={checks.symbol}    label="One special symbol (e.g. !@#$)" />
+                      <ReqRow met={checks.symbol} label="One special symbol (e.g. !@#$)" />
                     </div>
                   </div>
 
