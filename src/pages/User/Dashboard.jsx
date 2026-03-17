@@ -78,7 +78,7 @@ const Dashboard = () => {
             </div>
             <h1 className="dash-top-title">Dashboard</h1>
             <div className="dash-top-btn-wrap">
-              <Button rightIcon={<ChevronRight size={16} />}>Continue Learning</Button>
+              <Button rightIcon={<ChevronRight size={16} />} onClick={() => navigate(`/${slug}/courses`)}>Continue Learning</Button>
             </div>
           </div>
 

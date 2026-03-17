@@ -6,13 +6,7 @@ import Header from "../../components/layout/Header/Header";
 import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
 import Button from "../../components/ui/Button/Button";
 import CourseCard, { CourseFilterNav } from "../../components/common/CourseCard/CourseCard";
-
-const COURSES = [
-  { id: 1, name: "Sales Fundamentals", modules: 5, units: 18, status: "Ongoing", progress: 94, assignedBy: "Admin", icon: "💼", lastModule: "Module 5 · Unit 3: The AIDA Framework" },
-  { id: 2, name: "Customer Service Pro", modules: 4, units: 12, status: "Ongoing", progress: 54, assignedBy: "Admin", icon: "👤", lastModule: "Module 3 · Unit 2: Handling Complaints" },
-  { id: 3, name: "Digital Marketing", modules: 4, units: 11, status: "Completed", progress: 100, assignedBy: "Admin", icon: "📢", lastModule: "Module 4 · Unit 11: Campaign Analytics" },
-  { id: 4, name: "Technical Onboarding", modules: 6, units: 22, status: "Not Started", progress: 0, assignedBy: "Admin", icon: "⚙️", lastModule: null },
-];
+import { COURSES } from "../../data/mockCourses";
 
 const Courses = () => {
   const { user, company, logout } = useAuth();
@@ -71,7 +65,7 @@ const Courses = () => {
                   <div style={{ height: "100%", width: `${lastOngoing.progress}%`, background: "#FF6B00", borderRadius: 99 }} />
                 </div>
               </div>
-              <Button rounded="pill" style={{ flexShrink: 0 }}>Resume Course</Button>
+              <Button rounded="pill" style={{ flexShrink: 0 }} onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId: lastOngoing.id } })}>Resume Course</Button>
             </div>
           )}
         </div>

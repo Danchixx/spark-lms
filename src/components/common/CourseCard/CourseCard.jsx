@@ -46,7 +46,7 @@ const CourseCard = ({ course }) => {
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") || "";
 
   const handleActionClick = () => {
-    navigate(`/${slug}/courses/modules`);
+    navigate(`/${slug}/courses/modules`, { state: { courseId: course.id } });
   };
 
   return (
@@ -69,7 +69,7 @@ const CourseCard = ({ course }) => {
       {/* White body */}
       <div style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ fontWeight: 800, fontSize: 15, color: "#1a1a1a", lineHeight: 1.3 }}>{course.name}</div>
-        <div style={{ fontSize: 12, color: "#888" }}>{course.modules} Modules · {course.units} Lessons</div>
+        <div style={{ fontSize: 12, color: "#888" }}>{course.modulesCount} Modules · {course.unitsCount} Lessons</div>
 
         {/* Progress */}
         <div style={{ marginTop: 4 }}>
