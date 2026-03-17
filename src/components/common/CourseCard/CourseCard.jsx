@@ -1,4 +1,5 @@
 import { Pin, Trophy } from "lucide-react";
+import Button from "../../ui/Button/Button";
 
 /* ── Status chip ── */
 const statusStyles = {
@@ -27,6 +28,9 @@ const Bar = ({ value, color }) => (
   </div>
 );
 
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+
 /**
  * CourseCard
  * Props: course { id, name, modules, units, status, progress, assignedBy, icon }
@@ -36,6 +40,14 @@ const CourseCard = ({ course }) => {
   const isNotStarted = course.status === "Not Started";
   const barColor = isCompleted ? "#27ae60" : "#FF6B00";
   const progressDisplay = isNotStarted ? "—%" : `${course.progress}%`;
+
+  const navigate = useNavigate();
+  const { company } = useAuth();
+  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") || "";
+
+  const handleActionClick = () => {
+    navigate(`/${slug}/courses/modules`, { state: { courseId: course.id } });
+  };
 
   return (
     <div style={{
@@ -57,7 +69,7 @@ const CourseCard = ({ course }) => {
       {/* White body */}
       <div style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ fontWeight: 800, fontSize: 15, color: "#1a1a1a", lineHeight: 1.3 }}>{course.name}</div>
-        <div style={{ fontSize: 12, color: "#888" }}>{course.modules} Modules · {course.units} Lessons</div>
+        <div style={{ fontSize: 12, color: "#888" }}>{course.modulesCount} Modules · {course.unitsCount} Lessons</div>
 
         {/* Progress */}
         <div style={{ marginTop: 4 }}>
@@ -86,16 +98,14 @@ const CourseCard = ({ course }) => {
             </div>
           )}
 
-          <button style={{
-            background: isNotStarted ? "white" : "#FF6B00",
-            color: isNotStarted ? "#1a1a1a" : "white",
-            border: isNotStarted ? "1.5px solid #ddd" : "none",
-            borderRadius: 20, padding: "6px 18px",
-            fontSize: 12, fontWeight: 700, cursor: "pointer",
-            fontFamily: "inherit", transition: "all 0.2s",
-          }}>
+          <Button
+            size="sm"
+            rounded="pill"
+            variant={isCompleted || isNotStarted ? "ghost" : "primary"}
+            onClick={handleActionClick}
+          >
             {isCompleted ? "View" : isNotStarted ? "Start" : "Continue"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
