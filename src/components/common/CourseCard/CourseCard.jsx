@@ -1,4 +1,5 @@
 import { Pin, Trophy } from "lucide-react";
+import Button from "../../ui/Button/Button";
 
 /* ── Status chip ── */
 const statusStyles = {
@@ -27,6 +28,9 @@ const Bar = ({ value, color }) => (
   </div>
 );
 
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+
 /**
  * CourseCard
  * Props: course { id, name, modules, units, status, progress, assignedBy, icon }
@@ -36,6 +40,14 @@ const CourseCard = ({ course }) => {
   const isNotStarted = course.status === "Not Started";
   const barColor = isCompleted ? "#27ae60" : "#FF6B00";
   const progressDisplay = isNotStarted ? "—%" : `${course.progress}%`;
+
+  const navigate = useNavigate();
+  const { company } = useAuth();
+  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") || "";
+
+  const handleActionClick = () => {
+    navigate(`/${slug}/courses/modules`);
+  };
 
   return (
     <div style={{
@@ -86,16 +98,14 @@ const CourseCard = ({ course }) => {
             </div>
           )}
 
-          <button style={{
-            background: isNotStarted ? "white" : "#FF6B00",
-            color: isNotStarted ? "#1a1a1a" : "white",
-            border: isNotStarted ? "1.5px solid #ddd" : "none",
-            borderRadius: 20, padding: "6px 18px",
-            fontSize: 12, fontWeight: 700, cursor: "pointer",
-            fontFamily: "inherit", transition: "all 0.2s",
-          }}>
+          <Button
+            size="sm"
+            rounded="pill"
+            variant={isCompleted || isNotStarted ? "ghost" : "primary"}
+            onClick={handleActionClick}
+          >
             {isCompleted ? "View" : isNotStarted ? "Start" : "Continue"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
