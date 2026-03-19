@@ -21,7 +21,7 @@ const AssessmentCard = ({
     <div className="assessment-card-wrapper">
       <div className="assessment-card-header">
         <h2>{moduleName}</h2>
-        <p>Answer all questions. Passing score is 80%</p>
+        <p>Answer all questions. Passing score is 70%</p>
       </div>
 
       <div className="assessment-question-label">
