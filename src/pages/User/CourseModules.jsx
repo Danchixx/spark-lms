@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button/Button";
 import { ArrowLeft, Check, Lock, Play, FileText, PenTool } from "lucide-react";
 import { COURSES } from "../../data/mockCourses";
 import CertificateModal from "../../components/ui/CertificateModal/CertificateModal";
+import sparkLogoImg from "../../components/common/SparkLogo/sparklogo.png";
 
 const CourseModules = () => {
   const { user, company, logout } = useAuth();
@@ -15,7 +16,7 @@ const CourseModules = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   useSidebarAutoClose(setSidebarOpen);
-  
+
   const courseId = location.state?.courseId;
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page) => navigate(`/${slug}/${page.toLowerCase()}`);
@@ -59,7 +60,7 @@ const CourseModules = () => {
           <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
 
           <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-            
+
             {/* Breadcrumb Area */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
               <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
@@ -70,9 +71,9 @@ const CourseModules = () => {
             </div>
 
             {/* Main Hero Banner */}
-            <div style={{ 
-              background: "linear-gradient(90deg, #FF6B00, #ffb152)", 
-              borderRadius: 12, 
+            <div style={{
+              background: "linear-gradient(90deg, #FF6B00, #ffb152)",
+              borderRadius: 12,
               padding: "24px 32px",
               color: "white",
               display: "flex",
@@ -92,8 +93,8 @@ const CourseModules = () => {
                 </div>
               </div>
               {/* Background decorative element */}
-              <div style={{ position: "absolute", right: 20, top: "50%", transform: "translateY(-50%)", height: "130%", opacity: 0.35 }}>
-                <img src={sparkLogoImg} alt="Spark" style={{ height: "100%", objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.5)" }} />
+              <div style={{ position: "absolute", right: 20, top: "50%", transform: "translateY(-50%)", height: "130%", opacity: 0.4 }}>
+                <img src={sparkLogoImg} alt="Spark" style={{ height: "100%", objectFit: "contain" }} />
               </div>
             </div>
 
@@ -127,26 +128,26 @@ const CourseModules = () => {
                     transition: "all 0.3s ease" // Smooth transition for the container
                   }}>
                     {/* Module Header */}
-                    <div 
+                    <div
                       onClick={() => module.units.length > 0 && setExpandedModule(isExpanded ? null : module.id)}
-                      style={{ 
-                        padding: "16px 24px", 
-                        display: "flex", 
-                        alignItems: "center", 
+                      style={{
+                        padding: "16px 24px",
+                        display: "flex",
+                        alignItems: "center",
                         gap: 20,
                         cursor: module.units.length > 0 ? "pointer" : "default"
                       }}
                     >
-                      <div style={{ 
-                        width: 48, height: 48, borderRadius: "50%", 
-                        background: sc.bg, color: sc.color, 
+                      <div style={{
+                        width: 48, height: 48, borderRadius: "50%",
+                        background: sc.bg, color: sc.color,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 20, fontWeight: 800,
                         border: module.status === "completed" ? "none" : `2px solid ${sc.color}`
                       }}>
                         {module.status === "completed" ? <Check size={24} color="white" strokeWidth={3} /> : module.id}
                       </div>
-                      
+
                       <div style={{ flex: 1 }}>
                         <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700, color: "#1a1a1a" }}>Module {module.id}: {module.name}</h3>
                         <div style={{ fontSize: 13, color: "#888" }}>
@@ -162,12 +163,12 @@ const CourseModules = () => {
 
                     {/* Lessons List (Accordion) */}
                     <div style={{
-                       maxHeight: isExpanded ? "500px" : "0px",
-                       opacity: isExpanded ? 1 : 0,
-                       overflow: "hidden",
-                       transition: "max-height 0.4s ease, opacity 0.4s ease",
-                       padding: isExpanded ? "0 24px 24px 84px" : "0 24px 0 84px",
-                       display: "flex", flexDirection: "column", gap: 12
+                      maxHeight: isExpanded ? "500px" : "0px",
+                      opacity: isExpanded ? 1 : 0,
+                      overflow: "hidden",
+                      transition: "max-height 0.4s ease, opacity 0.4s ease",
+                      padding: isExpanded ? "0 24px 24px 84px" : "0 24px 0 84px",
+                      display: "flex", flexDirection: "column", gap: 12
                     }}>
                       {module.units.map((unit) => (
                         <div key={unit.id} style={{
@@ -178,14 +179,27 @@ const CourseModules = () => {
                           <div style={{ background: "#f5f5f5", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>
                             {getUnitIcon(unit.type)}
                           </div>
-                          
+
                           <div style={{ flex: 1, fontWeight: 600, color: "#1a1a1a", fontSize: 14 }}>
                             {unit.title}
                           </div>
 
                           <div>
                             {unit.status === "completed" && <Check size={20} color="#FF6B00" strokeWidth={3} />}
-                            {unit.status === "open" && <Button size="sm" rounded="pill">Open</Button>}
+                            {unit.status === "open" && (
+                              <Button 
+                                size="sm" 
+                                rounded="pill"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/${slug}/courses/lessons`, { 
+                                    state: { courseId, moduleId: module.id, lessonId: unit.id } 
+                                  });
+                                }}
+                              >
+                                Open
+                              </Button>
+                            )}
                             {unit.status === "locked" && <Lock size={16} color="#666" />}
                           </div>
                         </div>
@@ -200,8 +214,8 @@ const CourseModules = () => {
         </div>
       </div>
 
-      <CertificateModal 
-        isOpen={showCertificate} 
+      <CertificateModal
+        isOpen={showCertificate}
         onClose={() => setShowCertificate(false)}
         userName={user.name}
         courseName={courseData.name || courseData.title}

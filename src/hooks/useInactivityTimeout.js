@@ -1,18 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-// ┌─────────────────────────────────────────────────────────────┐
-// │  ⏱  INACTIVITY TIMEOUT — change the value below to adjust  │
-// │  how long (in milliseconds) a user can be idle before the   │
-// │  session expires.  Default: 2 minutes (120 000 ms).         │
-// └─────────────────────────────────────────────────────────────┘
-export const SESSION_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+export const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 2 minutes
 
 const ACTIVITY_EVENTS = ["mousemove", "keydown", "click", "scroll", "touchstart"];
 
-/**
- * Returns `true` when the user has been inactive for SESSION_TIMEOUT_MS.
- * Only runs when `isActive` is true (i.e. user is logged in).
- */
 const useInactivityTimeout = (isActive) => {
   const [expired, setExpired] = useState(false);
   const timerRef = useRef(null);
