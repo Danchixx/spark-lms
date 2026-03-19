@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button/Button";
 import AssessmentCard from "../../components/common/AssessmentCard/AssessmentCard";
 import SubmitAssessmentModal from "../../components/common/Modal/SubmitAssessmentModal";
 import TimeUpModal from "../../components/common/Modal/TimeUpModal";
+import AssessmentSuccessModal from "../../components/common/Modal/AssessmentSuccessModal";
 import { ArrowLeft, Timer } from "lucide-react";
 import { COURSES } from "../../data/mockCourses";
 
@@ -35,6 +36,9 @@ const MOCK_QUESTIONS = [
     choices: ["Aggressive upselling on every call", "Consistent value delivery and check-ins", "Avoiding all post-sale contact", "Sending automated bulk messages"] },
 ];
 
+// ── Correct answers (0-indexed choice) ── for mock scoring ──
+const CORRECT_ANSWERS = { 0: 2, 1: 1, 2: 2, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 2, 9: 1 };
+
 // ── Timer Config ──────────────────────────────────────────────
 // Change ASSESSMENT_TIME_SECONDS to adjust the assessment duration.
 const ASSESSMENT_TIME_SECONDS = 15 * 60; // 15 minutes
@@ -59,6 +63,8 @@ const ModuleAssessment = () => {
   const [timeLeft, setTimeLeft] = useState(ASSESSMENT_TIME_SECONDS);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showTimeUpModal, setShowTimeUpModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastScore, setLastScore] = useState(null);
   const timerRef = useRef(null);
 
   // Start countdown
@@ -112,17 +118,36 @@ const ModuleAssessment = () => {
 
   const handleSubmitClick = () => setShowSubmitModal(true);
 
+  const calcScore = () => {
+    let correct = 0;
+    for (let i = 0; i < totalQuestions; i++) {
+      if (answers[i] === CORRECT_ANSWERS[i]) correct++;
+    }
+    return Math.round((correct / totalQuestions) * 100);
+  };
+
   const handleConfirmSubmit = () => {
     setShowSubmitModal(false);
     clearInterval(timerRef.current);
-    // For now, just navigate back
-    navigate(-1);
+    const score = calcScore();
+    setLastScore(score);
+    setShowSuccessModal(true);
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    navigate(`/${slug}/courses/attempts`, {
+      state: { courseId, moduleId, newScore: lastScore }
+    });
   };
 
   const handleTimeUpClose = () => {
     setShowTimeUpModal(false);
     clearInterval(timerRef.current);
-    navigate(-1);
+    const score = calcScore();
+    navigate(`/${slug}/courses/attempts`, {
+      state: { courseId, moduleId, newScore: score }
+    });
   };
 
   return (
@@ -198,7 +223,7 @@ const ModuleAssessment = () => {
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ color: "#888" }}>Passing Score:</span>
-                      <span style={{ fontWeight: 700 }}>80%</span>
+                      <span style={{ fontWeight: 700 }}>70%</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ color: "#888" }}>Time Left:</span>
@@ -270,6 +295,7 @@ const ModuleAssessment = () => {
         hasUnanswered={hasUnanswered}
       />
       <TimeUpModal isOpen={showTimeUpModal} onClose={handleTimeUpClose} />
+      <AssessmentSuccessModal isOpen={showSuccessModal} onClose={handleSuccessClose} />
     </>
   );
 };

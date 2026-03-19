@@ -184,7 +184,7 @@ const CourseModules = () => {
                             {unit.title}
                           </div>
 
-                          <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             {unit.status === "completed" && <Check size={20} color="#FF6B00" strokeWidth={3} />}
                             {unit.status === "open" && (
                               <Button 
@@ -198,6 +198,21 @@ const CourseModules = () => {
                                 }}
                               >
                                 Open
+                              </Button>
+                            )}
+                            {unit.type === "assessment" && (unit.status === "completed" || unit.status === "open") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                rounded="pill"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/${slug}/courses/attempts`, {
+                                    state: { courseId, moduleId: module.id }
+                                  });
+                                }}
+                              >
+                                View Attempts
                               </Button>
                             )}
                             {unit.status === "locked" && <Lock size={16} color="#666" />}
