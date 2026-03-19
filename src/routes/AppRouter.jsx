@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import useInactivityTimeout from "../hooks/useInactivityTimeout";
+import SessionExpiredModal from "../components/common/Modal/SessionExpiredModal";
 
 import Landing from "../pages/Landing/Landing";
 import Login from "../pages/Auth/Login";
@@ -33,13 +35,22 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/" replace />;
 };
 
-// ── App Router ────────────────────────────────────────────────
-const AppRouter = () => {
-  const { user, company, selectCompany, login, logout } = useAuth();
+// ── Inner router (needs useNavigate, so must be inside BrowserRouter) ──
+const AppRoutes = () => {
+  const { user, company, logout } = useAuth();
+  const navigate = useNavigate();
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
 
+  // Inactivity timeout — only active when user is logged in
+  const sessionExpired = useInactivityTimeout(!!user);
+
+  const handleSessionExpired = () => {
+    logout();
+    navigate("/", { replace: true });
+  };
+
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         {/* Public */}
         <Route path="/" element={<Landing />} />
@@ -56,6 +67,18 @@ const AppRouter = () => {
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />
       </Routes>
+
+      {/* Session expired overlay */}
+      <SessionExpiredModal isOpen={sessionExpired} onLoginAgain={handleSessionExpired} />
+    </>
+  );
+};
+
+// ── App Router ────────────────────────────────────────────────
+const AppRouter = () => {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 };

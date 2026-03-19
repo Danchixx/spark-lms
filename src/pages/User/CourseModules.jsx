@@ -92,7 +92,9 @@ const CourseModules = () => {
                 </div>
               </div>
               {/* Background decorative element */}
-              <div style={{ position: "absolute", right: 20, top: "10%", fontSize: 120, opacity: 0.15 }}>🔥</div>
+              <div style={{ position: "absolute", right: 20, top: "50%", transform: "translateY(-50%)", height: "130%", opacity: 0.35 }}>
+                <img src={sparkLogoImg} alt="Spark" style={{ height: "100%", objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.5)" }} />
+              </div>
             </div>
 
             {/* Progress Bar Container */}
