@@ -16,6 +16,7 @@ import UserModuleAssessment from "../pages/User/ModuleAssessment";
 import UserModuleAttempts from "../pages/User/ModuleAttempts";
 import UserCertificates from "../pages/User/Certificates";
 import UserSettings from "../pages/User/Settings";
+import UserContact from "../pages/User/Contact";
 import SparkAdminDashboard from "../pages/SuperAdmin/SADashboard";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
@@ -84,6 +85,8 @@ const AppRoutes = () => {
         <Route path="/:company/courses/attempts" element={<ProtectedRoute><UserModuleAttempts /></ProtectedRoute>} />
         <Route path="/:company/certificates" element={<ProtectedRoute><UserCertificates /></ProtectedRoute>} />
         <Route path="/:company/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
+        <Route path="/:company/contact" element={<ProtectedRoute><UserContact /></ProtectedRoute>} />
+
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />
