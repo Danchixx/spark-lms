@@ -26,11 +26,11 @@ const DashboardRouter = () => {
   if (!user) return <Navigate to="/" replace />;
 
   switch (user.role) {
-    case "admin":       return <div>Admin Dashboard — coming soon</div>;
-    case "approver":    return <div>Approver Dashboard — coming soon</div>;
-    case "creator":     return <div>Creator Dashboard — coming soon</div>;
+    case "admin": return <div>Admin Dashboard — coming soon</div>;
+    case "approver": return <div>Approver Dashboard — coming soon</div>;
+    case "creator": return <div>Creator Dashboard — coming soon</div>;
     case "spark_admin": return <div>Spark Admin Dashboard — coming soon</div>;
-    default:            return <UserDashboard user={user} />;
+    default: return <UserDashboard user={user} />;
   }
 };
 
@@ -75,15 +75,15 @@ const AppRoutes = () => {
         />
 
         {/* Protected — same URL, different component per role */}
-        <Route path="/:company/dashboard"          element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
-        <Route path="/:company/profile"            element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-        <Route path="/:company/courses"            element={<ProtectedRoute><UserCourses /></ProtectedRoute>} />
-        <Route path="/:company/courses/modules"    element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
-        <Route path="/:company/courses/lessons"    element={<ProtectedRoute><UserModuleLessons /></ProtectedRoute>} />
+        <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
+        <Route path="/:company/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+        <Route path="/:company/courses" element={<ProtectedRoute><UserCourses /></ProtectedRoute>} />
+        <Route path="/:company/courses/modules" element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
+        <Route path="/:company/courses/lessons" element={<ProtectedRoute><UserModuleLessons /></ProtectedRoute>} />
         <Route path="/:company/courses/assessment" element={<ProtectedRoute><UserModuleAssessment /></ProtectedRoute>} />
-        <Route path="/:company/courses/attempts"   element={<ProtectedRoute><UserModuleAttempts /></ProtectedRoute>} />
-        <Route path="/:company/certificates"       element={<ProtectedRoute><UserCertificates /></ProtectedRoute>} />
-        <Route path="/:company/settings"           element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
+        <Route path="/:company/courses/attempts" element={<ProtectedRoute><UserModuleAttempts /></ProtectedRoute>} />
+        <Route path="/:company/certificates" element={<ProtectedRoute><UserCertificates /></ProtectedRoute>} />
+        <Route path="/:company/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />

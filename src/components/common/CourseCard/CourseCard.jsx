@@ -1,25 +1,8 @@
 import { Pin, Trophy } from "lucide-react";
 import Button from "../../ui/Button/Button";
+import StatusBadge from "../../ui/StatusBadge/StatusBadge";
 
-/* ── Status chip ── */
-const statusStyles = {
-  "Ongoing": { label: "On Going", color: "#FF6B00", bg: "#ffead6" },
-  "Completed": { label: "Completed", color: "#27ae60", bg: "#e0ffec" },
-  "Not Started": { label: "Not Started", color: "#888", bg: "#ededed" },
-};
 
-const StatusChip = ({ status }) => {
-  const s = statusStyles[status] || { label: status, color: "#888", bg: "#f0f0f0" };
-  return (
-    <div style={{
-      position: "absolute", top: 10, left: 10,
-      background: s.bg, color: s.color,
-      fontSize: 10, fontWeight: 700,
-      padding: "3px 8px", borderRadius: 10,
-      border: `1px solid ${s.color}33`,
-    }}>{s.label}</div>
-  );
-};
 
 /* ── Progress bar ── */
 const Bar = ({ value, color }) => (
@@ -62,7 +45,10 @@ const CourseCard = ({ course }) => {
     >
       {/* Orange image area */}
       <div style={{ position: "relative", height: 120, background: "linear-gradient(180deg, #ffb152, #FF8C00, #FF6B00)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <StatusChip status={course.status} />
+        <StatusBadge 
+          status={course.status} 
+          style={{ position: "absolute", top: 10, left: 10, fontSize: 10, padding: "2px 8px" }} 
+        />
         <div style={{ fontSize: 52, opacity: 0.85 }}>{course.icon}</div>
       </div>
 

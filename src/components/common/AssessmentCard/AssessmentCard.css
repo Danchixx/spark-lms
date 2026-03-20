@@ -1,0 +1,144 @@
+.assessment-card-wrapper {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  padding: 32px 40px;
+  font-family: 'Barlow', sans-serif;
+  color: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+}
+
+.assessment-card-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.assessment-card-header p {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 24px 0;
+}
+
+/* ── Question Label ── */
+.assessment-question-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #FF6B00;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.assessment-question-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1a1a1a;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* ── Choices ── */
+.assessment-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.assessment-choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  background: white;
+}
+
+.assessment-choice:hover {
+  border-color: #FF6B00;
+  background: #fff9f5;
+}
+
+.assessment-choice--selected {
+  background: linear-gradient(90deg, #fff0e0, #ffe8ce);
+  border-color: #FF6B00;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.assessment-choice-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.assessment-choice--selected .assessment-choice-radio {
+  border-color: #FF6B00;
+}
+
+.assessment-choice-radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #FF6B00;
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+
+.assessment-choice--selected .assessment-choice-radio-inner {
+  transform: scale(1);
+}
+
+/* ── Footer ── */
+.assessment-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 24px;
+  border-top: 1px solid #eee;
+}
+
+/* ── Dot Nav ── */
+.assessment-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.assessment-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ddd;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.assessment-dot--answered {
+  background: #FF6B00;
+}
+
+.assessment-dot--current {
+  background: #FF6B00;
+  width: 20px;
+  border-radius: 10px;
+}
+
+.assessment-footer-buttons {
+  display: flex;
+  gap: 12px;
+}

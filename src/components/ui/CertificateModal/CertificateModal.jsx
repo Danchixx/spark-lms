@@ -120,7 +120,7 @@ const CertificateModal = ({ isOpen, onClose, userName, courseName, date, company
               </div>
               <div style={{ textAlign: "center", width: 200 }}>
                 <div style={{ borderBottom: "1px solid #888", height: 30, marginBottom: 6 }}></div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a" }}>Regina Schelle</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a" }}>Regina Schelle Palabrica</div>
                 <div style={{ fontSize: 10, color: "#666", textTransform: "uppercase" }}>SPARK HR</div>
               </div>
             </div>

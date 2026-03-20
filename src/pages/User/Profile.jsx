@@ -147,76 +147,20 @@ const Profile = () => {
               <InputBox label="Username" icon={IdCard} value={PROFILE_DATA.email} readOnly />
               <InputBox
                 label="Password" icon={Lock}
-                value={showPassword ? "password123" : "••••••••••••••••••"}
-                type={showPassword ? "text" : "password"}
+                value="••••••••••••••••••"
+                type="password"
                 readOnly
-                rightEl={
-                  <button onClick={() => setShowPassword(!showPassword)} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex", alignItems: "center", flexShrink: 0 }}>
-                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                }
               />
             </div>
 
-            <div style={{ paddingLeft: "calc(50% + 10px)", paddingBottom: changingPassword ? 0 : 16, marginTop: -8 }}>
-              <button onClick={() => { setChangingPassword(!changingPassword); setNewPassword(""); setConfirmPassword(""); }} style={{ background: "none", border: "none", color: "#FF6B00", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, textDecoration: "underline", padding: "0 0 0 12px" }}>
-                {changingPassword ? "Cancel" : "Change Password?"}
+            <div style={{ paddingLeft: "calc(50% + 10px)", paddingBottom: 16, marginTop: -8 }}>
+              <button 
+                onClick={() => navigate(`/${slug}/settings`, { state: { activeTab: "security" } })} 
+                style={{ background: "none", border: "none", color: "#FF6B00", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, textDecoration: "underline", padding: "0 0 0 12px" }}
+              >
+                Change Password?
               </button>
             </div>
-
-            {changingPassword && (
-              <>
-                <div className="pw-fields" style={{ paddingTop: 12 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>New Password</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${newPassword ? (SC[strength] || "#e0e0e0") : "#e0e0e0"}`, borderRadius: 8, padding: "9px 12px", background: "white" }}>
-                      <Lock size={16} color="#aaa" style={{ flexShrink: 0 }} />
-                      <input type={showNew ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
-                      <button onClick={() => setShowNew(!showNew)} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex", alignItems: "center" }}>
-                        {showNew ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
-                    </div>
-                    {newPassword.length > 0 && (
-                      <div style={{ marginTop: 8 }}>
-                        <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
-                          {["weak", "medium", "strong"].map((level, i) => (
-                            <div key={level} style={{ flex: 1, height: 4, borderRadius: 4, background: strength && (i === 0 || (i === 1 && strength !== "weak") || (i === 2 && strength === "strong")) ? SC[strength] : "#e0e0e0", transition: "background 0.3s" }} />
-                          ))}
-                        </div>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: SC[strength] }}>{SL[strength]}</span>
-                      </div>
-                    )}
-                    <div style={{ marginTop: 10, padding: "10px 12px", background: "#f9f9f9", borderRadius: 8, border: "1px solid #f0f0f0" }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: "#555", margin: "0 0 6px" }}>Password requirements:</p>
-                      <ReqRow met={checks.length} label="At least 8 characters" />
-                      <ReqRow met={checks.letter} label="Contains a letter" />
-                      <ReqRow met={checks.number} label="Contains a number" />
-                      <ReqRow met={checks.uppercase} label="One uppercase letter" />
-                      <ReqRow met={checks.symbol} label="One special symbol (e.g. !@#$)" />
-                    </div>
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Confirm Password</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${confirmPassword ? (newPassword === confirmPassword ? "#22c55e" : "#e74c3c") : "#e0e0e0"}`, borderRadius: 8, padding: "9px 12px", background: "white" }}>
-                      <Lock size={16} color="#aaa" style={{ flexShrink: 0 }} />
-                      <input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
-                      <button onClick={() => setShowConfirm(!showConfirm)} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex", alignItems: "center" }}>
-                        {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
-                    </div>
-                    {confirmPassword && newPassword !== confirmPassword && <p style={{ margin: "6px 0 0", fontSize: 11, color: "#e74c3c", fontWeight: 500 }}>Passwords do not match</p>}
-                    {confirmPassword && newPassword === confirmPassword && <p style={{ margin: "6px 0 0", fontSize: 11, color: "#22c55e", fontWeight: 500 }}>Passwords match ✓</p>}
-                  </div>
-                </div>
-
-                <div style={{ padding: "12px 16px 16px", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={handleSavePassword} disabled={!passwordValid} style={{ padding: "8px 24px", borderRadius: 8, border: "none", fontFamily: "inherit", fontWeight: 700, fontSize: 13, cursor: passwordValid ? "pointer" : "not-allowed", background: passwordValid ? "#FF6B00" : "#ffb87a", color: "white", transition: "background 0.2s" }}>
-                    Save Password
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
