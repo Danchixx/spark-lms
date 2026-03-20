@@ -1,13 +1,17 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import Button from "../../components/ui/Button/Button";
+import SettingsCard from "../../components/ui/SettingsCard/SettingsCard";
+import {
+  Toggle, getStrength, STRENGTH_COLORS, STRENGTH_LABELS, ReqRow
+} from "../../components/ui/SettingsCard/SettingsHelpers";
 import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
 import {
-  Building2, Bell, ShieldCheck, Palette, Users, CreditCard,
-  Lock, Eye, EyeOff, Check, X, Camera, Globe, Mail, Phone, MapPin
+  Building2, Bell, ShieldCheck, Palette,
+  Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar
 } from "lucide-react";
 import "./Settings.css";
 
@@ -23,45 +27,12 @@ const COMPANY = {
   plan: "Pro Plan",
 };
 
-/* ── Toggle component ── */
-const Toggle = ({ checked, onChange }) => (
-  <label className="toggle-switch">
-    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-    <span className="toggle-track" />
-  </label>
-);
-
-/* ── Password strength ── */
-const getStrength = (pw) => {
-  const checks = {
-    length: pw.length >= 8, number: /[0-9]/.test(pw),
-    letter: /[a-zA-Z]/.test(pw), uppercase: /[A-Z]/.test(pw),
-    symbol: /[^a-zA-Z0-9]/.test(pw),
-  };
-  const passed = Object.values(checks).filter(Boolean).length;
-  const strength = pw.length === 0 ? null : passed <= 2 ? "weak" : passed <= 4 ? "medium" : "strong";
-  return { checks, strength };
-};
-const SC = { weak: "#e74c3c", medium: "#f39c12", strong: "#27ae60" };
-const SL = { weak: "Weak", medium: "Medium", strong: "Strong" };
-
-const ReqRow = ({ met, label }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-    <div style={{ width: 16, height: 16, borderRadius: "50%", background: met ? "#f0fdf4" : "#fef2f2", border: `1.5px solid ${met ? "#22c55e" : "#fca5a5"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      {met ? <Check size={9} color="#22c55e" /> : <X size={9} color="#f87171" />}
-    </div>
-    <span style={{ fontSize: 11, color: met ? "#16a34a" : "#888" }}>{label}</span>
-  </div>
-);
-
-/* ── Nav items ── */
-const NAV = [
+/* ── Nav items (User-only: no Organization, no Billing) ── */
+const USER_TABS = [
   { key: "company", label: "Company Profile", icon: Building2 },
-  { key: "organization", label: "Organization", icon: Users },
   { key: "notifications", label: "Notifications", icon: Bell },
   { key: "security", label: "Security", icon: ShieldCheck },
   { key: "appearance", label: "Appearance", icon: Palette },
-  { key: "billing", label: "Billing", icon: CreditCard },
 ];
 
 /* ── Panels ── */
@@ -78,18 +49,10 @@ const CompanyPanel = () => (
     <div className="company-visuals">
       <div className="label-small">Cover Photo and Logo</div>
       <div className="company-cover-edit">
-        <div className="cover-placeholder">
-          <button className="cover-edit-btn">
-            <Camera size={14} /> Cover Photo
-          </button>
-        </div>
         <div className="company-logo-overlay">
           <div className="logo-circle">
             <span style={{ fontSize: 24, fontWeight: 900, color: "#2980b9" }}>ZP</span>
           </div>
-          <button className="logo-edit-btn">
-            <Camera size={12} />
-          </button>
         </div>
       </div>
     </div>
@@ -107,7 +70,10 @@ const CompanyPanel = () => (
         </div>
         <div className="form-field">
           <label>Year Founded</label>
-          <input value="2018" readOnly />
+          <div className="input-with-icon">
+            <Calendar size={14} />
+            <input value="2018" readOnly />
+          </div>
         </div>
         <div className="form-field">
           <label>Company Website</label>
@@ -136,7 +102,10 @@ const CompanyPanel = () => (
       <div className="form-grid">
         <div className="form-field">
           <label>Contact Person</label>
-          <input value="Danchi D." readOnly />
+          <div className="input-with-icon">
+            <User size={14} />
+            <input value="Danchi D." readOnly />
+          </div>
         </div>
         <div className="form-field">
           <label>Contact Email</label>
@@ -154,9 +123,7 @@ const CompanyPanel = () => (
         </div>
         <div className="form-field">
           <label>Country</label>
-          <select value="Phillipines" disabled>
-            <option>Phillipines</option>
-          </select>
+          <input value="Phillipines" readOnly />
         </div>
         <div className="form-field full-width">
           <label>Office Address</label>
@@ -167,16 +134,10 @@ const CompanyPanel = () => (
         </div>
       </div>
     </div>
-  </div>
-);
 
-const OrganizationPanel = () => (
-  <div className="section-card">
-    <h2 className="settings-panel-title">Organization</h2>
-    <p className="settings-panel-subtitle">Manage your company departments and branches.</p>
-    <div className="settings-divider" />
-    <div style={{ padding: 40, textAlign: "center", color: "#888" }}>
-      Organization structure management coming soon.
+    <div className="settings-save-bar" style={{ background: "transparent", padding: "16px 0 0" }}>
+      <Button variant="ghost" size="sm">Cancel</Button>
+      <Button size="sm">Save Changes</Button>
     </div>
   </div>
 );
@@ -288,10 +249,10 @@ const SecurityPanel = () => {
           <div style={{ padding: "0 20px 8px" }}>
             <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
               {["weak", "medium", "strong"].map((level, i) => (
-                <div key={level} style={{ flex: 1, height: 4, borderRadius: 4, background: strength && (i === 0 || (i === 1 && strength !== "weak") || (i === 2 && strength === "strong")) ? SC[strength] : "#e0e0e0", transition: "background 0.3s" }} />
+                <div key={level} style={{ flex: 1, height: 4, borderRadius: 4, background: strength && (i === 0 || (i === 1 && strength !== "weak") || (i === 2 && strength === "strong")) ? STRENGTH_COLORS[strength] : "#e0e0e0", transition: "background 0.3s" }} />
               ))}
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: SC[strength] }}>{SL[strength]}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: STRENGTH_COLORS[strength] }}>{STRENGTH_LABELS[strength]}</span>
             <div style={{ marginTop: 8, padding: "10px 12px", background: "#f9f9f9", borderRadius: 8, border: "1px solid #f0f0f0" }}>
               <ReqRow met={checks.length} label="At least 8 characters" />
               <ReqRow met={checks.letter} label="Contains a letter" />
@@ -385,17 +346,6 @@ const AppearancePanel = () => {
   );
 };
 
-const BillingPanel = () => (
-  <div className="section-card">
-    <h2 className="settings-panel-title">Billing</h2>
-    <p className="settings-panel-subtitle">Manage your subscription and billing information.</p>
-    <div className="settings-divider" />
-    <div style={{ padding: 40, textAlign: "center", color: "#888" }}>
-      Billing and Subscription details coming soon.
-    </div>
-  </div>
-);
-
 /* ── Main Settings Page ── */
 const Settings = () => {
   const { user, company, logout } = useAuth();
@@ -404,25 +354,10 @@ const Settings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   useSidebarAutoClose(setSidebarOpen);
 
-  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "company");
-
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page) => navigate(`/${slug}/${page.toLowerCase()}`);
 
-  // Refs for scrolling
-  const sectionRefs = {
-    company: useRef(null),
-    organization: useRef(null),
-    notifications: useRef(null),
-    security: useRef(null),
-    appearance: useRef(null),
-    billing: useRef(null),
-  };
-
-  const handleTabClick = (key) => {
-    setActiveTab(key);
-    sectionRefs[key].current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const defaultTab = location.state?.activeTab || "company";
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
@@ -432,36 +367,20 @@ const Settings = () => {
         <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search settings ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 24px", color: "#1a1a1a" }}>Settings</h1>
-
-          <div className="settings-grid-layout">
-            {/* Floating Nav Container */}
-            <aside className="settings-sidebar-nav">
-              <div className="settings-nav-card-fixed">
-                {NAV.map(({ key, label }) => (
-                  <div
-                    key={key}
-                    className={`settings-nav-card-item ${activeTab === key ? "active" : ""}`}
-                    onClick={() => handleTabClick(key)}
-                  >
-                    {label}
-                  </div>
-                ))}
-              </div>
-            </aside>
-
-            {/* Scrollable Sections Area */}
-            <main className="settings-content-sections">
-              <div ref={sectionRefs.company}><CompanyPanel /></div>
-              <div ref={sectionRefs.organization}><OrganizationPanel /></div>
-              <div ref={sectionRefs.notifications}><NotificationsPanel /></div>
-              <div ref={sectionRefs.security}><SecurityPanel /></div>
-              <div ref={sectionRefs.appearance}><AppearancePanel /></div>
-              <div ref={sectionRefs.billing}><BillingPanel /></div>
-
-              <div style={{ height: 200 }} /> {/* Spacer at bottom */}
-            </main>
-          </div>
+          <SettingsCard tabs={USER_TABS} defaultTab={defaultTab} title="Settings">
+            <SettingsCard.Section sectionKey="company">
+              <CompanyPanel />
+            </SettingsCard.Section>
+            <SettingsCard.Section sectionKey="notifications">
+              <NotificationsPanel />
+            </SettingsCard.Section>
+            <SettingsCard.Section sectionKey="security">
+              <SecurityPanel />
+            </SettingsCard.Section>
+            <SettingsCard.Section sectionKey="appearance">
+              <AppearancePanel />
+            </SettingsCard.Section>
+          </SettingsCard>
         </div>
       </div>
     </div>
