@@ -13,7 +13,55 @@ const Header = ({
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
 
   return (
-    <div style={{
+    <>
+      <style>{`
+        /* ── Desktop burger ── */
+        .desk-burger {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #555;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          transition: background 0.2s ease, color 0.2s ease;
+          flex-shrink: 0;
+        }
+        .desk-burger:hover {
+          background: #f0f0f0;
+          color: #FF6B00;
+        }
+        .desk-burger-icon {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          width: 20px;
+        }
+        .desk-burger-line {
+          display: block;
+          height: 2px;
+          width: 100%;
+          background: currentColor;
+          border-radius: 2px;
+          transition: width 0.3s cubic-bezier(0.4,0,0.2,1),
+                      margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        /* Closed state hover → lines point RIGHT (indicating "open") */
+        .desk-burger:hover .desk-burger-line:nth-child(1) { width: 100%; }
+        .desk-burger:hover .desk-burger-line:nth-child(2) { width: 60%; margin-left: auto; }
+        .desk-burger:hover .desk-burger-line:nth-child(3) { width: 100%; }
+
+        /* Open state hover → lines point LEFT (indicating "close") */
+        .desk-burger--open:hover .desk-burger-line:nth-child(1) { width: 100%; }
+        .desk-burger--open:hover .desk-burger-line:nth-child(2) { width: 60%; margin-left: 0; }
+        .desk-burger--open:hover .desk-burger-line:nth-child(3) { width: 100%; }
+      `}</style>
+
+      <div style={{
       background: "white",
       padding: "0 24px",
       height: 60,
@@ -26,7 +74,7 @@ const Header = ({
       position: "relative",
     }}>
 
-      {/* Burger — Squash animation on mobile, plain button on desktop */}
+      {/* Burger — Squash animation on mobile, directional hover on desktop */}
       {isMobile ? (
         <Hamburger
           toggled={isOpen}
@@ -38,22 +86,14 @@ const Header = ({
         />
       ) : (
         <button
+          className={`desk-burger${isOpen ? " desk-burger--open" : ""}`}
           onClick={onToggleSidebar}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "#555", display: "flex", alignItems: "center",
-            justifyContent: "center", width: 36, height: 36,
-            borderRadius: 8, transition: "background 0.2s ease, color 0.2s ease",
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#f0f0f0"; e.currentTarget.style.color = "#FF6B00"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#555"; }}
           aria-label="Toggle menu"
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 5, width: 20 }}>
-            <div style={{ height: 2, background: "currentColor", borderRadius: 2 }} />
-            <div style={{ height: 2, background: "currentColor", borderRadius: 2 }} />
-            <div style={{ height: 2, background: "currentColor", borderRadius: 2 }} />
+          <div className="desk-burger-icon">
+            <span className="desk-burger-line" />
+            <span className="desk-burger-line" />
+            <span className="desk-burger-line" />
           </div>
         </button>
       )}
@@ -131,7 +171,8 @@ const Header = ({
           </span>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
