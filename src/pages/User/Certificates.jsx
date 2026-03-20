@@ -5,6 +5,7 @@ import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
 import Button from "../../components/ui/Button/Button";
+import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import CertificateModal from "../../components/ui/CertificateModal/CertificateModal";
 import { Calendar, Award, Check, CircleDashed } from "lucide-react";
 import { COURSES } from "../../data/mockCourses";
@@ -71,9 +72,9 @@ const Certificates = () => {
                       </div>
                     </div>
                     <div className="certificate-card-actions">
-                      <div className="certificate-badge certificate-badge--verified">
+                      <StatusBadge status="Verified" style={{ gap: 5 }}>
                         <Check size={12} /> Verified
-                      </div>
+                      </StatusBadge>
                       <Button variant="primary" size="sm" rounded="pill" onClick={() => setSelectedCourse(course)}>
                         View Certificate
                       </Button>
@@ -97,9 +98,9 @@ const Certificates = () => {
                       Progress: {course.progress}%
                     </div>
                     <div className="certificate-card-actions">
-                      <div className="certificate-badge certificate-badge--not-earned">
+                      <StatusBadge status="Not Earned Yet">
                         Not Earned Yet
-                      </div>
+                      </StatusBadge>
                       <Button 
                         variant="outline" 
                         size="sm" 
