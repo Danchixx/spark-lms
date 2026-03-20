@@ -80,6 +80,7 @@ const Login = () => {
                 </div>
               </div>
 
+              <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
               {/* Username */}
               <div style={{ marginBottom: 12 }}>
                 {touched.username && !username && (
@@ -131,9 +132,10 @@ const Login = () => {
                 </div>
               )}
 
-              <Button onClick={handleLogin} loading={loading} fullWidth size="lg" style={{ justifyContent: "center", marginBottom: 16 }}>
+              <Button type="submit" loading={loading} fullWidth size="lg" style={{ justifyContent: "center", marginBottom: 16 }}>
                 {loading ? "Logging in..." : "Login"}
               </Button>
+              </form>
 
               <div style={{ textAlign: "center" }}>
                 <span onClick={handleBack} style={{ fontSize: 12, color: "#FF6B00", cursor: "pointer", textDecoration: "underline" }}>← Change company</span>

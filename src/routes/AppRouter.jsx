@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import useInactivityTimeout from "../hooks/useInactivityTimeout";
+import SessionExpiredModal from "../components/common/Modal/SessionExpiredModal";
 
 import Landing from "../pages/Landing/Landing";
 import Login from "../pages/Auth/Login";
@@ -9,6 +11,11 @@ import UserDashboard from "../pages/User/Dashboard";
 import UserProfile from "../pages/User/Profile";
 import UserCourses from "../pages/User/Courses";
 import UserCourseModules from "../pages/User/CourseModules";
+import UserModuleLessons from "../pages/User/ModuleLessons";
+import UserModuleAssessment from "../pages/User/ModuleAssessment";
+import UserModuleAttempts from "../pages/User/ModuleAttempts";
+import UserCertificates from "../pages/User/Certificates";
+import UserSettings from "../pages/User/Settings";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 // import SparkAdminDashboard from "../pages/SparkAdmin/Dashboard";
@@ -33,13 +40,22 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/" replace />;
 };
 
-// ── App Router ────────────────────────────────────────────────
-const AppRouter = () => {
-  const { user, company, selectCompany, login, logout } = useAuth();
+// ── Inner router (needs useNavigate, so must be inside BrowserRouter) ──
+const AppRoutes = () => {
+  const { user, company, logout } = useAuth();
+  const navigate = useNavigate();
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
 
+  // Inactivity timeout — only active when user is logged in
+  const sessionExpired = useInactivityTimeout(!!user);
+
+  const handleSessionExpired = () => {
+    logout();
+    navigate("/", { replace: true });
+  };
+
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         {/* Public */}
         <Route path="/" element={<Landing />} />
@@ -51,11 +67,29 @@ const AppRouter = () => {
         <Route path="/:company/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
         <Route path="/:company/courses" element={<ProtectedRoute><UserCourses /></ProtectedRoute>} />
         <Route path="/:company/courses/modules" element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
-        {/* Add more shared routes here e.g. /:company/courses, /:company/certificates */}
+        <Route path="/:company/courses/lessons" element={<ProtectedRoute><UserModuleLessons /></ProtectedRoute>} />
+        <Route path="/:company/courses/assessment" element={<ProtectedRoute><UserModuleAssessment /></ProtectedRoute>} />
+        <Route path="/:company/courses/attempts" element={<ProtectedRoute><UserModuleAttempts /></ProtectedRoute>} />
+        <Route path="/:company/certificates" element={<ProtectedRoute><UserCertificates /></ProtectedRoute>} />
+        <Route path="/:company/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
+
+        {/* Add more shared routes here */}
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />
       </Routes>
+
+      {/* Session expired overlay */}
+      <SessionExpiredModal isOpen={sessionExpired} onLoginAgain={handleSessionExpired} />
+    </>
+  );
+};
+
+// ── App Router ────────────────────────────────────────────────
+const AppRouter = () => {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 };

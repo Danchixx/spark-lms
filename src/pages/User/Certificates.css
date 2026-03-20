@@ -1,0 +1,180 @@
+.certificates-page-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 32px;
+}
+
+/* ── Grid ── */
+.certificates-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+/* ── Card ── */
+.certificate-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.certificate-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Thick orange top bar for earned */
+.certificate-card--earned {
+  border-top: 4px solid #FF6B00;
+}
+
+.certificate-card--not-earned {
+  border: 1px solid #e0e0e0;
+  border-top: 4px solid #ccc;
+}
+
+/* ── Banner ── */
+.certificate-card-banner {
+  position: relative;
+  padding: 28px 24px 20px;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.certificate-card-banner--earned {
+  background: linear-gradient(135deg, #fff5eb 0%, #ffe8d0 100%);
+}
+
+.certificate-card-banner--not-earned {
+  background: #f2f2f2;
+}
+
+/* Spark flame in top-right */
+.certificate-card-flame {
+  position: absolute;
+  right: -10px;
+  top: 0;
+  width: 160px;
+  height: 160px;
+  pointer-events: none;
+  opacity: .6;
+}
+
+.certificate-card--not-earned .certificate-card-flame {
+  opacity: 0.7;
+}
+
+/* Course icon */
+.certificate-card-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.certificate-card-icon--not-earned {
+  font-size: 60px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.certificate-card-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 4px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.certificate-card-issuer {
+  font-size: 13px;
+  color: #888;
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+
+/* ── Details area (below banner) ── */
+.certificate-card-details {
+  padding: 16px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.certificate-card-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+  color: #555;
+  align-items: center;
+}
+
+.certificate-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.certificate-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── Badges ── */
+.certificate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+
+.certificate-badge--verified {
+  background: #d4f8e0;
+  color: #1a7a3a;
+}
+
+.certificate-badge--not-earned {
+  background: #e8e8e8;
+  color: #999;
+  border: 1px solid #d0d0d0;
+  font-weight: 600;
+}
+
+/* ── Progress ── */
+.certificate-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.certificate-progress-icon {
+  color: #FF6B00;
+}
+
+@media (max-width: 900px) {
+  .certificates-grid {
+    grid-template-columns: 1fr;
+  }
+}

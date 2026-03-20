@@ -1,0 +1,91 @@
+.timeup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: timeupFadeIn 0.2s ease;
+}
+
+@keyframes timeupFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.timeup-card {
+  background: white;
+  border-radius: 12px;
+  padding: 40px 48px;
+  max-width: 440px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  animation: timeupSlideUp 0.25s ease;
+}
+
+@keyframes timeupSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.timeup-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #333;
+  font-weight: 700;
+}
+
+.timeup-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.timeup-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.timeup-warning {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e74c3c;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.timeup-desc {
+  font-size: 15px;
+  color: #444;
+  margin: 0 0 28px 0;
+  line-height: 1.5;
+}
+
+.timeup-btn {
+  padding: 10px 40px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: #666;
+  color: white;
+  transition: opacity 0.2s;
+}
+
+.timeup-btn:hover {
+  opacity: 0.85;
+}
