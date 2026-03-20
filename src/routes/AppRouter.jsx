@@ -16,13 +16,13 @@ import UserModuleAssessment from "../pages/User/ModuleAssessment";
 import UserModuleAttempts from "../pages/User/ModuleAttempts";
 import UserCertificates from "../pages/User/Certificates";
 import UserSettings from "../pages/User/Settings";
+import SparkAdminDashboard from "../pages/SuperAdmin/SADashboard";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
-// import SparkAdminDashboard from "../pages/SparkAdmin/Dashboard";
 
 // ── Role → Dashboard map ─────────────────────────────────────
 const DashboardRouter = () => {
-  const { user, company } = useAuth();
+  const { user } = useAuth();
   if (!user) return <Navigate to="/" replace />;
 
   switch (user.role) {
@@ -35,9 +35,11 @@ const DashboardRouter = () => {
 };
 
 // ── Protect routes ────────────────────────────────────────────
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, role }) => {
   const { user } = useAuth();
-  return user ? children : <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/" replace />;
+  if (role && user.role !== role) return <Navigate to="/" replace />;
+  return children;
 };
 
 // ── Inner router (needs useNavigate, so must be inside BrowserRouter) ──
@@ -62,6 +64,16 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<SparkAdminLogin />} />
 
+        {/* Super Admin */}
+        <Route
+          path="/superadmin/dashboard"
+          element={
+            <ProtectedRoute role="spark_admin">
+              <SparkAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Protected — same URL, different component per role */}
         <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
         <Route path="/:company/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
@@ -72,8 +84,6 @@ const AppRoutes = () => {
         <Route path="/:company/courses/attempts" element={<ProtectedRoute><UserModuleAttempts /></ProtectedRoute>} />
         <Route path="/:company/certificates" element={<ProtectedRoute><UserCertificates /></ProtectedRoute>} />
         <Route path="/:company/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
-
-        {/* Add more shared routes here */}
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />
@@ -86,12 +96,10 @@ const AppRoutes = () => {
 };
 
 // ── App Router ────────────────────────────────────────────────
-const AppRouter = () => {
-  return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
-  );
-};
+const AppRouter = () => (
+  <BrowserRouter>
+    <AppRoutes />
+  </BrowserRouter>
+);
 
 export default AppRouter;
