@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { MOCK_TENANTS } from "../../data/mockTenants";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
 import SparkTenants from "./Tenants/SparkTenants";
+import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -18,7 +19,7 @@ const avgProgress = (courseActivity) => {
 // ─────────────────────────────────────────────────────────────
 // Top Bar  (fixed, full width)
 // ─────────────────────────────────────────────────────────────
-const TopBar = ({ onBurger, user }) => (
+const TopBar = ({ onBurger, sidebarOpen, user }) => (
   <div style={{
     position: "fixed",
     top: 0, left: 0, right: 0,
@@ -27,23 +28,45 @@ const TopBar = ({ onBurger, user }) => (
     borderBottom: "2px solid #FF6B00",
     display: "flex",
     alignItems: "center",
-    padding: "0 20px",
+    padding: "0 24px",
     gap: 12,
     zIndex: 110,
   }}>
-    <button onClick={onBurger} style={t.burgerBtn}>
-      <span style={t.burgerLine} />
-      <span style={t.burgerLine} />
-      <span style={t.burgerLine} />
+    <button className="sa-burger-btn" onClick={onBurger} style={t.burgerBtn}>
+      <span style={{
+        ...t.burgerLine,
+        transform: sidebarOpen ? "translateY(6px) rotate(45deg)" : "none",
+        transition: "transform 0.3s cubic-bezier(.4,0,.2,1)",
+      }} />
+      <span style={{
+        ...t.burgerLine,
+        opacity: sidebarOpen ? 0 : 1,
+        transform: sidebarOpen ? "scaleX(0)" : "scaleX(1)",
+        transition: "opacity 0.2s ease, transform 0.2s ease",
+      }} />
+      <span style={{
+        ...t.burgerLine,
+        transform: sidebarOpen ? "translateY(-6px) rotate(-45deg)" : "none",
+        transition: "transform 0.3s cubic-bezier(.4,0,.2,1)",
+      }} />
     </button>
 
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={t.logoText}>SPARK</span>
-      <span>🔥</span>
-    </div>
-    <div style={{ fontSize: 9, color: "#aaa", letterSpacing: ".12em",
-      textTransform: "uppercase" }}>
-      Yes to Learning and Development
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center" }}>
+        <span style={t.logoText}>SPARK</span>
+        <span style={{
+          color: "#9e9e9e",
+          fontFamily: "'Open Sans', sans-serif",
+          fontSize: 6.4,
+          textTransform: "uppercase",
+          whiteSpace: "nowrap",
+          marginTop: 2,
+          letterSpacing: ".12em",
+        }}>
+          Yes to Learning and Development
+        </span>
+      </div>
+      <img src={SparkLogo} alt="Spark Logo" style={{ height: 44, width: "auto" }} />
     </div>
 
     <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
@@ -67,8 +90,8 @@ const t = {
     padding: 4, borderRadius: 6, display: "flex", flexDirection: "column", gap: 4 },
   burgerLine: { display: "block", width: 20, height: 2,
     background: "#444", borderRadius: 2 },
-  logoText: { fontFamily: "'Barlow Condensed', sans-serif",
-    fontWeight: 900, fontSize: 20, color: "#222" },
+  logoText: { fontFamily: "'Sora', sans-serif",
+    fontWeight: 600, fontSize: 26, color: "#222", letterSpacing: 3 },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -84,9 +107,24 @@ const WelcomeScreen = ({ name, onDone }) => {
     <div style={{ position: "fixed", inset: 0, background: "#fff",
       zIndex: 300, display: "flex", flexDirection: "column" }}>
       <div style={{ height: TOPBAR_HEIGHT, borderBottom: "2px solid #FF6B00",
-        display: "flex", alignItems: "center", padding: "0 24px", gap: 6 }}>
-        <span style={t.logoText}>SPARK</span>
-        <span>🔥</span>
+        display: "flex", alignItems: "center", padding: "0 24px" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center" }}>
+            <span style={t.logoText}>SPARK</span>
+            <span style={{
+              color: "#9e9e9e",
+              fontFamily: "'Open Sans', sans-serif",
+              fontSize: 6.4,
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              marginTop: 2,
+              letterSpacing: ".12em",
+            }}>
+              Yes to Learning and Development
+            </span>
+          </div>
+          <img src={SparkLogo} alt="Spark Logo" style={{ height: 44, width: "auto" }} />
+        </div>
       </div>
       <div style={{ flex: 1, display: "flex", alignItems: "center",
         justifyContent: "center" }}>
@@ -309,34 +347,94 @@ const RECENT_SUBS = [
 // ─────────────────────────────────────────────────────────────
 // Dashboard Home
 // ─────────────────────────────────────────────────────────────
+// ── SVG icons matching the user dashboard style ───────────────
+const StatIcons = {
+  tenants: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+      stroke="#FF6B00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  ),
+  approvals: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+      stroke="#FF6B00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
+  ),
+  courses: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+      stroke="#FF6B00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+  ),
+  subscriptions: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+      stroke="#FF6B00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2"/>
+      <line x1="1" y1="10" x2="23" y2="10"/>
+    </svg>
+  ),
+};
+
 const DashboardHome = ({ onNavigate }) => {
   const [notifyTenant, setNotifyTenant] = useState(null);
   const inactiveCount = MOCK_TENANTS.filter((t) => daysSince(t.lastActive) >= 7).length;
 
   const STATS = [
-    { key: "tenants",   label: "Tenants",       value: "+5 this week",    icon: "🏢" },
-    { key: "approvals", label: "Approvals",     value: "+3 this week",    icon: "🕐" },
-    { key: "courses",   label: "Courses",       value: "4 new",           icon: "📚" },
-    { key: "tenants",   label: "Subscriptions", value: "+3 this quarter", icon: "💳" },
+    { key: "tenants",       label: "Tenants",       count: 24,  sub: "+5 this week",    iconKey: "tenants"       },
+    { key: "approvals",     label: "Approvals",     count: 8,   sub: "+3 this week",    iconKey: "approvals"     },
+    { key: "courses",       label: "Courses",       count: 61,  sub: "4 new",           iconKey: "courses"       },
+    { key: "tenants",       label: "Subscriptions", count: 18,  sub: "+3 this quarter", iconKey: "subscriptions" },
   ];
 
   return (
     <div style={{ padding: 20 }}>
-      {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)",
-        gap: 14, marginBottom: 24 }}>
+
+      {/* ── Dashboard title ── */}
+      <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
+        fontWeight: 900, fontSize: 28, color: "#222", marginBottom: 20 }}>
+        Dashboard
+      </div>
+
+      {/* ── Stat cards — orange border on top ── */}
+      <div className="sa-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        gap: 16, marginBottom: 24 }}>
         {STATS.map((s, i) => (
-          <div key={i} onClick={() => onNavigate(s.key)} style={d.statCard}>
-            <div>
-              <div style={d.statLabel}>{s.label}</div>
-              <div style={d.statValue}>{s.value}</div>
+          <div
+            key={i}
+            onClick={() => onNavigate(s.key)}
+            style={d.statCard}
+            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+          >
+            <div style={{ fontSize: 11, color: "#888", fontWeight: 500,
+              textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>
+              {s.label}
             </div>
-            <div style={d.statIcon}>{s.icon}</div>
+            <div style={{ display: "flex", alignItems: "flex-end",
+              justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 36, fontWeight: 700, color: "#222",
+                  lineHeight: 1 }}>
+                  {s.count}
+                </div>
+                <div style={{ fontSize: 12, color: "#FF6B00", marginTop: 6,
+                  fontWeight: 500 }}>
+                  ↑ {s.sub}
+                </div>
+              </div>
+              <div style={d.statIconWrap}>
+                {StatIcons[s.iconKey]}
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Inactive alert */}
+      {/* ── Inactive alert ── */}
       {inactiveCount > 0 && (
         <div style={{ background: "#fde8e8", border: "1px solid #f5c6c6",
           borderRadius: 10, padding: "12px 18px", marginBottom: 20,
@@ -347,33 +445,82 @@ const DashboardHome = ({ onNavigate }) => {
               {inactiveCount} tenant{inactiveCount > 1 ? "s" : ""} inactive for 7+ days
             </div>
             <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
-              Scroll down to view and send notifications to inactive tenants.
+              Check the Tenant Activeness panel below and send notifications.
             </div>
           </div>
         </div>
       )}
 
-      {/* Two-column layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
+      {/* ── Two-column layout: Activeness box | Right panels ── */}
+      <div className="sa-main-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 340px)",
+        gap: 20, alignItems: "start" }}>
 
-        {/* LEFT — Tenant Activeness */}
-        <div>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
-            fontWeight: 900, fontSize: 18, color: "#222", marginBottom: 14 }}>
-            Tenant Activeness
+        {/* LEFT — Tenant Activeness contained in a white box */}
+        <div style={d.panel}>
+          <div style={d.panelTitle}>Tenant Activeness</div>
+          <style>{`
+            .tenant-scroll::-webkit-scrollbar {
+              width: 4px;
+            }
+            .tenant-scroll::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            .tenant-scroll::-webkit-scrollbar-thumb {
+              background: #e0e0e0;
+              border-radius: 99px;
+            }
+            .tenant-scroll::-webkit-scrollbar-thumb:hover {
+              background: #ccc;
+            }
+
+            /* ── Responsive breakpoints ── */
+            @media (max-width: 1024px) {
+              .sa-main-grid {
+                grid-template-columns: 1fr !important;
+              }
+              .sa-right-col {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+              }
+            }
+            @media (max-width: 640px) {
+              .sa-stat-grid {
+                grid-template-columns: 1fr 1fr !important;
+              }
+              .sa-main-grid {
+                grid-template-columns: 1fr !important;
+              }
+              .sa-right-col {
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+              }
+            }
+            @media (max-width: 400px) {
+              .sa-stat-grid {
+                grid-template-columns: 1fr !important;
+              }
+            }
+          `}</style>
+          <div className="tenant-scroll"
+            style={{ maxHeight: 520, overflowY: "auto", paddingRight: 6 }}>
+            {MOCK_TENANTS.map((ten) => (
+              <TenantActivityCard key={ten.id} tenant={ten} onNotify={setNotifyTenant} />
+            ))}
           </div>
-          {MOCK_TENANTS.map((ten) => (
-            <TenantActivityCard key={ten.id} tenant={ten} onNotify={setNotifyTenant} />
-          ))}
         </div>
 
-        {/* RIGHT — Recent Subs + System Updates */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* RIGHT — Recent Subscriptions + System Updates */}
+        <div className="sa-right-col" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
+          {/* Recent Subscriptions */}
           <div style={d.panel}>
             <div style={d.panelTitle}>Recent Subscriptions</div>
-            {RECENT_SUBS.map((sub) => (
-              <div key={sub.name} style={d.subItem}>
+            {RECENT_SUBS.map((sub, i) => (
+              <div key={sub.name} style={{
+                ...d.subItem,
+                borderBottom: i < RECENT_SUBS.length - 1
+                  ? "1px solid #f2f2f2" : "none",
+              }}>
                 <div style={{ ...d.subLogo, background: sub.bg }}>
                   <span style={{ color: "#fff", fontSize: 8, fontWeight: 900,
                     textAlign: "center", lineHeight: 1.2 }}>
@@ -387,7 +534,7 @@ const DashboardHome = ({ onNavigate }) => {
                     {sub.name}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "auto 1fr",
-                    gap: "1px 6px", fontSize: 10, color: "#888" }}>
+                    gap: "2px 8px", fontSize: 11, color: "#888" }}>
                     <span style={{ color: "#aaa" }}>Subscribed Since</span>
                     <span>{sub.since}</span>
                     <span style={{ color: "#aaa" }}>Type</span>
@@ -398,27 +545,28 @@ const DashboardHome = ({ onNavigate }) => {
             ))}
           </div>
 
+          {/* System Updates */}
           <div style={d.panel}>
             <div style={d.panelTitle}>System Updates</div>
             {[
-              { icon: "🆕", text: "New tenant registered: Build Hub PH",   time: "2h ago", color: "#2980b9" },
-              { icon: "✅", text: "Course approved: Sales Fundamentals",     time: "5h ago", color: "#27ae60" },
-              { icon: "⚠️", text: "Eleksis inactive for 10 days",            time: "1d ago", color: "#c0392b" },
-              { icon: "💳", text: "DLSU renewed Institute subscription",      time: "2d ago", color: "#FF6B00" },
-              { icon: "👤", text: "New admin role assigned at DepEd",         time: "3d ago", color: "#8e44ad" },
+              { icon: "🆕", text: "New tenant registered: Build Hub PH",  time: "2h ago",  color: "#2980b9" },
+              { icon: "✅", text: "Course approved: Sales Fundamentals",    time: "5h ago",  color: "#27ae60" },
+              { icon: "⚠️", text: "Eleksis inactive for 10 days",           time: "1d ago",  color: "#c0392b" },
+              { icon: "💳", text: "DLSU renewed Institute subscription",     time: "2d ago",  color: "#FF6B00" },
+              { icon: "👤", text: "New admin role assigned at DepEd",        time: "3d ago",  color: "#8e44ad" },
             ].map((u, i, arr) => (
               <div key={i} style={{ display: "flex", alignItems: "flex-start",
                 gap: 10, padding: "9px 0",
                 borderBottom: i < arr.length - 1 ? "1px solid #f5f5f5" : "none" }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8,
-                  background: u.color + "18",
-                  display: "flex", alignItems: "center",
-                  justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8,
+                  background: u.color + "18", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  fontSize: 15, flexShrink: 0 }}>
                   {u.icon}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "#333", lineHeight: 1.4 }}>{u.text}</div>
-                  <div style={{ fontSize: 10, color: "#bbb", marginTop: 2 }}>{u.time}</div>
+                  <div style={{ fontSize: 12, color: "#333", lineHeight: 1.5 }}>{u.text}</div>
+                  <div style={{ fontSize: 11, color: "#bbb", marginTop: 2 }}>{u.time}</div>
                 </div>
               </div>
             ))}
@@ -434,23 +582,38 @@ const DashboardHome = ({ onNavigate }) => {
 };
 
 const d = {
-  statCard: { background: "#fff", borderRadius: 10, border: "1px solid #ece8e8",
-    borderTop: "3px solid #FF6B00", padding: "18px 20px", cursor: "pointer",
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    transition: "transform .15s, box-shadow .15s" },
-  statLabel: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
-    fontSize: 13, letterSpacing: ".1em", textTransform: "uppercase",
-    color: "#888", marginBottom: 6 },
-  statValue: { fontSize: 13, color: "#FF6B00", fontWeight: 700 },
-  statIcon: { width: 48, height: 48, background: "#FFF0E6", borderRadius: 10,
-    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 },
-  panel: { background: "#fff", borderRadius: 10, border: "1px solid #eee", padding: 16 },
-  panelTitle: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
-    fontSize: 16, color: "#222", marginBottom: 12 },
-  subItem: { display: "flex", alignItems: "flex-start", gap: 10,
-    padding: "9px 0", borderBottom: "1px solid #f2f2f2" },
-  subLogo: { width: 36, height: 36, borderRadius: 6, flexShrink: 0,
-    display: "flex", alignItems: "center", justifyContent: "center" },
+  // Stat card — orange border on TOP, matching user dashboard style
+  statCard: {
+    background: "#fff",
+    borderRadius: 12,
+    border: "1px solid #eee",
+    borderTop: "3px solid #FF6B00",
+    padding: "20px 22px",
+    cursor: "pointer",
+    transition: "transform .2s ease, box-shadow .2s ease",
+  },
+  statIconWrap: {
+    width: 52, height: 52,
+    background: "#FFF0E6",
+    borderRadius: 12,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    flexShrink: 0,
+  },
+  panel: {
+    background: "#fff", borderRadius: 12,
+    border: "1px solid #eee", padding: "18px 20px",
+  },
+  panelTitle: {
+    fontSize: 15, fontWeight: 700, color: "#222", marginBottom: 14,
+  },
+  subItem: {
+    display: "flex", alignItems: "flex-start",
+    gap: 12, paddingTop: 10, paddingBottom: 10,
+  },
+  subLogo: {
+    width: 38, height: 38, borderRadius: 8, flexShrink: 0,
+    display: "flex", alignItems: "center", justifyContent: "center",
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -479,6 +642,13 @@ const SADashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activePage, setActivePage] = useState("dashboard");
 
+  // Close mobile dropdown when a nav item is selected
+  useEffect(() => {
+    const handler = () => setSidebarOpen(false);
+    window.addEventListener("sa-mobile-nav-close", handler);
+    return () => window.removeEventListener("sa-mobile-nav-close", handler);
+  }, []);
+
   const renderPage = () => {
     switch (activePage) {
       case "dashboard":  return <DashboardHome onNavigate={setActivePage} />;
@@ -506,8 +676,15 @@ const SADashboard = () => {
       background: "#f0f0f0",
       minHeight: "100vh",
     }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .sa-content-area {
+            margin-left: 0 !important;
+          }
+        }
+      `}</style>
       {/* Fixed top bar */}
-      <TopBar onBurger={() => setSidebarOpen((v) => !v)} user={user} />
+      <TopBar onBurger={() => setSidebarOpen((v) => !v)} sidebarOpen={sidebarOpen} user={user} />
 
       {/* Fixed sidebar — imported from components/layout/SASidebar */}
       <SASidebar
@@ -523,7 +700,7 @@ const SADashboard = () => {
         - marginLeft shifts it right of the fixed sidebar (with smooth transition)
         - overflowY: auto makes only THIS area scroll — sidebar stays fixed
       */}
-      <div style={{
+      <div className="sa-content-area" style={{
         marginTop: TOPBAR_HEIGHT,
         marginLeft: sidebarOpen ? SIDEBAR_WIDTH : 0,
         transition: "margin-left .25s ease",
