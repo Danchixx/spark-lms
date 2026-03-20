@@ -38,7 +38,7 @@ const Courses = () => {
       <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, units ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, units ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 24px" }}>My Courses</h1>
