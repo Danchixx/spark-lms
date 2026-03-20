@@ -9,6 +9,8 @@ import UserDashboard from "../pages/User/Dashboard";
 import UserProfile from "../pages/User/Profile";
 import UserCourses from "../pages/User/Courses";
 import UserCourseModules from "../pages/User/CourseModules";
+
+import SparkAdminDashboard from "../pages/SuperAdmin/SADashboard";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 // import SparkAdminDashboard from "../pages/SparkAdmin/Dashboard";
@@ -28,9 +30,16 @@ const DashboardRouter = () => {
 };
 
 // ── Protect routes ────────────────────────────────────────────
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, role }) => {
   const { user } = useAuth();
-  return user ? children : <Navigate to="/" replace />;
+
+  if (!user) return <Navigate to="/" replace />;
+
+  if (role && user.role !== role) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 };
 
 // ── App Router ────────────────────────────────────────────────
@@ -45,7 +54,14 @@ const AppRouter = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<SparkAdminLogin />} />
-
+        <Route
+        path="/superadmin/dashboard"
+        element={
+          <ProtectedRoute role="spark_admin">
+            <SparkAdminDashboard />
+          </ProtectedRoute>
+        }
+        />
         {/* Protected — same URL, different component per role */}
         <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
         <Route path="/:company/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
