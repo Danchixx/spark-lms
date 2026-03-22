@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, createContext, useContext } from "react";
+import { useState, useRef, useCallback, createContext, useContext, useEffect } from "react";
 import "./SettingsCard.css";
 
 /**
@@ -20,6 +20,14 @@ const SettingsCard = ({ tabs = [], defaultTab, title = "Settings", children }) =
   const registerRef = useCallback((key, ref) => {
     refsMap.current[key] = ref;
   }, []);
+
+  useEffect(() => {
+    if (defaultTab) {
+      setTimeout(() => {
+        refsMap.current[defaultTab]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [defaultTab]);
 
   const handleTabClick = (key) => {
     setActiveTab(key);

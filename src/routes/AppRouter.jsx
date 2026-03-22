@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import useInactivityTimeout from "../hooks/useInactivityTimeout";
 import SessionExpiredModal from "../components/common/Modal/SessionExpiredModal";
@@ -47,6 +47,7 @@ const ProtectedRoute = ({ children, role }) => {
 const AppRoutes = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
 
   // Inactivity timeout — only active when user is logged in
@@ -59,8 +60,8 @@ const AppRoutes = () => {
 
   return (
     <>
-      <Routes>
-        {/* Public */}
+      <Routes location={location}>
+          {/* Public */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<SparkAdminLogin />} />

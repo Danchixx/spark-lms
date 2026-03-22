@@ -9,6 +9,7 @@ import {
   Toggle, getStrength, STRENGTH_COLORS, STRENGTH_LABELS, ReqRow
 } from "../../components/ui/SettingsCard/SettingsHelpers";
 import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import PageTransition from "../../components/common/PageTransition";
 import {
   Building2, Bell, ShieldCheck, Palette,
   Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar
@@ -364,23 +365,25 @@ const Settings = () => {
       <Sidebar isOpen={sidebarOpen} activePage="Settings" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search settings ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <SettingsCard tabs={USER_TABS} defaultTab={defaultTab} title="Settings">
-            <SettingsCard.Section sectionKey="company">
-              <CompanyPanel />
-            </SettingsCard.Section>
-            <SettingsCard.Section sectionKey="notifications">
-              <NotificationsPanel />
-            </SettingsCard.Section>
-            <SettingsCard.Section sectionKey="security">
-              <SecurityPanel />
-            </SettingsCard.Section>
-            <SettingsCard.Section sectionKey="appearance">
-              <AppearancePanel />
-            </SettingsCard.Section>
-          </SettingsCard>
+          <PageTransition>
+            <SettingsCard tabs={USER_TABS} defaultTab={defaultTab} title="Settings">
+              <SettingsCard.Section sectionKey="company">
+                <CompanyPanel />
+              </SettingsCard.Section>
+              <SettingsCard.Section sectionKey="notifications">
+                <NotificationsPanel />
+              </SettingsCard.Section>
+              <SettingsCard.Section sectionKey="security">
+                <SecurityPanel />
+              </SettingsCard.Section>
+              <SettingsCard.Section sectionKey="appearance">
+                <AppearancePanel />
+              </SettingsCard.Section>
+            </SettingsCard>
+          </PageTransition>
         </div>
       </div>
     </div>

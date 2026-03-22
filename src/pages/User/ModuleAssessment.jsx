@@ -11,6 +11,7 @@ import TimeUpModal from "../../components/common/Modal/TimeUpModal";
 import AssessmentSuccessModal from "../../components/common/Modal/AssessmentSuccessModal";
 import { ArrowLeft, Timer } from "lucide-react";
 import { COURSES } from "../../data/mockCourses";
+import PageTransition from "../../components/common/PageTransition";
 
 // ── Mock Questions ────────────────────────────────────────────
 const MOCK_QUESTIONS = [
@@ -159,6 +160,7 @@ const ModuleAssessment = () => {
           <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
 
           <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+            <PageTransition>
 
             {/* Breadcrumb + Timer Row */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
@@ -284,6 +286,7 @@ const ModuleAssessment = () => {
               </div>
             </div>
 
+            </PageTransition>
           </div>
         </div>
       </div>

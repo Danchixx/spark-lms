@@ -6,6 +6,7 @@ import Header from "../../components/layout/Header/Header";
 import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
 import ProfileCard from "../../components/common/ProfileCard/ProfileCard";
 import { Lock, Eye, EyeOff, IdCard, ShieldCheck, Check, X } from "lucide-react";
+import PageTransition from "../../components/common/PageTransition";
 
 const PROFILE_DATA = {
   lastName: "Gonzales", firstName: "Danilo", middleName: "Pogi",
@@ -124,44 +125,46 @@ const Profile = () => {
       <Sidebar isOpen={sidebarOpen} activePage="Profile" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, units ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 20px" }}>Profile</h1>
+          <PageTransition>
+            <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 20px" }}>Profile</h1>
 
-          {/* ── Profile Card (reusable component) ── */}
-          <div style={{ marginBottom: 16 }}>
-            <ProfileCard
-              profileData={PROFILE_DATA}
-              editable={true}
-              onSave={handleSaveDetails}
-            />
-          </div>
-
-          {/* ── Account Settings ── */}
-          <div style={{ background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.07)", border: "1px solid #f0f0f0", marginBottom: 28 }}>
-            <div style={{ height: 5, background: "linear-gradient(90deg,#e0e0e0,#f0f0f0)" }} />
-            <SectionTitle icon={ShieldCheck} title="Account Settings" />
-
-            <div className="acct-row">
-              <InputBox label="Username" icon={IdCard} value={PROFILE_DATA.email} readOnly />
-              <InputBox
-                label="Password" icon={Lock}
-                value="••••••••••••••••••"
-                type="password"
-                readOnly
+            {/* ── Profile Card (reusable component) ── */}
+            <div style={{ marginBottom: 16 }}>
+              <ProfileCard
+                profileData={PROFILE_DATA}
+                editable={true}
+                onSave={handleSaveDetails}
               />
             </div>
 
-            <div style={{ paddingLeft: "calc(50% + 10px)", paddingBottom: 16, marginTop: -8 }}>
-              <button 
-                onClick={() => navigate(`/${slug}/settings`, { state: { activeTab: "security" } })} 
-                style={{ background: "none", border: "none", color: "#FF6B00", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, textDecoration: "underline", padding: "0 0 0 12px" }}
-              >
-                Change Password?
-              </button>
+            {/* ── Account Settings ── */}
+            <div style={{ background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.07)", border: "1px solid #f0f0f0", marginBottom: 28 }}>
+              <div style={{ height: 5, background: "linear-gradient(90deg,#e0e0e0,#f0f0f0)" }} />
+              <SectionTitle icon={ShieldCheck} title="Account Settings" />
+
+              <div className="acct-row">
+                <InputBox label="Username" icon={IdCard} value={PROFILE_DATA.email} readOnly />
+                <InputBox
+                  label="Password" icon={Lock}
+                  value="••••••••••••••••••"
+                  type="password"
+                  readOnly
+                />
+              </div>
+
+              <div style={{ paddingLeft: "calc(50% + 10px)", paddingBottom: 16, marginTop: -8 }}>
+                <button
+                  onClick={() => navigate(`/${slug}/settings`, { state: { activeTab: "security" } })}
+                  style={{ background: "none", border: "none", color: "#FF6B00", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, textDecoration: "underline", padding: "0 0 0 12px" }}
+                >
+                  Change Password?
+                </button>
+              </div>
             </div>
-          </div>
+          </PageTransition>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import Header from "../../components/layout/Header/Header";
 import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
 import Button from "../../components/ui/Button/Button";
 import { User, Mail, Phone, MapPin, Send } from "lucide-react";
+import PageTransition from "../../components/common/PageTransition";
 import "./Contact.css";
 
 const Contact = () => {
@@ -44,6 +45,7 @@ const Contact = () => {
         <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+          <PageTransition>
           <h1 className="contact-page-title">Contact Us</h1>
 
           <div className="contact-layout">
@@ -174,6 +176,7 @@ const Contact = () => {
               </div>
             </div>
           </div>
+          </PageTransition>
         </div>
       </div>
     </div>

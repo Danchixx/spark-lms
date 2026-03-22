@@ -9,6 +9,7 @@ import LessonCard from "../../components/common/LessonCard/LessonCard";
 import { ArrowLeft, Check, Circle } from "lucide-react";
 import { COURSES } from "../../data/mockCourses";
 import sparkLogoImg from "../../components/common/SparkLogo/sparklogo.png";
+import PageTransition from "../../components/common/PageTransition";
 
 const ModuleLessons = () => {
   const { user, company, logout } = useAuth();
@@ -72,6 +73,7 @@ const ModuleLessons = () => {
         <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+          <PageTransition>
           
           {/* Breadcrumb Area */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, fontSize: 16 }}>
@@ -176,6 +178,7 @@ const ModuleLessons = () => {
             </div>
           </div>
 
+          </PageTransition>
         </div>
       </div>
     </div>
