@@ -68,13 +68,14 @@ const ReqRow = ({ met, label }) => (
 
 /* ── Page ── */
 const Profile = () => {
-  const { user, company, logout, updateProfile } = useAuth();
+  const { user, company, logout, updateProfile, uploadAvatar } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   useSidebarAutoClose(setSidebarOpen);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isAvatarLoading, setIsAvatarLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -122,6 +123,19 @@ const Profile = () => {
     }
   };
 
+  const handleAvatarChange = async (file) => {
+    setIsAvatarLoading(true);
+    try {
+      await uploadAvatar(file);
+      setSuccessMessage("Your profile photo has been updated successfully.");
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error("Failed to upload avatar:", err);
+    } finally {
+      setIsAvatarLoading(false);
+    }
+  };
+
   const handleSavePassword = () => {
     setChangingPassword(false);
     setNewPassword(""); setConfirmPassword("");
@@ -157,6 +171,8 @@ const Profile = () => {
                 profileData={profileData}
                 editable={true}
                 onSave={handleSaveDetails}
+                onAvatarChange={handleAvatarChange}
+                isUploading={isAvatarLoading}
               />
             </div>
 

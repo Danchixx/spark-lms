@@ -90,23 +90,71 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (updates) => {
     if (!user?.id) return;
     try {
-      const { error } = await supabase
+      console.log("Updating profile for user ID:", user.id, "with:", updates);
+      const { data, error } = await supabase
         .from('users')
         .update(updates)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select(`
+          *,
+          roles(name),
+          companies!users_company_id_fkey(*)
+        `)
+        .single();
 
       if (error) throw error;
+      console.log("Update successful, returned data:", data);
       
-      // Refresh local user state from database
-      await fetchUserProfile(user.email);
+      // Update local state directly
+      const { companies, roles, ...restUser } = data;
+      setUser({
+        ...restUser,
+        role: roles?.name || 'user',
+        name: `${restUser.firstname} ${restUser.lastname}`
+      });
+      if (companies) setCompany(companies);
     } catch (err) {
       console.error("Error updating profile:", err);
       throw err;
     }
   };
 
+  const uploadAvatar = async (file) => {
+    if (!user?.id) return;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
+      const filePath = fileName;
+
+      console.log("Starting upload to avatars bucket. Path:", filePath);
+
+      // 1. Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+      console.log("Upload successful:", uploadData);
+
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      console.log("Generated Public URL:", publicUrl);
+
+      // 3. Update User Table
+      await updateProfile({ avatar_url: publicUrl });
+
+      return publicUrl;
+    } catch (err) {
+      console.error("Error uploading avatar:", err);
+      throw err;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, company, selectCompany, login, logout, updateProfile, loading }}>
+    <AuthContext.Provider value={{ session, user, company, selectCompany, login, logout, updateProfile, uploadAvatar, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

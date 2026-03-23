@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
-  UserCircle, Pencil, Building2, Briefcase, BookOpen,
+  UserCircle, Pencil, Building2, Briefcase, BookOpen, Loader2,
 } from "lucide-react";
 
 const LABEL_W = 150;
@@ -107,10 +107,11 @@ const SideInfoRow = ({ icon: Icon, label, value }) => (
 );
 
 /* ── ProfileCard ── */
-const ProfileCard = ({ profileData, editable = true, onSave }) => {
+const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isUploading = false }) => {
   const [editing, setEditing] = useState(false);
   const [contact, setContact] = useState(profileData.contactNumber);
   const [address, setAddress] = useState(profileData.address);
+  const fileInputRef = useRef(null);
 
   const fullName = `${profileData.firstName} ${profileData.middleName} ${profileData.lastName}`;
 
@@ -123,6 +124,13 @@ const ProfileCard = ({ profileData, editable = true, onSave }) => {
     setEditing(false);
     setContact(profileData.contactNumber);
     setAddress(profileData.address);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onAvatarChange?.(file);
+    }
   };
 
   return (
@@ -157,6 +165,12 @@ const ProfileCard = ({ profileData, editable = true, onSave }) => {
           }
           .field-value-col { padding: 4px 14px 10px !important; }
         }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .spin-icon { animation: spin 1s linear infinite; }
       `}</style>
 
       <div style={{ background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.07)", border: "1px solid #f0f0f0" }}>
@@ -167,14 +181,35 @@ const ProfileCard = ({ profileData, editable = true, onSave }) => {
           {/* Avatar Panel */}
           <div className="avatar-panel">
             <div style={{ position: "relative", marginBottom: 12 }}>
-              <div style={{ width: 140, height: 140, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 0 0 4px white, 0 2px 10px rgba(0,0,0,0.1)" }}>
+              <div style={{ width: 140, height: 140, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 0 0 4px white, 0 2px 10px rgba(0,0,0,0.1)", position: "relative" }}>
                 {profileData.avatarUrl ? (
-                  <img src={profileData.avatarUrl} alt={fullName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={profileData.avatarUrl} alt={fullName} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: isUploading ? 0.3 : 1, transition: "opacity 0.2s ease" }} />
                 ) : (
-                  <UserCircle size={90} color="#ccc" strokeWidth={1} />
+                  <UserCircle size={90} color="#ccc" strokeWidth={1} style={{ opacity: isUploading ? 0.3 : 1 }} />
+                )}
+
+                {/* Loading Overlay */}
+                {isUploading && (
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.4)" }}>
+                    <Loader2 size={32} color="#FF6B00" className="spin-icon" />
+                  </div>
                 )}
               </div>
-              <button style={{ position: "absolute", bottom: 2, right: 2, width: 26, height: 26, borderRadius: "50%", background: "#FF6B00", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+
+              {/* Hidden File Input */}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                accept="image/*" 
+                style={{ display: "none" }} 
+              />
+
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                style={{ position: "absolute", bottom: 2, right: 2, width: 26, height: 26, borderRadius: "50%", background: isUploading ? "#ccc" : "#FF6B00", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isUploading ? "not-allowed" : "pointer", zIndex: 5 }}
+              >
                 <Pencil size={11} color="white" />
               </button>
             </div>
