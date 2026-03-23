@@ -8,6 +8,7 @@ const PageTransition = ({ children, className = "" }) => {
       exit={{ opacity: 0, y: -15 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
       className={`page-transition-wrapper ${className}`}
+      style={{ width: "100%" }}
     >
       {children}
     </motion.div>

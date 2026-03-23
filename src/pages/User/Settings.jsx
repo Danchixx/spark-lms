@@ -135,11 +135,6 @@ const CompanyPanel = () => (
         </div>
       </div>
     </div>
-
-    <div className="settings-save-bar" style={{ background: "transparent", padding: "16px 0 0" }}>
-      <Button variant="ghost" size="sm">Cancel</Button>
-      <Button size="sm">Save Changes</Button>
-    </div>
   </div>
 );
 
@@ -193,6 +188,21 @@ const NotificationsPanel = () => {
   );
 };
 
+const PwField = ({ label, value, onChange, show, onToggle, placeholder }) => (
+  <div className="settings-field">
+    <div className="settings-field-label">{label}</div>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", background: "white", transition: "border-color 0.15s" }}
+      onFocus={(e) => e.currentTarget.style.borderColor = "#FF6B00"}
+      onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}>
+      <Lock size={15} color="#aaa" style={{ flexShrink: 0 }} />
+      <input type={show ? "text" : "password"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
+      <button onClick={onToggle} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex", alignItems: "center" }}>
+        {show ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+    </div>
+  </div>
+);
+
 const SecurityPanel = () => {
   const [sessionTimeout, setSessionTimeout] = useState(true);
   const [currentPw, setCurrentPw] = useState("");
@@ -204,21 +214,6 @@ const SecurityPanel = () => {
 
   const { checks, strength } = getStrength(newPw);
   const canSave = currentPw && Object.values(checks).every(Boolean) && newPw === confirmPw;
-
-  const PwField = ({ label, value, onChange, show, onToggle, placeholder }) => (
-    <div className="settings-field">
-      <div className="settings-field-label">{label}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", background: "white", transition: "border-color 0.15s" }}
-        onFocus={(e) => e.currentTarget.style.borderColor = "#FF6B00"}
-        onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}>
-        <Lock size={15} color="#aaa" style={{ flexShrink: 0 }} />
-        <input type={show ? "text" : "password"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
-        <button onClick={onToggle} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex", alignItems: "center" }}>
-          {show ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="section-card">

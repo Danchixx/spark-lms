@@ -6,8 +6,6 @@
 .settings-grid-layout {
   display: flex;
   gap: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
   align-items: flex-start;
 }
 
@@ -15,7 +13,7 @@
 .settings-sidebar-nav {
   width: 250px;
   position: sticky;
-  top: 0;
+  top: 24px;
   flex-shrink: 0;
   z-index: 20;
 }

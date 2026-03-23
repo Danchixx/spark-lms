@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SparkLogo from "../../common/SparkLogo/sparklogo.png";
 import LogoutModal from "../../common/Modal/LogoutModal";
 
@@ -14,9 +15,12 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
   const overlayRef = useRef(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [search, setSearch] = useState("");
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [logoutHovered, setLogoutHovered] = useState(false);
+  const navigate = useNavigate();
 
-  // For desktop: visible controls width push
-  // For mobile: controls dropdown slide-down
+  const slug = user?.company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
+
   const [visible, setVisible] = useState(isOpen);
   const [animate, setAnimate] = useState(isOpen);
 
@@ -33,7 +37,6 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
     }
   }, [isOpen]);
 
-  // Lock body scroll when mobile dropdown open
   useEffect(() => {
     if (isMobile && isOpen) {
       document.body.style.overflow = "hidden";
@@ -52,7 +55,6 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
     if (window.innerWidth <= BREAKPOINT) onClose?.();
   };
 
-  // Filter nav items by search
   const filteredNav = search.trim()
     ? NAV_ITEMS.map(group => ({
       ...group,
@@ -62,9 +64,94 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
     })).filter(group => group.items.length > 0)
     : NAV_ITEMS;
 
-  /* ── Shared inner nav content ── */
   const navContent = (isMobileMode = false) => (
     <>
+      <style>{`
+        @keyframes activeSweep {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(0);     }
+        }
+        .nav-item {
+          padding: 11px 20px;
+          cursor: pointer;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border-left: 3px solid transparent;
+          transition: color 0.2s ease, border-color 0.2s ease, padding-left 0.2s ease;
+          position: relative;
+          white-space: nowrap;
+          overflow: hidden;
+          isolation: isolate;
+        }
+        /* Sweep bg — always behind text via z-index: -1 */
+        .nav-item::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: rgba(255,255,255,0.07);
+          transform: translateX(-100%);
+          transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: -1;
+          pointer-events: none;
+        }
+        .nav-item:hover::before { transform: translateX(0); }
+        .nav-item:hover { padding-left: 24px; }
+        /* Active state */
+        .nav-item--active {
+          color: white !important;
+          font-weight: 700;
+          border-left: 3px solid #FF6B00 !important;
+          padding-left: 24px;
+        }
+        .nav-item--active,
+        .nav-item--active * { color: white !important; }
+        /* Active sweep: orange bg, still behind text */
+        .nav-item--active::before {
+          background: rgba(255,107,0,0.15);
+          animation: activeSweep 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .logout-btn {
+          border: none;
+          border-radius: 6px;
+          font-weight: 700;
+          cursor: pointer;
+          letter-spacing: 1px;
+          font-family: inherit;
+          transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        }
+        .logout-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(231,76,60,0.4);
+        }
+        .logout-btn:active {
+          transform: translateY(0);
+          box-shadow: none;
+        }
+        .company-avatar {
+          transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+          cursor: pointer;
+        }
+        .company-avatar:hover {
+          transform: scale(1.08);
+          opacity: 0.85;
+        }
+        .search-input-wrap {
+          display: flex;
+          align-items: center;
+          background: rgba(255,255,255,0.15);
+          border-radius: 30px;
+          padding: 10px 16px;
+          gap: 8px;
+          transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-input-wrap:focus-within {
+          background: rgba(255,255,255,0.22);
+          box-shadow: 0 0 0 2px rgba(255,107,0,0.35);
+        }
+      `}</style>
+
       {/* Logo Header — desktop only */}
       {!isMobileMode && (
         <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", borderBottom: "1px solid #333" }}>
@@ -79,7 +166,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
       {/* Search — mobile only */}
       {isMobileMode && (
         <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
-          <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.15)", borderRadius: 30, padding: "10px 16px", gap: 8 }}>
+          <div className="search-input-wrap">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -97,34 +184,22 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
       <div style={{ flex: 1, padding: "16px 0", overflowY: "auto" }}>
         {filteredNav.map((group) => (
           <div key={group.section} style={{ marginBottom: 24 }}>
-            {!isMobileMode && (
-              <div style={{ padding: "0 20px", fontSize: 10, color: "#666", letterSpacing: 1.5, marginBottom: 8, fontWeight: 700 }}>
-                {group.section}
-              </div>
-            )}
-            {isMobileMode && (
-              <div style={{ padding: "0 20px", fontSize: 10, color: "rgba(255,255,255,0.5)", letterSpacing: 1.5, marginBottom: 8, fontWeight: 700 }}>
-                {group.section}
-              </div>
-            )}
+            <div style={{
+              padding: "0 20px", fontSize: 10,
+              color: isMobileMode ? "rgba(255,255,255,0.4)" : "#555",
+              letterSpacing: 1.5, marginBottom: 8, fontWeight: 700,
+              textTransform: "uppercase",
+            }}>
+              {group.section}
+            </div>
             {group.items.map((item) => (
               <div
                 key={item}
+                className={`nav-item${activePage === item ? " nav-item--active" : ""}`}
                 onClick={() => handleNavigate(item)}
                 style={{
-                  padding: "12px 20px",
-                  color: activePage === item ? "white" : isMobileMode ? "rgba(255,255,255,0.85)" : "#aaa",
-                  cursor: "pointer",
-                  fontSize: 15,
+                  color: activePage === item ? "white" : isMobileMode ? "rgba(255,255,255,0.75)" : "#aaa",
                   fontWeight: activePage === item ? 700 : 400,
-                  borderLeft: activePage === item
-                    ? "3px solid #FF6B00"
-                    : "3px solid transparent",
-                  background: activePage === item ? "rgba(255,255,255,0.1)" : "transparent",
-                  transition: "all 0.15s",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
                 }}
               >
                 {item}
@@ -136,27 +211,16 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
 
       {/* Footer */}
       {isMobileMode ? (
-        /* Mobile footer: logout left, powered by center, spark logo right */
         <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Company logo — left */}
           {/*}
-          <div style={{
-            width: 36, height: 36, borderRadius: "50%",
-            background: user.company.color + "22",
-            border: `2px solid ${user.company.color}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 10, fontWeight: 900, color: user.company.color,
-            flexShrink: 0, overflow: "hidden",
-          }}>
-            {typeof user.company.logo === "string" && user.company.logo.startsWith("/")
-              ? <img src={user.company.logo} alt={user.company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
-              : user.company.logo}
-          </div> */}
+          <div style={{...}}>...</div> */}
 
-          {/* Logout — center */}
+          {/* Logout */}
           <button
+            className="logout-btn"
             onClick={() => setShowLogoutModal(true)}
-            style={{ background: "#e74c3c", color: "white", border: "none", borderRadius: 6, padding: "8px 24px", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: 1, fontFamily: "inherit" }}
+            style={{ background: "#e74c3c", color: "white", padding: "8px 24px", fontSize: 13 }}
           >
             Logout
           </button>
@@ -169,27 +233,34 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
               <span style={{ color: "white", fontWeight: 700, fontSize: 18, letterSpacing: 2, fontFamily: "'Sora', sans-serif" }}>SPARK</span>
               <img src={SparkLogo} alt="Spark Logo" style={{ height: 32, width: "auto" }} />
             </div>
-            {/*<span style={{ color: "rgba(255,255,255,0.4)", fontSize: 5.5, textTransform: "uppercase", whiteSpace: "nowrap", marginTop: 2 }}>YES TO LEARNING AND DEVELOPMENT</span>*/}
           </div>
         </div>
       ) : (
-        /* Desktop footer: company logo + logout */
+        /* Desktop footer */
         <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: "50%",
-            background: user.company.color + "22",
-            border: `2px solid ${user.company.color}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 10, fontWeight: 900, color: user.company.color,
-            flexShrink: 0, overflow: "hidden",
-          }}>
+          {/* Company avatar — clicks to Settings */}
+          <div
+            className="company-avatar"
+            onClick={() => navigate(`/${slug}/settings`)}
+            title="View Company Profile"
+            style={{
+              width: 36, height: 36, borderRadius: "50%",
+              background: user.company.color + "22",
+              border: `2px solid ${user.company.color}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 10, fontWeight: 900, color: user.company.color,
+              flexShrink: 0, overflow: "hidden",
+            }}
+          >
             {typeof user.company.logo === "string" && user.company.logo.startsWith("/")
               ? <img src={user.company.logo} alt={user.company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
               : user.company.logo}
           </div>
+
           <button
+            className="logout-btn"
             onClick={() => setShowLogoutModal(true)}
-            style={{ background: "#e74c3c", color: "white", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: 1, fontFamily: "inherit" }}
+            style={{ background: "#e74c3c", color: "white", padding: "6px 14px", fontSize: 12 }}
           >
             LOGOUT
           </button>
@@ -238,12 +309,10 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
         display: "flex",
         flexDirection: "column",
         boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-        // maxHeight instead of translateY — always grows downward, never slides up
         maxHeight: animate ? "80vh" : "0px",
         overflow: "hidden",
         transition: "max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
       }}>
-        {/* Inner wrapper: fade + subtle downward reveal of content */}
         <div style={{
           opacity: animate ? 1 : 0,
           transform: animate ? "translateY(0)" : "translateY(-8px)",
