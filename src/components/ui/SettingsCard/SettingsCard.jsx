@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, createContext, useContext } from "react";
+import { useState, useRef, useCallback, createContext, useContext, useEffect } from "react";
 import "./SettingsCard.css";
 
 /**
@@ -11,7 +11,7 @@ import "./SettingsCard.css";
  *  - children:   <SettingsCard.Section sectionKey="..."> wrappers
  */
 
-const SettingsCardContext = createContext({ registerRef: () => {} });
+const SettingsCardContext = createContext({ registerRef: () => { } });
 
 const SettingsCard = ({ tabs = [], defaultTab, title = "Settings", children }) => {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.key || "");
@@ -20,6 +20,14 @@ const SettingsCard = ({ tabs = [], defaultTab, title = "Settings", children }) =
   const registerRef = useCallback((key, ref) => {
     refsMap.current[key] = ref;
   }, []);
+
+  useEffect(() => {
+    if (defaultTab) {
+      setTimeout(() => {
+        refsMap.current[defaultTab]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [defaultTab]);
 
   const handleTabClick = (key) => {
     setActiveTab(key);
@@ -72,7 +80,8 @@ const Section = ({ sectionKey, children }) => {
     [sectionKey, registerRef]
   );
 
-  return <div ref={setRef}>{children}</div>;
+  const margin = sectionKey === "company" ? 150 : 47;
+  return <div ref={setRef} style={{ scrollMarginTop: margin }}>{children}</div>;
 };
 
 SettingsCard.Section = Section;

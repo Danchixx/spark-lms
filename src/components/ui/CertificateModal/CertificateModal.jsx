@@ -13,7 +13,8 @@ const CertificateModal = ({ isOpen, onClose, userName, courseName, date, company
       background: "rgba(0,0,0,0.5)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 1000,
-      padding: "20px"
+      padding: "20px",
+      animation: "modal-fade-in 0.2s ease"
     }}>
       <style>
         {`@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');`}
@@ -28,7 +29,8 @@ const CertificateModal = ({ isOpen, onClose, userName, courseName, date, company
         position: "relative",
         boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
         overflow: "hidden",
-        fontFamily: "'Barlow', sans-serif"
+        fontFamily: "'Barlow', sans-serif",
+        animation: "modal-scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)"
       }}>
 
         {/* Close Button */}
