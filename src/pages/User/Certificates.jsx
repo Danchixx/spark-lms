@@ -129,7 +129,7 @@ const Certificates = () => {
           userName={user.name}
           courseName={selectedCourse.name}
           date={CERT_DATES[selectedCourse.id] || "March 2026"}
-          companyLogo={company?.logo}
+          companyLogo={company?.logo_url}
         />
       )}
     </>

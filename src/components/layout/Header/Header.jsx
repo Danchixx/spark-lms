@@ -151,7 +151,7 @@ const Header = ({
         {/* Company name — mobile only, centered */}
         {isMobile && (
           <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontWeight: 700, fontSize: 16, color: "#1a1a1a", whiteSpace: "nowrap", pointerEvents: "none" }}>
-            {user?.company?.name ?? "Spark LMS"}
+            {company?.name ?? "Spark LMS"}
           </span>
         )}
 

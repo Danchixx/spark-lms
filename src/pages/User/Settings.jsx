@@ -14,7 +14,6 @@ import {
   Building2, Bell, ShieldCheck, Palette,
   Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar
 } from "lucide-react";
-import "./Settings.css";
 
 /* ── Nav items (User-only: no Organization, no Billing) ── */
 const USER_TABS = [
@@ -35,16 +34,23 @@ const CompanyPanel = () => {
     <div className="section-card">
       <div className="section-header-wrap">
         <h2 className="settings-panel-title">Company Profile</h2>
-        <p className="settings-panel-subtitle">Manage your company's identity - logo, cover, contacts.</p>
+        <p className="settings-panel-subtitle">Your company's identity - logo, cover, contacts.</p>
       </div>
 
       <div className="settings-divider" />
 
       <div className="company-visuals">
-        <div className="label-small">Cover Photo and Logo</div>
-        <div className="company-cover-edit">
+        <div className="label-small">Logo and Cover Photo</div>
+        <div
+          className="company-cover-edit"
+          style={company?.cover_photo_url ? {
+            backgroundImage: `url(${company.cover_photo_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          } : {}}
+        >
           <div className="company-logo-overlay">
-            <div className="logo-circle" style={{ background: "transparent", border: "1.5px solid #e0e0e0" }}>
+            <div className="logo-circle" style={{ background: "white", border: "1.5px solid #e0e0e0" }}>
               {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
                 ? <img src={company.logo_url} alt={company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
                 : <span style={{ fontSize: 24, fontWeight: 900, color: company.color || "#FF6B00" }}>{company.name?.substring(0, 2).toUpperCase()}</span>}

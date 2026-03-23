@@ -247,7 +247,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
             title="View Company Profile"
             style={{
               width: 36, height: 36, borderRadius: "50%",
-              background: "transparent",
+              background: "white",
               border: "1.5px solid #e0e0e0",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 10, fontWeight: 900, color: company?.color || "#FF6B00",

@@ -17,21 +17,62 @@ const SettingsCard = ({ tabs = [], defaultTab, title = "Settings", children }) =
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.key || "");
   const refsMap = useRef({});
 
+  const isProgrammaticScroll = useRef(false);
+
   const registerRef = useCallback((key, ref) => {
     refsMap.current[key] = ref;
   }, []);
 
   useEffect(() => {
     if (defaultTab) {
+      isProgrammaticScroll.current = true;
       setTimeout(() => {
         refsMap.current[defaultTab]?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setTimeout(() => { isProgrammaticScroll.current = false; }, 1000);
       }, 100);
     }
   }, [defaultTab]);
 
+  // Observer to sync tabs with scroll position
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isProgrammaticScroll.current) return;
+
+        // Find the first intersecting entry
+        const intersecting = entries.filter(e => e.isIntersecting);
+        if (intersecting.length > 0) {
+          // Identify which one is "most" at top
+          const topOne = intersecting.sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+          if (topOne) {
+            setActiveTab(topOne.target.getAttribute("data-section"));
+          }
+        }
+      },
+      {
+        root: null,
+        rootMargin: "-10% 0px -70% 0px", // Focus on top portion of scroll area
+        threshold: 0
+      }
+    );
+
+    // Initial observe
+    Object.values(refsMap.current).forEach(node => {
+      if (node) observer.observe(node);
+    });
+
+    return () => observer.disconnect();
+  }, [tabs]);
+
   const handleTabClick = (key) => {
+    isProgrammaticScroll.current = true;
     setActiveTab(key);
     refsMap.current[key]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    
+    // Unlock after scroll finishes
+    setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 1000);
   };
 
   return (
@@ -59,7 +100,7 @@ const SettingsCard = ({ tabs = [], defaultTab, title = "Settings", children }) =
         {/* Scrollable Sections */}
         <main className="settings-content-sections">
           {children}
-          <div style={{ height: 200 }} />
+          <div style={{ height: 400 }} />
         </main>
       </div>
     </SettingsCardContext.Provider>
@@ -81,7 +122,7 @@ const Section = ({ sectionKey, children }) => {
   );
 
   const margin = sectionKey === "company" ? 150 : 47;
-  return <div ref={setRef} style={{ scrollMarginTop: margin }}>{children}</div>;
+  return <div ref={setRef} data-section={sectionKey} style={{ scrollMarginTop: margin }}>{children}</div>;
 };
 
 SettingsCard.Section = Section;

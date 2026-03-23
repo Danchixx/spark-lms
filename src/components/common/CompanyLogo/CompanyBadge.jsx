@@ -4,7 +4,7 @@ const CompanyBadge = ({ company, size = 48 }) => (
       width: size,
       height: size,
       borderRadius: 8,
-      background: "transparent",
+      background: "white",
       border: `1.5px solid #e0e0e0`,
       display: "flex",
       alignItems: "center",
