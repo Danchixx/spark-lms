@@ -27,15 +27,17 @@ const Login = () => {
     if (!username || !password) return;
     setLoading(true);
     setError("");
-    await new Promise((r) => setTimeout(r, 1800));
-    const user = MOCK_USERS[username.toLowerCase()];
-    if (!user) { setError("wrong_credentials"); setLoading(false); return; }
-    if (user.company !== company.id) { setError("not_in_company"); setLoading(false); return; }
-    if (user.password !== password) { setError("wrong_credentials"); setLoading(false); return; }
-    setLoading(false);
-    login({ ...user, company });
-    const slug = company.name.toLowerCase().replace(/\s+/g, "-");
-    navigate(`/${slug}/dashboard`);
+    
+    try {
+      await login(username, password);
+      
+      const slug = company.name.toLowerCase().replace(/\s+/g, "-");
+      navigate(`/${slug}/dashboard`);
+    } catch (err) {
+      setError("wrong_credentials");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {
@@ -72,10 +74,10 @@ const Login = () => {
               <h2 style={{ textAlign: "center", fontWeight: 900, fontSize: 26, letterSpacing: 2, margin: "0 0 20px", fontFamily: "'Barlow Condensed', sans-serif" }}>LOGIN</h2>
 
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-                <div style={{ width: 90, height: 90, borderRadius: "50%", border: `2px solid ${company.color}44`, background: company.color + "11", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                  {typeof company.logo === "string" && company.logo.startsWith("/")
-                    ? <img src={company.logo} alt={company.name} style={{ width: "70%", height: "70%", objectFit: "contain" }} />
-                    : <span style={{ fontWeight: 900, fontSize: 22, color: company.color, fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: 2 }}>{company.logo}</span>
+                <div style={{ width: 90, height: 90, borderRadius: "50%", border: "1.5px solid #e0e0e0", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
+                    ? <img src={company.logo_url} alt={company.name} style={{ width: "70%", height: "70%", objectFit: "contain" }} />
+                    : <span style={{ fontWeight: 900, fontSize: 22, color: (company.color || "#FF6B00"), fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: 2 }}>{company.logo_url || company.name?.substring(0,2).toUpperCase()}</span>
                   }
                 </div>
               </div>

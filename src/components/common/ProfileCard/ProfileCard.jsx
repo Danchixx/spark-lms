@@ -168,7 +168,11 @@ const ProfileCard = ({ profileData, editable = true, onSave }) => {
           <div className="avatar-panel">
             <div style={{ position: "relative", marginBottom: 12 }}>
               <div style={{ width: 140, height: 140, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 0 0 4px white, 0 2px 10px rgba(0,0,0,0.1)" }}>
-                <UserCircle size={90} color="#ccc" strokeWidth={1} />
+                {profileData.avatarUrl ? (
+                  <img src={profileData.avatarUrl} alt={fullName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <UserCircle size={90} color="#ccc" strokeWidth={1} />
+                )}
               </div>
               <button style={{ position: "absolute", bottom: 2, right: 2, width: 26, height: 26, borderRadius: "50%", background: "#FF6B00", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <Pencil size={11} color="white" />
