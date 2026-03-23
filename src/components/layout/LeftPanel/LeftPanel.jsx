@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import SparkLogo from "../../common/SparkLogo/sparklogo.png";
 
 const LeftPanel = ({ subtitle }) => {
@@ -134,18 +135,47 @@ const LeftPanel = ({ subtitle }) => {
       <div className="left-panel">
         {/* Center section - fixed in middle, unaffected by subtitle */}
         <div className="left-panel-center">
-          <div className="left-panel-logo-circle">
+          <motion.div
+            initial={{ opacity: 0, x: -60 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="left-panel-logo-circle"
+          >
             <img src={SparkLogo} alt="Spark Logo" />
-          </div>
+          </motion.div>
           <div className="left-panel-text">
-            <div style={{ color: "#1a1a1a" }}>LEARN.</div><br></br>
-            <div style={{ color: "rgb(213,213,213)" }}>GROW.</div><br></br>
-            <div style={{ color: "white" }}>SPARK.</div>
+            <motion.div
+              initial={{ opacity: 0, x: -60 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+              style={{ color: "#1a1a1a" }}
+            >LEARN.</motion.div>
+            <br></br>
+            <motion.div
+              initial={{ opacity: 0, x: -60 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+              style={{ color: "rgb(213,213,213)" }}
+            >GROW.</motion.div>
+            <br></br>
+            <motion.div
+              initial={{ opacity: 0, x: -60 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+              style={{ color: "white" }}
+            >SPARK.</motion.div>
           </div>
         </div>
-        
+
         {/* Subtitle at bottom */}
-        <div className="left-panel-subtitle">{subtitle}</div>
+        <motion.div
+          initial={{ opacity: 0, x: -60 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+          className="left-panel-subtitle"
+        >
+          {subtitle}
+        </motion.div>
       </div>
     </>
   );

@@ -4,6 +4,8 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import SparkHeader from "../../components/layout/SparkHeader/SparkHeader";
 import LeftPanel from "../../components/layout/LeftPanel/LeftPanel";
+import PageTransition from "../../components/common/PageTransition";
+import { Building2, Search, Loader2 } from "lucide-react";
 import CompanyBadge from "../../components/common/CompanyLogo/CompanyBadge";
 import Button from "../../components/ui/Button/Button";
 
@@ -13,6 +15,7 @@ const Landing = () => {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [companies, setCompanies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Auto-redirect if already logged in!
   useEffect(() => {
@@ -25,8 +28,18 @@ const Landing = () => {
   // Fetch companies from Supabase
   useEffect(() => {
     const fetchCompanies = async () => {
-      const { data } = await supabase.from('companies').select('*').eq('is_archived', false);
-      if (data) setCompanies(data);
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('is_archived', false);
+        
+        if (data) setCompanies(data);
+        if (error) console.error("Error fetching companies:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchCompanies();
   }, []);
@@ -66,13 +79,14 @@ const Landing = () => {
         </div>
 
         <div className="landing-right">
-          <div style={{ background: "white", borderRadius: 16, padding: 28, width: "100%", maxWidth: 360, boxShadow: "0 8px 40px rgba(0,0,0,0.12)", boxSizing: "border-box" }}>
+          <PageTransition style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+            <div style={{ background: "white", borderRadius: 16, padding: 28, width: "100%", maxWidth: 360, boxShadow: "0 8px 40px rgba(0,0,0,0.12)", boxSizing: "border-box" }}>
             <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1.5, color: "#333", marginBottom: 16 }}>
               SELECT YOUR COMPANY
             </div>
 
             <div style={{ position: "relative", marginBottom: 16 }}>
-              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#999", fontSize: 16 }}>🔍</span>
+              <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#999" }} size={16} />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -81,26 +95,38 @@ const Landing = () => {
               />
             </div>
 
-            <div style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-              {filtered.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => setSelected(c)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 14, padding: "12px 14px",
-                    border: selected?.id === c.id ? "2px solid #FF6B00" : "1.5px solid #eee",
-                    borderRadius: 10, cursor: "pointer",
-                    background: selected?.id === c.id ? "#fff8f0" : "white",
-                    transition: "all 0.15s", boxSizing: "border-box",
-                  }}
-                >
-                  <CompanyBadge company={c} size={44} />
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: 14, color: selected?.id === c.id ? "#FF6B00" : "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
-                    <div style={{ fontSize: 12, color: "#888", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.industry} · {c.members} members</div>
-                  </div>
+            <div style={{ minHeight: 120, maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              {isLoading ? (
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, py: 20 }}>
+                  <Loader2 className="animate-spin" size={32} color="#FF6B00" />
+                  <span style={{ fontSize: 12, color: "#888", fontWeight: 500 }}>Finding companies...</span>
                 </div>
-              ))}
+              ) : filtered.length === 0 ? (
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "20px 0" }}>
+                  <Building2 size={32} color="#ddd" />
+                  <span style={{ fontSize: 13, color: "#999", fontWeight: 500 }}>No companies found</span>
+                </div>
+              ) : (
+                filtered.map((c) => (
+                  <div
+                    key={c.id}
+                    onClick={() => setSelected(c)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 14, padding: "12px 14px",
+                      border: selected?.id === c.id ? "2px solid #FF6B00" : "1.5px solid #eee",
+                      borderRadius: 10, cursor: "pointer",
+                      background: selected?.id === c.id ? "#fff8f0" : "white",
+                      transition: "all 0.15s", boxSizing: "border-box",
+                    }}
+                  >
+                    <CompanyBadge company={c} size={44} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: selected?.id === c.id ? "#FF6B00" : "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
+                      <div style={{ fontSize: 12, color: "#888", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.industry} · {c.members || 0} members</div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <Button
@@ -113,7 +139,8 @@ const Landing = () => {
               Select a company to continue →
             </Button>
           </div>
-        </div>
+        </PageTransition>
+      </div>
       </div>
     </div>
   );

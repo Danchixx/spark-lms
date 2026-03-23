@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import SparkHeader from "../../components/layout/SparkHeader/SparkHeader";
 import LeftPanel from "../../components/layout/LeftPanel/LeftPanel";
+import PageTransition from "../../components/common/PageTransition";
 import Button from "../../components/ui/Button/Button";
 import { MOCK_USERS } from "../../utils/mockData";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
@@ -70,7 +71,8 @@ const Login = () => {
           </div>
 
           <div className="login-form-area">
-            <div style={{ background: "white", borderRadius: 16, padding: "36px 32px", width: "100%", maxWidth: 340, boxShadow: "0 8px 40px rgba(0,0,0,0.12)" }}>
+            <PageTransition style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+              <div style={{ background: "white", borderRadius: 16, padding: "36px 32px", width: "100%", maxWidth: 340, boxShadow: "0 8px 40px rgba(0,0,0,0.12)" }}>
               <h2 style={{ textAlign: "center", fontWeight: 900, fontSize: 26, letterSpacing: 2, margin: "0 0 20px", fontFamily: "'Barlow Condensed', sans-serif" }}>LOGIN</h2>
 
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
@@ -143,10 +145,11 @@ const Login = () => {
                 <span onClick={handleBack} style={{ fontSize: 12, color: "#FF6B00", cursor: "pointer", textDecoration: "underline" }}>← Change company</span>
               </div>
             </div>
-          </div>
+          </PageTransition>
         </div>
       </div>
-    </>
+    </div>
+  </>
   );
 };
 
