@@ -8,15 +8,6 @@ import ProfileCard from "../../components/common/ProfileCard/ProfileCard";
 import { Lock, Eye, EyeOff, IdCard, ShieldCheck, Check, X } from "lucide-react";
 import PageTransition from "../../components/common/PageTransition";
 
-const PROFILE_DATA = {
-  lastName: "Gonzales", firstName: "Danilo", middleName: "Pogi",
-  email: "danilogatch@gmail.com", contactNumber: "+63 912 345 6789",
-  dateOfBirth: "1998-06-15", gender: "Male",
-  address: "Bagong Ilog, Pasig City, Metro Manila",
-  employeeId: "EMP-00142", jobTitle: "Software Dev", department: "IT",
-  dateHired: "2024-01-10", memberSince: "January 2025",
-  status: "Active", role: "User", coursesAssigned: 4,
-};
 
 /* ── Password strength ── */
 const getStrength = (pw) => {
@@ -54,8 +45,8 @@ const SectionTitle = ({ icon: Icon, title }) => (
 );
 
 const SuccessModal = ({ message, onClose }) => (
-  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <div style={{ background: "white", borderRadius: 16, padding: "36px 40px", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", animation: "modal-fade-in 0.2s ease" }}>
+    <div style={{ background: "white", borderRadius: 16, padding: "36px 40px", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.15)", animation: "modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
       <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#f0fdf4", border: "2px solid #bbf7d0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
         <Check size={28} color="#22c55e" />
       </div>
@@ -77,13 +68,14 @@ const ReqRow = ({ met, label }) => (
 
 /* ── Page ── */
 const Profile = () => {
-  const { user, company, logout } = useAuth();
+  const { user, company, logout, updateProfile, uploadAvatar } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   useSidebarAutoClose(setSidebarOpen);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isAvatarLoading, setIsAvatarLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -97,9 +89,51 @@ const Profile = () => {
   const { checks, strength } = getStrength(newPassword);
   const passwordValid = Object.values(checks).every(Boolean) && newPassword === confirmPassword && newPassword.length > 0;
 
-  const handleSaveDetails = (updated) => {
-    setSuccessMessage("Your contact details have been updated successfully.");
-    setShowSuccessModal(true);
+  const profileData = {
+    lastName: user?.lastname || "",
+    firstName: user?.firstname || "",
+    middleName: user?.middlename || "", 
+    email: user?.email || "",
+    contactNumber: user?.contact_no || "",
+    dateOfBirth: user?.date_of_birth || "",
+    gender: user?.gender || "",
+    address: user?.address || "",
+    employeeId: user?.employee_id || "",
+    jobTitle: user?.job_title || "",
+    department: user?.department || "",
+    dateHired: user?.date_hired || "",
+    memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Just recently",
+    status: user?.status || "Active",
+    role: user?.role || "User",
+    coursesAssigned: 0,
+    avatarUrl: user?.avatar_url || null,
+  };
+
+  const handleSaveDetails = async (updated) => {
+    try {
+      await updateProfile({
+        contact_no: updated.contactNumber,
+        address: updated.address
+      });
+      setSuccessMessage("Your contact details have been updated successfully.");
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      // Fallback for user feedback if needed
+    }
+  };
+
+  const handleAvatarChange = async (file) => {
+    setIsAvatarLoading(true);
+    try {
+      await uploadAvatar(file);
+      setSuccessMessage("Your profile photo has been updated successfully.");
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error("Failed to upload avatar:", err);
+    } finally {
+      setIsAvatarLoading(false);
+    }
   };
 
   const handleSavePassword = () => {
@@ -134,9 +168,11 @@ const Profile = () => {
             {/* ── Profile Card (reusable component) ── */}
             <div style={{ marginBottom: 16 }}>
               <ProfileCard
-                profileData={PROFILE_DATA}
+                profileData={profileData}
                 editable={true}
                 onSave={handleSaveDetails}
+                onAvatarChange={handleAvatarChange}
+                isUploading={isAvatarLoading}
               />
             </div>
 
@@ -146,7 +182,7 @@ const Profile = () => {
               <SectionTitle icon={ShieldCheck} title="Account Settings" />
 
               <div className="acct-row">
-                <InputBox label="Username" icon={IdCard} value={PROFILE_DATA.email} readOnly />
+                <InputBox label="Username" icon={IdCard} value={profileData.email} readOnly />
                 <InputBox
                   label="Password" icon={Lock}
                   value="••••••••••••••••••"

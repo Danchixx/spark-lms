@@ -22,7 +22,7 @@
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
   border: 1px solid #f0f0f0;
   padding: 12px 0;
 }
@@ -61,7 +61,7 @@
   background: white;
   border-radius: 12px;
   border: 1px solid #f0f0f0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
   padding: 32px;
   margin-bottom: 24px;
 }
@@ -158,15 +158,15 @@
   height: 20px;
   border-radius: 50%;
   background: white;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   transition: transform 0.25s;
 }
 
-.toggle-switch input:checked + .toggle-track {
+.toggle-switch input:checked+.toggle-track {
   background: #FF6B00;
 }
 
-.toggle-switch input:checked + .toggle-track::after {
+.toggle-switch input:checked+.toggle-track::after {
   transform: translateX(20px);
 }
 
@@ -307,7 +307,7 @@
 
 .company-cover-edit {
   position: relative;
-  height: 180px;
+  height: 250px;
   border-radius: 12px;
   background: linear-gradient(135deg, #FF8C00 0%, #FF6B00 100%);
   margin-bottom: 50px;
@@ -320,7 +320,7 @@
 }
 
 .cover-edit-btn {
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
   color: white;
   border: none;
@@ -342,12 +342,12 @@
 }
 
 .logo-circle {
-  width: 84px;
-  height: 84px;
+  width: 120px;
+  height: 120px;
   background: white;
   border-radius: 50%;
   border: 4px solid white;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -368,7 +368,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* ── Security ── */
@@ -403,7 +403,7 @@
 
 .theme-card.selected {
   border-color: #FF6B00;
-  box-shadow: 0 0 0 4px rgba(255,107,0,0.1);
+  box-shadow: 0 0 0 4px rgba(255, 107, 0, 0.1);
 }
 
 .theme-card-preview {
@@ -482,26 +482,32 @@
   .settings-grid-layout {
     flex-direction: column;
   }
+
   .settings-sidebar-nav {
     width: 100%;
     position: static;
   }
+
   .settings-nav-card-fixed {
     display: flex;
     overflow-x: auto;
     white-space: nowrap;
   }
+
   .settings-nav-card-item {
     border-left: none;
     border-bottom: 4px solid transparent;
   }
+
   .settings-nav-card-item.active {
     border-left: none;
     border-bottom: 4px solid #FF6B00;
   }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
+
   .form-field.full-width {
     grid-column: span 1;
   }

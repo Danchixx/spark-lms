@@ -65,7 +65,7 @@ const CourseModules = () => {
 
             {/* Breadcrumb Area */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-              <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
+              <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(`/${slug}/courses`)}>
                 My Courses
               </Button>
               <span style={{ color: "#666", fontWeight: "600" }}>&gt;</span>

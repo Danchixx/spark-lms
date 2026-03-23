@@ -77,7 +77,7 @@ const ModuleLessons = () => {
           
           {/* Breadcrumb Area */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, fontSize: 16 }}>
-            <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
+            <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId } })}>
               Modules
             </Button>
             <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>

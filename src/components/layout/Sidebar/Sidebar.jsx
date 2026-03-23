@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SparkLogo from "../../common/SparkLogo/sparklogo.png";
 import LogoutModal from "../../common/Modal/LogoutModal";
+import { useAuth } from "../../../context/AuthContext";
 
 const NAV_ITEMS = [
   { section: "MAIN", items: ["Dashboard", "Profile", "Courses", "Certificates"] },
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
 const BREAKPOINT = 1024;
 
 const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) => {
+  const { company } = useAuth();
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
   const overlayRef = useRef(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -19,7 +21,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
   const [logoutHovered, setLogoutHovered] = useState(false);
   const navigate = useNavigate();
 
-  const slug = user?.company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
+  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
 
   const [visible, setVisible] = useState(isOpen);
   const [animate, setAnimate] = useState(isOpen);
@@ -245,16 +247,16 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
             title="View Company Profile"
             style={{
               width: 36, height: 36, borderRadius: "50%",
-              background: user.company.color + "22",
-              border: `2px solid ${user.company.color}`,
+              background: "white",
+              border: "1.5px solid #e0e0e0",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 10, fontWeight: 900, color: user.company.color,
+              fontSize: 10, fontWeight: 900, color: company?.color || "#FF6B00",
               flexShrink: 0, overflow: "hidden",
             }}
           >
-            {typeof user.company.logo === "string" && user.company.logo.startsWith("/")
-              ? <img src={user.company.logo} alt={user.company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
-              : user.company.logo}
+            {typeof company?.logo_url === "string" && company.logo_url.startsWith("http")
+              ? <img src={company.logo_url} alt={company?.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+              : company?.logo_url || company?.name?.substring(0, 2).toUpperCase()}
           </div>
 
           <button

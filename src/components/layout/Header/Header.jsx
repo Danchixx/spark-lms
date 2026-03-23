@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Squash as Hamburger } from "hamburger-react";
 import { Bell, User, X } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
 
 const BREAKPOINT = 1024;
 
@@ -19,13 +20,14 @@ const Header = ({
   searchPlaceholder = "Search ...",
   role = "User",
 }) => {
+  const { company } = useAuth();
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
   const notifRef = useRef(null);
   const navigate = useNavigate();
 
-  const slug = user?.company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
+  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
   const goToProfile = () => navigate(`/${slug}/profile`);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -149,7 +151,7 @@ const Header = ({
         {/* Company name — mobile only, centered */}
         {isMobile && (
           <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontWeight: 700, fontSize: 16, color: "#1a1a1a", whiteSpace: "nowrap", pointerEvents: "none" }}>
-            {user?.company?.name ?? "Spark LMS"}
+            {company?.name ?? "Spark LMS"}
           </span>
         )}
 
@@ -242,8 +244,12 @@ const Header = ({
               onMouseEnter={e => e.currentTarget.style.background = "#f5f5f5"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <User size={18} color="#888" />
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt={user?.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <User size={18} color="#888" />
+                )}
               </div>
               <span style={{ fontWeight: 600, fontSize: 14, color: "#1a1a1a" }}>{user?.name}</span>
             </div>
@@ -253,9 +259,13 @@ const Header = ({
           {isMobile && (
             <div
               onClick={goToProfile}
-              style={{ width: 36, height: 36, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              style={{ width: 36, height: 36, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden" }}
             >
-              <User size={16} color="#888" />
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt={user?.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <User size={16} color="#888" />
+              )}
             </div>
           )}
 

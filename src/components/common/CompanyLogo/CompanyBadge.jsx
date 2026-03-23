@@ -4,8 +4,8 @@ const CompanyBadge = ({ company, size = 48 }) => (
       width: size,
       height: size,
       borderRadius: 8,
-      background: company.color + "22",
-      border: `2px solid ${company.color}44`,
+      background: "white",
+      border: `1.5px solid #e0e0e0`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -13,9 +13,9 @@ const CompanyBadge = ({ company, size = 48 }) => (
       overflow: "hidden",
     }}
   >
-    {typeof company.logo === "string" && company.logo.startsWith("/") ? (
+    {typeof company.logo_url === "string" && company.logo_url.startsWith("http") ? (
       <img
-        src={company.logo}
+        src={company.logo_url}
         alt={company.name}
         style={{ width: "80%", height: "80%", objectFit: "contain" }}
       />
@@ -23,11 +23,11 @@ const CompanyBadge = ({ company, size = 48 }) => (
       <span style={{
         fontWeight: 900,
         fontSize: size * 0.28,
-        color: company.color,
+        color: company.color || "#FF6B00",
         fontFamily: "'Barlow Condensed', sans-serif",
         letterSpacing: 1,
       }}>
-        {company.logo}
+        {company.logo_url || company.name?.substring(0, 2).toUpperCase()}
       </span>
     )}
   </div>

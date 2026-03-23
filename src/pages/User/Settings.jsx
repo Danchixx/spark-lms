@@ -14,19 +14,6 @@ import {
   Building2, Bell, ShieldCheck, Palette,
   Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar
 } from "lucide-react";
-import "./Settings.css";
-
-/* ── Mock company data ── */
-const COMPANY = {
-  name: "ZOUP",
-  industry: "Sales and Marketing",
-  website: "https://zoup.com",
-  address: "Suite B, 3rd Floor, Rose Industries Building, Pasig City",
-  logo: "ZP",
-  color: "#2980b9",
-  memberSince: "January 2024",
-  plan: "Pro Plan",
-};
 
 /* ── Nav items (User-only: no Organization, no Billing) ── */
 const USER_TABS = [
@@ -38,105 +25,120 @@ const USER_TABS = [
 
 /* ── Panels ── */
 
-const CompanyPanel = () => (
-  <div className="section-card">
-    <div className="section-header-wrap">
-      <h2 className="settings-panel-title">Company Profile</h2>
-      <p className="settings-panel-subtitle">Manage your company's identity - logo, cover, contacts.</p>
-    </div>
+const CompanyPanel = () => {
+  const { company } = useAuth();
 
-    <div className="settings-divider" />
+  if (!company) return null;
 
-    <div className="company-visuals">
-      <div className="label-small">Cover Photo and Logo</div>
-      <div className="company-cover-edit">
-        <div className="company-logo-overlay">
-          <div className="logo-circle">
-            <span style={{ fontSize: 24, fontWeight: 900, color: "#2980b9" }}>ZP</span>
+  return (
+    <div className="section-card">
+      <div className="section-header-wrap">
+        <h2 className="settings-panel-title">Company Profile</h2>
+        <p className="settings-panel-subtitle">Your company's identity - logo, cover, contacts.</p>
+      </div>
+
+      <div className="settings-divider" />
+
+      <div className="company-visuals">
+        <div className="label-small">Logo and Cover Photo</div>
+        <div
+          className="company-cover-edit"
+          style={company?.cover_photo_url ? {
+            backgroundImage: `url(${company.cover_photo_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          } : {}}
+        >
+          <div className="company-logo-overlay">
+            <div className="logo-circle" style={{ background: "white", border: "1.5px solid #e0e0e0" }}>
+              {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
+                ? <img src={company.logo_url} alt={company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+                : <span style={{ fontSize: 24, fontWeight: 900, color: company.color || "#FF6B00" }}>{company.name?.substring(0, 2).toUpperCase()}</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <div className="form-section-title">Company Details</div>
+        <div className="form-grid">
+          <div className="form-field">
+            <label>Company Name</label>
+            <input value={company.name || ""} readOnly />
+          </div>
+          <div className="form-field">
+            <label>Industry</label>
+            <input value={company.industry || ""} readOnly />
+          </div>
+          <div className="form-field">
+            <label>Year Founded</label>
+            <div className="input-with-icon">
+              <Calendar size={14} />
+              <input value={company.year_founded || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Company Website</label>
+            <div className="input-with-icon">
+              <Globe size={14} />
+              <input value={company.website_url || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field full-width">
+            <label>Company Description</label>
+            <textarea rows={3} value={company.description || ""} readOnly />
+          </div>
+          <div className="form-field full-width">
+            <label>Workspace URL</label>
+            <div className="workspace-url-input">
+              <span className="prefix">spark-ph-lms.com/</span>
+              <input value={company.slug || ""} readOnly />
+            </div>
+            <span className="field-hint">Your learning portal URL: <strong>spark-ph-lms.com/{company.slug}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <div className="form-section-title">Contact Information</div>
+        <div className="form-grid">
+          <div className="form-field">
+            <label>Contact Person</label>
+            <div className="input-with-icon">
+              <User size={14} />
+              <input value={company.contact_person || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Contact Email</label>
+            <div className="input-with-icon">
+              <Mail size={14} />
+              <input value={company.contact_email || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Phone Number</label>
+            <div className="input-with-icon">
+              <Phone size={14} />
+              <input value={company.phone_number || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Country</label>
+            <input value={company.country || ""} readOnly />
+          </div>
+          <div className="form-field full-width">
+            <label>Office Address</label>
+            <div className="input-with-icon">
+              <MapPin size={14} />
+              <input value={company.office_address || ""} readOnly />
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-    <div className="form-section">
-      <div className="form-section-title">Company Details</div>
-      <div className="form-grid">
-        <div className="form-field">
-          <label>Company Name</label>
-          <input value={COMPANY.name} readOnly />
-        </div>
-        <div className="form-field">
-          <label>Industry</label>
-          <input value={COMPANY.industry} readOnly />
-        </div>
-        <div className="form-field">
-          <label>Year Founded</label>
-          <div className="input-with-icon">
-            <Calendar size={14} />
-            <input value="2018" readOnly />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Company Website</label>
-          <div className="input-with-icon">
-            <Globe size={14} />
-            <input value={COMPANY.website} readOnly />
-          </div>
-        </div>
-        <div className="form-field full-width">
-          <label>Company Description</label>
-          <textarea rows={3} value="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus eget sapien bibendum varius. Curabitur vehicula, nisl a fermentum aliquet, nunc urna tincidunt nisi." readOnly />
-        </div>
-        <div className="form-field full-width">
-          <label>Workspace URL</label>
-          <div className="workspace-url-input">
-            <span className="prefix">spark-ph-lms.com/</span>
-            <input value="zoup" readOnly />
-          </div>
-          <span className="field-hint">Your learning portal URL: <strong>spark-ph-lms.com/zoup</strong></span>
-        </div>
-      </div>
-    </div>
-
-    <div className="form-section">
-      <div className="form-section-title">Contact Information</div>
-      <div className="form-grid">
-        <div className="form-field">
-          <label>Contact Person</label>
-          <div className="input-with-icon">
-            <User size={14} />
-            <input value="Danchi D." readOnly />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Contact Email</label>
-          <div className="input-with-icon">
-            <Mail size={14} />
-            <input value="email@zoup.com" readOnly />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Phone Number</label>
-          <div className="input-with-icon">
-            <Phone size={14} />
-            <input value="0999-999-999" readOnly />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Country</label>
-          <input value="Phillipines" readOnly />
-        </div>
-        <div className="form-field full-width">
-          <label>Office Address</label>
-          <div className="input-with-icon">
-            <MapPin size={14} />
-            <input value={COMPANY.address} readOnly />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const NotificationsPanel = () => {
   const [notifs, setNotifs] = useState({

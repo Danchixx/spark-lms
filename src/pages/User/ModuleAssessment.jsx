@@ -165,7 +165,7 @@ const ModuleAssessment = () => {
             {/* Breadcrumb + Timer Row */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 16 }}>
-                <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
+                <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId } })}>
                   Modules
                 </Button>
                 <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
