@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
-import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import ProgressBar from "../../components/ui/ProgressBar/ProgressBar";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
@@ -34,8 +34,7 @@ const STATS_TEMPLATE: StatItem[] = [
 const Dashboard = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  useSidebarAutoClose(setSidebarOpen);
+  const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
@@ -96,7 +95,7 @@ type ActivityItem = {
 
             // Map recent courses
             setRecentCourses(assignments.slice(0, 5).map(a => ({
-                name: a.courses?.title || 'Unknown Course',
+                name: (a.courses as any)?.title || 'Unknown Course',
                 status: a.status === 'in_progress' ? 'Ongoing' : a.status === 'completed' ? 'Completed' : 'Not Started',
                 progress: a.progress || 0,
                 remark: a.status === 'completed' ? 'Passed' : '-'
@@ -128,13 +127,13 @@ type ActivityItem = {
       <Sidebar isOpen={sidebarOpen} activePage="Dashboard" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search ..." role="User" />
 
         <div className="dash-padding" style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <PageTransition>
             <div className="dash-top">
               <div className="dash-top-greeting">
-                <div style={{ fontSize: 13, color: "#888" }}>Hello {user.name.split(" ")[0]},</div>
+                <div style={{ fontSize: 13, color: "#888" }}>Hello {user?.name?.split(" ")[0] || "Student"},</div>
                 <div style={{ fontSize: 13, color: "#888" }}>Welcome back!</div>
               </div>
               <h1 className="dash-top-title">Dashboard</h1>

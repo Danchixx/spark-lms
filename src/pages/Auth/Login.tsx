@@ -28,7 +28,7 @@ const Login = () => {
   useEffect(() => {
     const fetchCompany = async () => {
       if (!companySlug) return;
-      
+
       // If we already have the right company, don't fetch
       if (company && company.slug === companySlug) {
         setIsFetchingCompany(false);
@@ -131,9 +131,9 @@ const Login = () => {
                 <h2 style={{ textAlign: "center", fontWeight: 900, fontSize: 26, letterSpacing: 2, margin: "0 0 20px", fontFamily: "'Barlow Condensed', sans-serif" }}>LOGIN</h2>
 
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-                  <div style={{ width: 90, height: 90, borderRadius: "50%", border: "1.5px solid #e0e0e0", background: "white", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  <div style={{ width: 120, height: 120, borderRadius: "50%", border: "1.5px solid #e0e0e0", background: "white", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                     {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
-                      ? <img src={company.logo_url} alt={company.name} style={{ width: "70%", height: "70%", objectFit: "contain" }} />
+                      ? <img src={company.logo_url} alt={company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
                       : <span style={{ fontWeight: 900, fontSize: 22, color: (company.color || "#FF6B00"), fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: 2 }}>{company.logo_url || company.name?.substring(0, 2).toUpperCase()}</span>
                     }
                   </div>

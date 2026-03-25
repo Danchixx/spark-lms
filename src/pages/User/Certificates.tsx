@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
-import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import CertificateModal from "../../components/ui/CertificateModal/CertificateModal";
@@ -14,13 +14,13 @@ import PageTransition from "../../components/common/PageTransition";
 import "./Certificates.css";
 
 // Mock certificate issue dates
-const CERT_DATES = {
+const CERT_DATES: Record<number, string> = {
   3: "Feb 14, 2026",
   1: "Feb 27, 2026",
 };
 
 // Mock scores
-const CERT_SCORES = {
+const CERT_SCORES: Record<number, number> = {
   3: 95,
   1: 91,
 };
@@ -28,13 +28,12 @@ const CERT_SCORES = {
 const Certificates = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  useSidebarAutoClose(setSidebarOpen);
+  const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
 
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
 
   // Split courses into earned (completed) and not yet earned
   const earnedCourses = COURSES.filter((c) => c.progress === 100);
@@ -46,7 +45,7 @@ const Certificates = () => {
         <Sidebar isOpen={sidebarOpen} activePage="Certificates" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search ..." role="User" />
+          <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search ..." role="User" />
 
           <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
             <PageTransition>
@@ -126,7 +125,7 @@ const Certificates = () => {
         <CertificateModal
           isOpen={!!selectedCourse}
           onClose={() => setSelectedCourse(null)}
-          userName={user.name}
+          userName={user?.name || ""}
           courseName={selectedCourse.name}
           date={CERT_DATES[selectedCourse.id] || "March 2026"}
           companyLogo={company?.logo_url}

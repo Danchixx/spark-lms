@@ -8,7 +8,7 @@ import SettingsCard from "../../components/ui/SettingsCard/SettingsCard";
 import {
   Toggle, getStrength, STRENGTH_COLORS, STRENGTH_LABELS, ReqRow
 } from "../../components/ui/SettingsCard/SettingsHelpers";
-import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import useSidebar from "../../hooks/useSidebar";
 import PageTransition from "../../components/common/PageTransition";
 import {
   Building2, Bell, ShieldCheck, Palette,
@@ -176,7 +176,7 @@ const NotificationsPanel = () => {
                 <div className="toggle-label">{r.label}</div>
                 <div className="toggle-desc">{r.desc}</div>
               </div>
-              <Toggle checked={notifs[r.key]} onChange={() => toggle(r.key)} />
+              <Toggle checked={(notifs as any)[r.key]} onChange={() => toggle(r.key)} />
             </div>
           ))}
         </div>
@@ -259,7 +259,7 @@ const SecurityPanel = () => {
                 <div key={level} style={{ flex: 1, height: 4, borderRadius: 4, background: strength && (i === 0 || (i === 1 && strength !== "weak") || (i === 2 && strength === "strong")) ? STRENGTH_COLORS[strength] : "#e0e0e0", transition: "background 0.3s" }} />
               ))}
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: STRENGTH_COLORS[strength] }}>{STRENGTH_LABELS[strength]}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: (STRENGTH_COLORS as any)[strength as any] }}>{(STRENGTH_LABELS as any)[strength as any]}</span>
             <div style={{ marginTop: 8, padding: "10px 12px", background: "#f9f9f9", borderRadius: 8, border: "1px solid #f0f0f0" }}>
               <ReqRow met={checks.length} label="At least 8 characters" />
               <ReqRow met={checks.letter} label="Contains a letter" />
@@ -358,8 +358,7 @@ const Settings = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  useSidebarAutoClose(setSidebarOpen);
+  const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
 
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
@@ -371,7 +370,7 @@ const Settings = () => {
       <Sidebar isOpen={sidebarOpen} activePage="Settings" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <PageTransition>

@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
-import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import LessonCard from "../../components/common/LessonCard/LessonCard";
 import { ArrowLeft, Check, Circle } from "lucide-react";
@@ -15,8 +15,7 @@ const ModuleLessons = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  useSidebarAutoClose(setSidebarOpen);
+  const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
 
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
@@ -55,13 +54,19 @@ const ModuleLessons = () => {
     }
 
     if (currentIndex < localLessons.length - 1) {
-      setCurrentLessonId(localLessons[currentIndex + 1].id);
+      const nextLesson = localLessons[currentIndex + 1];
+      if (nextLesson) {
+        setCurrentLessonId(nextLesson.id);
+      }
     }
   };
 
   const handleBack = () => {
     if (currentIndex > 0) {
-      setCurrentLessonId(localLessons[currentIndex - 1].id);
+      const prevLesson = localLessons[currentIndex - 1];
+      if (prevLesson) {
+        setCurrentLessonId(prevLesson.id);
+      }
     }
   };
 
@@ -70,7 +75,7 @@ const ModuleLessons = () => {
       <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search courses, lessons ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <PageTransition>
@@ -149,7 +154,7 @@ const ModuleLessons = () => {
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ width: 8, height: 8, borderRadius: "50%", background: isCompleted || isActive ? "#FF6B00" : "#ccc" }} />
                           <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#FF6B00" : "#444" }}>
-                            Lesson {idx + 1}: {lsn.title.split(":")[0].replace(/^(Video|Reading|Assessment)$/, '').trim() || lsn.title.split(":")[0]}
+                            Lesson {idx + 1}: {lsn?.title?.split(":")[0]?.replace(/^(Video|Reading|Assessment)$/, '').trim() || lsn?.title?.split(":")[0] || ''}
                           </span>
                         </div>
                         {isCompleted && <Check size={16} color="#FF6B00" />}

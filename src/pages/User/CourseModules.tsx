@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
-import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import { ArrowLeft, Check, Lock, Play, FileText, PenTool } from "lucide-react";
 import { COURSES } from "../../data/mockCourses";
@@ -15,8 +15,7 @@ const CourseModules = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  useSidebarAutoClose(setSidebarOpen);
+  const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
 
   const courseId = location.state?.courseId;
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
@@ -58,7 +57,7 @@ const CourseModules = () => {
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
+          <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search courses, lessons ..." role="User" />
 
           <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
             <PageTransition>
@@ -69,7 +68,7 @@ const CourseModules = () => {
                 My Courses
               </Button>
               <span style={{ color: "#666", fontWeight: "600" }}>&gt;</span>
-              <span style={{ fontWeight: 600, color: "#1a1a1a" }}>{courseData.name || courseData.title}</span>
+              <span style={{ fontWeight: 600, color: "#1a1a1a" }}>{courseData.name}</span>
             </div>
 
             {/* Main Hero Banner */}
@@ -86,7 +85,7 @@ const CourseModules = () => {
               <div style={{ display: "flex", gap: 24, alignItems: "center", zIndex: 1 }}>
                 <div style={{ fontSize: 64, filter: "drop-shadow(0px 4px 4px rgba(0,0,0,0.25))" }}>{courseData.icon || "🧳"}</div>
                 <div>
-                  <h1 style={{ margin: "0 0 12px 0", fontSize: 32, fontWeight: 800 }}>{courseData.name || courseData.title}</h1>
+                  <h1 style={{ margin: "0 0 12px 0", fontSize: 32, fontWeight: 800 }}>{courseData.name}</h1>
                   <div style={{ display: "flex", gap: 24, fontSize: 15, fontWeight: 600 }}>
                     <span>{courseData.modulesCount} Modules</span>
                     <span>{courseData.unitsCount} Lessons</span>
@@ -117,7 +116,7 @@ const CourseModules = () => {
             {/* Modules List */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {courseData.modules.map((module, index) => {
-                const sc = statusColors[module.status];
+                const sc = (statusColors as any)[module.status];
                 const isExpanded = expandedModule === module.id;
 
                 return (
@@ -235,10 +234,10 @@ const CourseModules = () => {
       <CertificateModal
         isOpen={showCertificate}
         onClose={() => setShowCertificate(false)}
-        userName={user.name}
-        courseName={courseData.name || courseData.title}
+        userName={user?.name || ""}
+        courseName={courseData.name || ""}
         date="27th of February, 2026"
-        companyLogo={company?.logo}
+        companyLogo={company?.logo_url}
       />
     </>
   );

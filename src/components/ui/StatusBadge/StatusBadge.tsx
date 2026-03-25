@@ -1,3 +1,5 @@
+import React from "react";
+
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   Completed: { bg: "#E0EFE5", color: "#0E5E4A" },
   Verified: { bg: "#E0EFE5", color: "#0E5E4A" },

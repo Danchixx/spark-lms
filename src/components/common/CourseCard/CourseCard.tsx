@@ -1,24 +1,39 @@
 import { Pin, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useAuth } from "../../../context/AuthContext";
 import Button from "../../ui/Button/Button";
 import StatusBadge from "../../ui/StatusBadge/StatusBadge";
 
-
+interface BarProps {
+  value: number;
+  color: string;
+}
 
 /* ── Progress bar ── */
-const Bar = ({ value, color }) => (
+const Bar = ({ value, color }: BarProps) => (
   <div style={{ height: 6, background: "#f0f0f0", borderRadius: 99, overflow: "hidden" }}>
     <div style={{ height: "100%", width: `${Math.max(0, value)}%`, background: color, borderRadius: 99, transition: "width 0.3s" }} />
   </div>
 );
 
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
+interface CourseCardProps {
+  course: {
+    id: string | number;
+    name: string;
+    modulesCount: number;
+    unitsCount: number;
+    status: string;
+    progress: number;
+    assignedBy: string;
+    icon: string;
+  };
+}
 
 /**
  * CourseCard
- * Props: course { id, name, modules, units, status, progress, assignedBy, icon }
  */
-const CourseCard = ({ course }) => {
+const CourseCard = ({ course }: CourseCardProps) => {
   const isCompleted = course.status === "Completed";
   const isNotStarted = course.status === "Not Started";
   const barColor = isCompleted ? "#27ae60" : "#FF6B00";
@@ -98,8 +113,19 @@ const CourseCard = ({ course }) => {
   );
 };
 
+interface CourseFilterNavProps {
+  counts: {
+    all: number;
+    ongoing: number;
+    completed: number;
+    notStarted: number;
+  };
+  active: string;
+  onChange: (filter: string) => void;
+}
+
 /* ── Filter Nav ── */
-export const CourseFilterNav = ({ counts, active, onChange }) => {
+export const CourseFilterNav = ({ counts, active, onChange }: CourseFilterNavProps) => {
   const filters = [
     { key: "All", label: `All (${counts.all})` },
     { key: "Ongoing", label: `Ongoing (${counts.ongoing})` },
@@ -108,7 +134,7 @@ export const CourseFilterNav = ({ counts, active, onChange }) => {
   ];
 
   return (
-    <div style={{
+    <div className="course-filter-nav" style={{
       display: "inline-flex", flexWrap: "wrap", gap: 8,
       marginBottom: 24,
       background: "white",
@@ -116,26 +142,73 @@ export const CourseFilterNav = ({ counts, active, onChange }) => {
       borderRadius: 16,
       padding: "8px 10px",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      position: "relative",
+      maxWidth: "100%",
     }}>
+      <style>{`
+        @media (max-width: 536px) {
+          .course-filter-nav {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            padding: 8px 12px !important;
+            padding-bottom: 12px !important; /* Space for scrollbar */
+          }
+          .course-filter-nav::-webkit-scrollbar {
+            height: 4px;
+          }
+          .course-filter-nav::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+          }
+          .course-filter-nav::-webkit-scrollbar-thumb {
+            background: #FF6B00;
+            border-radius: 10px;
+          }
+          .course-filter-nav button {
+            flex-shrink: 0;
+          }
+        }
+      `}</style>
       {filters.map((f) => {
         const isActive = active === f.key;
         return (
-          <button
+          <motion.button
             key={f.key}
             onClick={() => onChange(f.key)}
+            whileHover={!isActive ? { background: "#f8f8f8", borderColor: "#d0d0d0" } : {}}
             style={{
               padding: "7px 18px",
               fontSize: 13, fontWeight: 700,
               cursor: "pointer", fontFamily: "inherit",
-              background: isActive ? "#FF6B00" : "white",
+              background: "transparent",
               color: isActive ? "white" : "#666",
-              border: isActive ? "none" : "1.5px solid #e0e0e0",
+              border: isActive ? "1.5px solid transparent" : "1.5px solid #e0e0e0",
               borderRadius: 10,
-              transition: "all 0.15s",
+              transition: "color 0.2s, background 0.2s, border-color 0.2s",
+              position: "relative",
+              zIndex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: 36,
             }}
           >
+            {isActive && (
+              <motion.div
+                layoutId="activeTab"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "#FF6B00",
+                  borderRadius: 8,
+                  zIndex: -1,
+                }}
+                transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+              />
+            )}
             {f.label}
-          </button>
+          </motion.button>
         );
       })}
     </div>
