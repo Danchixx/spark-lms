@@ -1,4 +1,5 @@
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import AppRouter from "./routes/AppRouter";
 import "./styles/globals.css";
 import "./styles/variables.css";
@@ -15,7 +16,9 @@ const App = () => {
 
   return (
     <AuthProvider>
-      <AppRouter />
+      <ThemeProvider>
+        <AppRouter />
+      </ThemeProvider>
     </AuthProvider>
   );
 };

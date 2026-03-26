@@ -30,12 +30,21 @@ const Landing = () => {
     const fetchCompanies = async () => {
       setIsLoading(true);
       try {
+        // Fetch companies with a nested count of users (members)
+        // Explicitly specify the relationship to avoid PGRST201 (ambiguous relationship)
         const { data, error } = await supabase
           .from('companies')
-          .select('*')
+          .select('*, members:users!users_company_id_fkey(count)')
           .eq('is_archived', false);
         
-        if (data) setCompanies(data);
+        if (data) {
+          // Format the data to extract the count from the nested members array
+          const formattedCompanies = data.map((c: any) => ({
+            ...c,
+            members: c.members?.[0]?.count || 0
+          }));
+          setCompanies(formattedCompanies);
+        }
         if (error) console.error("Error fetching companies:", error);
       } finally {
         setIsLoading(false);

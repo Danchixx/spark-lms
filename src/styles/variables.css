@@ -5,7 +5,76 @@
   --color-bg: #f9fafb;
   --color-surface: #ffffff;
   --color-text: #111827;
+  --color-text-header: #1a1a1a;
   --color-text-muted: #6b7280;
+  --color-border: #e2e8f0;
+  --color-bg-muted: #f8fafc;
+  --color-bg-hover: #f1f5f9;
+  --color-bg-subtle: #fafafa;
+  --color-input-bg: #ffffff;
+  --color-progress-bg: #e2e8f0;
+  --color-cert-earned-bg: linear-gradient(135deg, #fff5eb 0%, #ffe8d0 100%);
   --radius: 0.5rem;
+  --sidebar-bg: var(--color-surface);
+  --sidebar-text: var(--color-text);
+  --sidebar-text-muted: var(--color-text-muted);
+  --sidebar-border: var(--color-border);
+  --sidebar-shadow: 0 0 15px rgba(0,0,0,0.05);
+  --sidebar-active-bg: rgba(255, 107, 0, 0.1);
+  --sidebar-active-text: #000000;
+  --sidebar-bg-muted: var(--color-bg-muted);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+
+.dark {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #f8fafc;
+  --color-text-header: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-border: #334155;
+  --color-bg-muted: #0f172a;
+  --color-bg-hover: #1e293b;
+  --color-bg-subtle: rgba(255, 255, 255, 0.03);
+  --color-input-bg: rgba(255, 255, 255, 0.05);
+  --color-progress-bg: #334155;
+  --color-cert-earned-bg: linear-gradient(135deg, #2d1b0a 0%, #3d2b1a 100%);
+  --sidebar-shadow: none;
+  --sidebar-bg: var(--color-surface);
+  --sidebar-text: var(--color-text);
+  --sidebar-text-muted: var(--color-text-muted);
+  --sidebar-bg-muted: var(--color-bg-muted);
+  --sidebar-border: var(--color-border);
+  --sidebar-active-text: #ffffff;
+  --sidebar-active-bg: rgba(255, 107, 0, 0.15);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow: 0 1px 3px rgba(0,0,0,0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5), 0 4px 6px -2px rgba(0,0,0,0.3);
+}
+
+/* Classic Black Sidebar Variant (used in Light Mode) */
+[data-sidebar-theme="black"]:not(.dark) .sidebar-container {
+  --sidebar-bg: #1a1a1a;
+  --sidebar-text: #ffffff;
+  --sidebar-text-header: #ffffff;
+  --sidebar-text-muted: rgba(255, 255, 255, 0.5);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-active-text: #ffffff;
+  --sidebar-active-bg: rgba(255, 107, 0, 0.15);
+  --sidebar-bg-muted: rgba(255, 255, 255, 0.05);
+  --color-bg-hover: rgba(255, 255, 255, 0.03);
+}
+
+/* ── Modal Overrides for Black Sidebar Theme (Light Mode) ── */
+[data-sidebar-theme="black"]:not(.dark) .logout-modal-card,
+[data-sidebar-theme="black"]:not(.dark) .session-expired-card {
+  --color-surface: #1a1a1a;
+  --color-text: #ffffff;
+  --color-text-header: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.6);
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-bg-muted: rgba(255, 255, 255, 0.05);
+  --color-bg-hover: rgba(255, 255, 255, 0.1);
 }

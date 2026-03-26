@@ -101,26 +101,26 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
           content: '';
           position: absolute;
           inset: 0;
-          background: rgba(255,255,255,0.07);
+          background: var(--color-bg-hover);
           transform: translateX(-100%);
           transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: -1;
           pointer-events: none;
         }
         .nav-item:hover::before { transform: translateX(0); }
-        .nav-item:hover { padding-left: 24px; }
+        .nav-item:hover { padding-left: 24px; color: var(--sidebar-text-header, var(--sidebar-text)) !important; }
         /* Active state */
         .nav-item--active {
-          color: white !important;
+          color: var(--sidebar-active-text) !important;
           font-weight: 700;
           border-left: 3px solid #FF6B00 !important;
           padding-left: 24px;
         }
         .nav-item--active,
-        .nav-item--active * { color: white !important; }
+        .nav-item--active * { color: var(--sidebar-active-text) !important; }
         /* Active sweep: orange bg, still behind text */
         .nav-item--active::before {
-          background: rgba(255,107,0,0.15);
+          background: var(--sidebar-active-bg);
           animation: activeSweep 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         .logout-btn {
@@ -151,41 +151,43 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
         .search-input-wrap {
           display: flex;
           align-items: center;
-          background: rgba(255,255,255,0.15);
+          background: var(--sidebar-bg-muted);
+          border: 1px solid var(--sidebar-border);
           border-radius: 30px;
-          padding: 10px 16px;
+          padding: 8px 14px;
           gap: 8px;
           transition: background 0.2s ease, box-shadow 0.2s ease;
         }
         .search-input-wrap:focus-within {
-          background: rgba(255,255,255,0.22);
+          background: var(--sidebar-bg);
           box-shadow: 0 0 0 2px rgba(255,107,0,0.35);
+          border-color: #FF6B00;
         }
       `}</style>
 
       {/* Logo Header — desktop only */}
       {!isMobileMode && (
-        <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", borderBottom: "1px solid #333" }}>
-          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center" }}>
-            <span style={{ color: "white", fontWeight: 600, fontSize: 30, letterSpacing: 3, fontFamily: "'Sora', sans-serif" }}>SPARK</span>
-            <span style={{ color: "#9e9e9e", fontFamily: "'Open Sans Regular', sans-serif", fontSize: 6.4, textTransform: "uppercase", whiteSpace: "nowrap", marginTop: 1 }}>YES TO LEARNING AND DEVELOPMENT</span>
+        <div style={{ height: 60, padding: "0 20px", display: "flex", alignItems: "center", borderBottom: "1px solid var(--sidebar-border)", boxSizing: "border-box" }}>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center", marginRight: 8 }}>
+            <span style={{ color: "var(--sidebar-text-header, var(--sidebar-text))", fontWeight: 600, fontSize: 26, letterSpacing: 3, fontFamily: "'Sora', sans-serif" }}>SPARK</span>
+            <span style={{ color: "var(--sidebar-text-muted)", fontFamily: "'Open Sans Regular', sans-serif", fontSize: 6, textTransform: "uppercase", whiteSpace: "nowrap", marginTop: 1 }}>YES TO LEARNING AND DEVELOPMENT</span>
           </div>
-          <img src={SparkLogo} alt="Spark Logo" style={{ height: 48, width: "auto" }} />
+          <img src={SparkLogo} alt="Spark Logo" style={{ height: 40, width: "auto" }} />
         </div>
       )}
 
       {/* Search — mobile only */}
       {isMobileMode && (
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--sidebar-border)" }}>
           <div className="search-input-wrap">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sidebar-text-muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search"
-              style={{ background: "transparent", border: "none", outline: "none", color: "white", fontSize: 14, width: "100%", fontFamily: "inherit" }}
+              style={{ background: "transparent", border: "none", outline: "none", color: "var(--sidebar-text)", fontSize: 13, width: "100%", fontFamily: "inherit" }}
             />
           </div>
         </div>
@@ -197,7 +199,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
           <div key={group.section} style={{ marginBottom: 24 }}>
             <div style={{
               padding: "0 20px", fontSize: 10,
-              color: isMobileMode ? "rgba(255,255,255,0.4)" : "#555",
+              color: "var(--sidebar-text-muted)",
               letterSpacing: 1.5, marginBottom: 8, fontWeight: 700,
               textTransform: "uppercase",
             }}>
@@ -209,7 +211,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
                 className={`nav-item${activePage === item ? " nav-item--active" : ""}`}
                 onClick={() => handleNavigate(item)}
                 style={{
-                  color: activePage === item ? "white" : isMobileMode ? "rgba(255,255,255,0.75)" : "#aaa",
+                  color: activePage === item ? "var(--sidebar-active-text)" : "var(--sidebar-text-muted)",
                   fontWeight: activePage === item ? 700 : 400,
                 }}
               >
@@ -221,8 +223,8 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
       </div>
 
       {/* Footer */}
-      {isMobileMode ? (
-        <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {isMobileMode && (
+        <div style={{ padding: "16px 20px", borderTop: "1px solid var(--sidebar-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Company logo — left */}
           {/*}
           <div style={{...}}>...</div> */}
@@ -236,19 +238,19 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
             Logout
           </button>
 
-          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 7, textTransform: "uppercase", whiteSpace: "nowrap", letterSpacing: 2 }}>POWERED BY</span>
+          <span style={{ color: "var(--sidebar-text-muted)", fontSize: 7, textTransform: "uppercase", whiteSpace: "nowrap", letterSpacing: 2 }}>POWERED BY</span>
 
           {/* Spark logo — right */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ color: "white", fontWeight: 700, fontSize: 18, letterSpacing: 2, fontFamily: "'Sora', sans-serif" }}>SPARK</span>
+              <span style={{ color: "var(--sidebar-text-header, var(--sidebar-text))", fontWeight: 700, fontSize: 18, letterSpacing: 2, fontFamily: "'Sora', sans-serif" }}>SPARK</span>
               <img src={SparkLogo} alt="Spark Logo" style={{ height: 32, width: "auto" }} />
             </div>
           </div>
         </div>
-      ) : (
-        /* Desktop footer */
-        <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", gap: 12 }}>
+      )}
+      {!isMobileMode && (
+        <div style={{ padding: "16px 20px", borderTop: "1px solid var(--sidebar-border)", display: "flex", alignItems: "center", gap: 12 }}>
           {/* Company avatar — clicks to Settings */}
           <div
             className="company-avatar"
@@ -256,8 +258,8 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
             title="View Company Profile"
             style={{
               width: 36, height: 36, borderRadius: "50%",
-              background: "white",
-              border: "1.5px solid #e0e0e0",
+              background: "var(--color-bg-subtle)",
+              border: "1.5px solid var(--color-border)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 10, fontWeight: 900, color: company?.color || "#FF6B00",
               flexShrink: 0, overflow: "hidden",
@@ -289,8 +291,8 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
   /* ── Desktop: smooth width push sidebar ── */
   if (typeof window !== "undefined" && window.innerWidth > BREAKPOINT) {
     return (
-      <div style={{ width: isOpen ? 210 : 0, flexShrink: 0, overflow: "hidden", transition: "width 0.3s ease" }}>
-        <div style={{ width: 210, height: "100%", background: "#1e1e1e", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+      <div className="sidebar-container" style={{ width: isOpen ? 210 : 0, flexShrink: 0, overflow: "hidden", transition: "width 0.3s ease", boxShadow: "var(--sidebar-shadow)", zIndex: 100 }}>
+        <div style={{ width: 210, height: "100%", background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           {navContent(false)}
         </div>
       </div>
@@ -304,6 +306,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
     <div
       ref={overlayRef}
       onClick={handleBackdrop}
+      className="sidebar-container"
       style={{
         position: "fixed",
         inset: 0,
@@ -316,10 +319,10 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
     >
       <div style={{
         width: "100%",
-        background: "#1e1e1e",
+        background: "var(--sidebar-bg)",
         display: "flex",
         flexDirection: "column",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+        boxShadow: "var(--shadow)",
         maxHeight: animate ? "80vh" : "0px",
         overflow: "hidden",
         transition: "max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1)",

@@ -1,5 +1,5 @@
 const ProgressBar = ({ value }: { value: number }) => (
-  <div style={{ width: 80, height: 7, background: "#eee", borderRadius: 4, overflow: "hidden" }}>
+  <div style={{ width: 80, height: 7, background: "var(--color-progress-bg)", borderRadius: 4, overflow: "hidden" }}>
     <div
       style={{
         width: `${value}%`,

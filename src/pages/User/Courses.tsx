@@ -41,7 +41,7 @@ const Courses = () => {
   const lastOngoing = allCourses.find((c) => c.status === "Ongoing");
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <style>{`
         .courses-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 28px; }
         @media (max-width: 1024px) { .courses-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -55,20 +55,20 @@ const Courses = () => {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <PageTransition>
-            <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 24px" }}>My Courses</h1>
+            <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 24px", color: "var(--color-text-header)" }}>My Courses</h1>
 
             <CourseFilterNav counts={counts} active={activeFilter} onChange={setActiveFilter} />
 
             <div className="courses-grid">
               {filtered.map((course) => <CourseCard key={course.id} course={course} />)}
               {filtered.length === 0 && (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "#aaa", fontSize: 14 }}>No courses found.</div>
+                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)", fontSize: 14 }}>No courses found.</div>
               )}
             </div>
 
             {/* Continue Banner */}
             {lastOngoing && (
-              <div className="continue-banner" style={{ background: "white", borderRadius: 12, padding: "16px 20px", boxShadow: "0 2px 10px rgba(0,0,0,0.07)", border: "1px solid #f0f0f0", display: "flex", alignItems: "center", gap: 16 }}>
+              <div className="continue-banner" style={{ background: "var(--color-surface)", borderRadius: 12, padding: "16px 20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: 16 }}>
                 <style>{`
                   @media (max-width: 600px) {
                     .continue-banner {
@@ -99,9 +99,9 @@ const Courses = () => {
                     {lastOngoing.icon}
                   </div>
                   <div className="banner-content" style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: "#1a1a1a" }}>Continue: {lastOngoing.name}</div>
-                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{lastOngoing.lastModule}</div>
-                    <div style={{ marginTop: 8, height: 5, background: "#f0f0f0", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: "var(--color-text-header)" }}>Continue: {lastOngoing.name}</div>
+                    <div style={{ fontSize: 12, color: "var(--color-text-muted)", marginTop: 2 }}>{lastOngoing.lastModule}</div>
+                    <div style={{ marginTop: 8, height: 5, background: "var(--color-bg-muted)", borderRadius: 99, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${lastOngoing.progress}%`, background: "#FF6B00", borderRadius: 99 }} />
                     </div>
                   </div>

@@ -5,7 +5,7 @@ import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import ProfileCard from "../../components/common/ProfileCard/ProfileCard";
-import { Lock, Eye, EyeOff, IdCard, ShieldCheck, Check, X, type LucideIcon } from "lucide-react";
+import { Lock, IdCard, ShieldCheck, Check, X, type LucideIcon } from "lucide-react";
 import PageTransition from "../../components/common/PageTransition";
 
 
@@ -20,8 +20,6 @@ const getStrength = (pw: string) => {
   const strength = pw.length === 0 ? null : passed <= 2 ? "weak" : passed <= 4 ? "medium" : "strong";
   return { checks, strength };
 };
-const SC = { weak: "#e74c3c", medium: "#f39c12", strong: "#27ae60" };
-const SL = { weak: "Weak", medium: "Medium", strong: "Strong" };
 
 /* ── Small components ── */
 type InputBoxProps = {
@@ -35,32 +33,32 @@ type InputBoxProps = {
 
 const InputBox = ({ label, icon: Icon, value, type = "text", readOnly, rightEl }: InputBoxProps) => (
   <div style={{ flex: 1, minWidth: 0 }}>
-    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>{label}</label>
-    <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", background: readOnly ? "#fafafa" : "white" }}>
-      {Icon && <Icon size={16} color="#aaa" style={{ flexShrink: 0 }} />}
-      <input type={type} value={value} readOnly={readOnly} onChange={() => { }} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
+    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)", marginBottom: 6 }}>{label}</label>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid var(--color-border)", borderRadius: 8, padding: "9px 12px", background: readOnly ? "var(--color-bg-subtle)" : "var(--color-surface)" }}>
+      {Icon && <Icon size={16} color="var(--color-text-muted)" style={{ opacity: 0.6, flexShrink: 0 }} />}
+      <input type={type} value={value} readOnly={readOnly} onChange={() => { }} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "var(--color-text)", minWidth: 0 }} />
       {rightEl}
     </div>
   </div>
 );
 
 const SectionTitle = ({ icon: Icon, title }: { icon: LucideIcon; title: string }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px 12px", borderBottom: "1px solid #f0f0f0" }}>
-    <div style={{ width: 24, height: 24, borderRadius: 6, background: "#fff7ed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px 12px", borderBottom: "1px solid var(--color-border)" }}>
+    <div style={{ width: 24, height: 24, borderRadius: 6, background: "var(--color-bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       <Icon size={13} color="#FF6B00" />
     </div>
-    <span style={{ fontSize: 11, fontWeight: 800, color: "#555", textTransform: "uppercase", letterSpacing: "0.12em" }}>{title}</span>
+    <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.12em" }}>{title}</span>
   </div>
 );
 
 const SuccessModal = ({ message, onClose }: { message: string; onClose: () => void }) => (
-  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", animation: "modal-fade-in 0.2s ease" }}>
-    <div style={{ background: "white", borderRadius: 16, padding: "36px 40px", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.15)", animation: "modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
-      <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#f0fdf4", border: "2px solid #bbf7d0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", animation: "modal-fade-in 0.2s ease", backdropFilter: "blur(4px)" }}>
+    <div style={{ background: "var(--color-surface)", borderRadius: 16, padding: "36px 40px", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", animation: "modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)", border: "1px solid var(--color-border)" }}>
+      <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(34, 197, 94, 0.1)", border: "2px solid rgba(34, 197, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
         <Check size={28} color="#22c55e" />
       </div>
-      <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a", margin: "0 0 8px" }}>Success!</h3>
-      <p style={{ fontSize: 13, color: "#666", margin: "0 0 24px", lineHeight: 1.6 }}>{message}</p>
+      <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--color-text-header)", margin: "0 0 8px" }}>Success!</h3>
+      <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 24px", lineHeight: 1.6 }}>{message}</p>
       <button onClick={onClose} style={{ background: "#FF6B00", color: "white", border: "none", borderRadius: 8, padding: "10px 32px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>Done</button>
     </div>
   </div>
@@ -68,10 +66,10 @@ const SuccessModal = ({ message, onClose }: { message: string; onClose: () => vo
 
 const ReqRow = ({ met, label }: { met: boolean; label: string }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-    <div style={{ width: 16, height: 16, borderRadius: "50%", background: met ? "#f0fdf4" : "#fef2f2", border: `1.5px solid ${met ? "#22c55e" : "#fca5a5"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: 16, height: 16, borderRadius: "50%", background: met ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)", border: `1.5px solid ${met ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {met ? <Check size={9} color="#22c55e" /> : <X size={9} color="#f87171" />}
     </div>
-    <span style={{ fontSize: 11, color: met ? "#16a34a" : "#888" }}>{label}</span>
+    <span style={{ fontSize: 11, color: met ? "#22c55e" : "var(--color-text-muted)" }}>{label}</span>
   </div>
 );
 
@@ -84,18 +82,10 @@ const Profile = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [newPassword] = useState("");
 
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
-
-  const { checks, strength } = getStrength(newPassword);
-  const passwordValid = Object.values(checks).every(Boolean) && newPassword === confirmPassword && newPassword.length > 0;
 
   const profileData = {
     lastName: user?.lastname || "",
@@ -127,7 +117,6 @@ const Profile = () => {
       setShowSuccessModal(true);
     } catch (err) {
       console.error("Failed to update profile:", err);
-      // Fallback for user feedback if needed
     }
   };
 
@@ -144,15 +133,8 @@ const Profile = () => {
     }
   };
 
-  const handleSavePassword = () => {
-    setChangingPassword(false);
-    setNewPassword(""); setConfirmPassword("");
-    setSuccessMessage("Your password has been changed successfully.");
-    setShowSuccessModal(true);
-  };
-
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <style>{`
         .acct-row { display: flex; gap: 20px; padding: 16px; }
         .pw-fields { display: flex; gap: 20px; padding: 0 16px 16px; }
@@ -171,7 +153,7 @@ const Profile = () => {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <PageTransition>
-            <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 20px" }}>Profile</h1>
+            <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 20px", color: "var(--color-text-header)" }}>Profile</h1>
 
             {/* ── Profile Card (reusable component) ── */}
             <div style={{ marginBottom: 16 }}>
@@ -185,8 +167,8 @@ const Profile = () => {
             </div>
 
             {/* ── Account Settings ── */}
-            <div style={{ background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.07)", border: "1px solid #f0f0f0", marginBottom: 28 }}>
-              <div style={{ height: 5, background: "linear-gradient(90deg,#e0e0e0,#f0f0f0)" }} />
+            <div style={{ background: "var(--color-surface)", borderRadius: 14, overflow: "hidden", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)", marginBottom: 28 }}>
+              <div style={{ height: 5, background: "var(--color-bg-muted)" }} />
               <SectionTitle icon={ShieldCheck} title="Account Settings" />
 
               <div className="acct-row">
@@ -202,7 +184,7 @@ const Profile = () => {
               <div style={{ paddingLeft: "calc(50% + 10px)", paddingBottom: 16, marginTop: -8 }}>
                 <button
                   onClick={() => navigate(`/${slug}/settings`, { state: { activeTab: "security" } })}
-                  style={{ background: "none", border: "none", color: "#FF6B00", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, textDecoration: "underline", padding: "0 0 0 12px" }}
+                  style={{ background: "none", border: "none", color: "#FF6B00", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, textDecoration: "underline", padding: "0 0 0 12px" }}
                 >
                   Change Password?
                 </button>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Squash as Hamburger } from "hamburger-react";
 import { Bell, User, X } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { useTheme } from "../../../context/ThemeContext";
 
 const BREAKPOINT = 1024;
 
@@ -29,6 +30,7 @@ const Header = ({
   role = "User",
 }: HeaderProps) => {
   const { company } = useAuth();
+  const { theme, sidebarTheme } = useTheme();
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
@@ -67,12 +69,12 @@ const Header = ({
     <>
       <style>{`
         .desk-burger {
-          background: none; border: none; cursor: pointer; color: #555;
+          background: none; border: none; cursor: pointer; color: var(--color-text-muted);
           display: flex; align-items: center; justify-content: center;
           width: 36px; height: 36px; border-radius: 8px;
           transition: background 0.2s ease, color 0.2s ease; flex-shrink: 0;
         }
-        .desk-burger:hover { background: #f0f0f0; color: #FF6B00; }
+        .desk-burger:hover { background: var(--color-bg-hover); color: #FF6B00; }
         .desk-burger-icon { display: flex; flex-direction: column; gap: 5px; width: 20px; }
         .desk-burger-line {
           display: block; height: 2px; width: 100%; background: currentColor; border-radius: 2px;
@@ -91,17 +93,17 @@ const Header = ({
           padding: 6px; border-radius: 8px;
           transition: background 0.2s ease;
         }
-        .notif-btn:hover { background: #f0f0f0; }
+        .notif-btn:hover { background: var(--color-bg-hover); }
 
         .notif-dropdown {
           position: absolute;
           top: calc(100% + 10px);
           right: 0;
           width: 320px;
-          background: white;
+          background: var(--color-surface);
           border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.14);
-          border: 1px solid #f0f0f0;
+          box-shadow: var(--shadow);
+          border: 1px solid var(--color-border);
           z-index: 200;
           overflow: hidden;
           animation: notifFadeIn 0.2s ease;
@@ -137,15 +139,18 @@ const Header = ({
       `}</style>
 
       <div style={{
-        background: "white", padding: "0 24px", height: 60,
+        background: (isMobile && isOpen && sidebarTheme === 'black' && theme === 'light') ? '#1a1a1a' : "var(--color-surface)", 
+        padding: "0 24px", height: 60,
         display: "flex", alignItems: "center", gap: 16,
-        boxShadow: "0 1px 4px rgba(0,0,0,0.08)", zIndex: 10,
+        boxShadow: "var(--shadow)", zIndex: 10,
         flexShrink: 0, position: "relative",
+        transition: "background 0.3s ease",
+        color: (isMobile && isOpen && sidebarTheme === 'black' && theme === 'light') ? '#ffffff' : 'inherit'
       }}>
 
         {/* Burger */}
         {isMobile ? (
-          <Hamburger toggled={isOpen} toggle={onToggleSidebar} size={20} color="#555" duration={0.4} label="Toggle menu" />
+          <Hamburger toggled={isOpen} toggle={onToggleSidebar} size={20} color={(isMobile && isOpen && sidebarTheme === 'black' && theme === 'light') ? '#fff' : "#555"} duration={0.4} label="Toggle menu" />
         ) : (
           <button className={`desk-burger${isOpen ? " desk-burger--open" : ""}`} onClick={onToggleSidebar} aria-label="Toggle menu">
             <div className="desk-burger-icon">
@@ -158,18 +163,18 @@ const Header = ({
 
         {/* Company name — mobile only, centered */}
         {isMobile && (
-          <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontWeight: 700, fontSize: 16, color: "#1a1a1a", whiteSpace: "nowrap", pointerEvents: "none" }}>
+          <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontWeight: 700, fontSize: 16, color: (isMobile && isOpen && sidebarTheme === 'black' && theme === 'light') ? '#fff' : "var(--color-text-header)", whiteSpace: "nowrap", pointerEvents: "none" }}>
             {company?.name ?? "Spark LMS"}
           </span>
         )}
 
         {/* Search — desktop only */}
         {!isMobile && (
-          <div style={{ flex: 1, maxWidth: 380, display: "flex", alignItems: "center", background: "#f4f4f4", borderRadius: 8, padding: "8px 14px", gap: 8 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ flex: 1, maxWidth: 380, display: "flex", alignItems: "center", background: "var(--color-bg-muted)", borderRadius: 8, padding: "8px 14px", gap: 8 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input placeholder={searchPlaceholder} style={{ border: "none", background: "transparent", outline: "none", fontSize: 14, width: "100%", fontFamily: "inherit", color: "#333" }} />
+            <input placeholder={searchPlaceholder} style={{ border: "none", background: "transparent", outline: "none", fontSize: 14, width: "100%", fontFamily: "inherit", color: "var(--color-text)" }} />
           </div>
         )}
 
@@ -179,7 +184,7 @@ const Header = ({
           {/* Bell with dropdown */}
           <div ref={notifRef} style={{ position: "relative" }}>
             <button className="notif-btn" onClick={() => setNotifOpen(prev => !prev)} aria-label="Notifications">
-              <Bell size={22} color={notifOpen ? "#FF6B00" : "#555"} />
+              <Bell size={22} color={notifOpen ? "#FF6B00" : (isMobile && isOpen && sidebarTheme === 'black' && theme === 'light') ? "#fff" : "#555"} />
               {unreadCount > 0 && (
                 <span style={{
                   position: "absolute", top: 2, right: 2,
@@ -249,17 +254,17 @@ const Header = ({
               onClick={goToProfile}
               title="View Profile"
               style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", borderRadius: 8, padding: "4px 8px", transition: "background 0.2s ease" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#f5f5f5"}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--color-bg-hover)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--color-bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt={user?.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
-                  <User size={18} color="#888" />
+                  <User size={18} color="var(--color-text-muted)" />
                 )}
               </div>
-              <span style={{ fontWeight: 600, fontSize: 14, color: "#1a1a1a" }}>{user?.name}</span>
+              <span style={{ fontWeight: 600, fontSize: 14, color: "var(--color-text-header)" }}>{user?.name}</span>
             </div>
           )}
 

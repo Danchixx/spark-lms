@@ -10,10 +10,12 @@ import {
 } from "../../components/ui/SettingsCard/SettingsHelpers";
 import useSidebar from "../../hooks/useSidebar";
 import PageTransition from "../../components/common/PageTransition";
+import { useTheme } from "../../context/ThemeContext";
 import {
   Building2, Bell, ShieldCheck, Palette,
   Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar
 } from "lucide-react";
+import { color } from "framer-motion";
 
 /* ── Nav items (User-only: no Organization, no Billing) ── */
 const USER_TABS = [
@@ -50,7 +52,7 @@ const CompanyPanel = () => {
           } : {}}
         >
           <div className="company-logo-overlay">
-            <div className="logo-circle" style={{ background: "white", border: "1.5px solid #e0e0e0" }}>
+            <div className="logo-circle" style={{ background: "var(--color-surface)", border: "1.5px solid var(--color-border)" }}>
               {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
                 ? <img src={company.logo_url} alt={company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
                 : <span style={{ fontSize: 24, fontWeight: 900, color: company.color || "#FF6B00" }}>{company.name?.substring(0, 2).toUpperCase()}</span>}
@@ -202,12 +204,12 @@ type PwFieldProps = {
 const PwField = ({ label, value, onChange, show, onToggle, placeholder }: PwFieldProps) => (
   <div className="settings-field">
     <div className="settings-field-label">{label}</div>
-    <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", background: "white", transition: "border-color 0.15s" }}
+    <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid var(--color-border)", borderRadius: 8, padding: "9px 12px", background: "var(--color-surface)", transition: "border-color 0.15s" }}
       onFocus={(e) => e.currentTarget.style.borderColor = "#FF6B00"}
-      onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}>
-      <Lock size={15} color="#aaa" style={{ flexShrink: 0 }} />
-      <input type={show ? "text" : "password"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
-      <button onClick={onToggle} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex", alignItems: "center" }}>
+      onBlur={(e) => e.currentTarget.style.borderColor = "var(--color-border)"}>
+      <Lock size={15} color="var(--color-text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
+      <input type={show ? "text" : "password"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "var(--color-text)", minWidth: 0 }} />
+      <button onClick={onToggle} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", display: "flex", alignItems: "center", opacity: 0.6 }}>
         {show ? <EyeOff size={14} /> : <Eye size={14} />}
       </button>
     </div>
@@ -260,7 +262,7 @@ const SecurityPanel = () => {
               ))}
             </div>
             <span style={{ fontSize: 11, fontWeight: 700, color: (STRENGTH_COLORS as any)[strength as any] }}>{(STRENGTH_LABELS as any)[strength as any]}</span>
-            <div style={{ marginTop: 8, padding: "10px 12px", background: "#f9f9f9", borderRadius: 8, border: "1px solid #f0f0f0" }}>
+            <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--color-bg-subtle)", borderRadius: 8, border: "1px solid var(--color-border)" }}>
               <ReqRow met={checks.length} label="At least 8 characters" />
               <ReqRow met={checks.letter} label="Contains a letter" />
               <ReqRow met={checks.number} label="Contains a number" />
@@ -283,7 +285,7 @@ const SecurityPanel = () => {
 };
 
 const AppearancePanel = () => {
-  const [theme, setTheme] = useState("light");
+  const { theme, setTheme, sidebarTheme, setSidebarTheme } = useTheme();
   const [font, setFont] = useState("DM Sans");
   const [collapseSidebar, setCollapseSidebar] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
@@ -303,17 +305,42 @@ const AppearancePanel = () => {
             { key: "light", label: "Light (Default)" },
             { key: "dark", label: "Dark" },
           ].map((t) => (
-            <div key={t.key} className={`theme-card ${theme === t.key ? "selected" : ""}`} onClick={() => setTheme(t.key)}>
+            <div key={t.key} className={`theme-card ${theme === t.key ? "selected" : ""}`} onClick={() => setTheme(t.key as "light" | "dark")}>
               <div className={`theme-card-preview ${t.key}`}>
-                <div className="theme-preview-bar" style={{ width: "70%", background: t.key === "light" ? "#ddd" : "#444" }} />
-                <div className="theme-preview-bar" style={{ width: "50%", background: t.key === "light" ? "#ddd" : "#444" }} />
-                <div className="theme-preview-bar" style={{ width: "60%", background: t.key === "light" ? "#ddd" : "#444" }} />
+                <div className="theme-preview-sidebar" />
+                <div className="theme-preview-content">
+                  <div className="theme-preview-line" style={{ width: "80%" }} />
+                  <div className="theme-preview-line" style={{ width: "50%" }} />
+                  <div className="theme-preview-line" style={{ width: "65%" }} />
+                </div>
               </div>
               <div className="theme-card-label">{t.label}</div>
             </div>
           ))}
         </div>
       </div>
+      
+      {theme === 'light' && (
+        <div className="card-inner" style={{ marginBottom: 20 }}>
+          <div className="settings-card-header">Sidebar Theme</div>
+          <div className="theme-options">
+            {[
+              { key: "light", label: "Light (Default)" },
+              { key: "black", label: "Black" },
+            ].map((t) => (
+              <div key={t.key} className={`theme-card ${sidebarTheme === t.key ? "selected" : ""}`} onClick={() => setSidebarTheme(t.key as "light" | "black")}>
+                <div className={`theme-card-preview ${t.key === 'black' ? 'black-sidebar' : 'light'}`}>
+                  <div className="theme-preview-sidebar" />
+                  <div className="theme-preview-content">
+                    <div className="theme-preview-line" style={{ width: "60%" }} />
+                  </div>
+                </div>
+                <div className="theme-card-label">{t.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card-inner" style={{ marginBottom: 20 }}>
         <div className="settings-card-header">Interface Font</div>
@@ -331,15 +358,15 @@ const AppearancePanel = () => {
         <div className="settings-card-header">Sidebar Behavior</div>
         <div className="toggle-row">
           <div className="toggle-info">
-            <div className="toggle-label">Collapse Sidebar</div>
+            <div className="toggle-label">Collapse Sidebar <span style={{ color: "gray" }}>(Only for Desktop)</span> </div>
             <div className="toggle-desc">Show only icons until hovered — saves horizontal space</div>
           </div>
           <Toggle checked={collapseSidebar} onChange={setCollapseSidebar} />
         </div>
         <div className="toggle-row">
           <div className="toggle-info">
-            <div className="toggle-label">Show Labels</div>
-            <div className="toggle-desc">Display text labels alongside sidebar icons</div>
+            <div className="toggle-label">Show Icons</div>
+            <div className="toggle-desc">Display icons alongside text labels</div>
           </div>
           <Toggle checked={showLabels} onChange={setShowLabels} />
         </div>
@@ -366,7 +393,7 @@ const Settings = () => {
   const defaultTab = location.state?.activeTab || "company";
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Settings" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>

@@ -90,7 +90,7 @@ const SettingsCard = ({ tabs = [], defaultTab, title = "Settings", children }: S
 
   return (
     <SettingsCardContext.Provider value={{ registerRef }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 24px", color: "#1a1a1a" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 24px", color: "var(--color-text-header)" }}>
         {title}
       </h1>
 

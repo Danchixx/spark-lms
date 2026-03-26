@@ -1,11 +1,11 @@
 import React from "react";
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  Completed: { bg: "#E0EFE5", color: "#0E5E4A" },
-  Verified: { bg: "#E0EFE5", color: "#0E5E4A" },
-  Ongoing: { bg: "#FDF1CC", color: "#8A5E00" },
-  "Not Started": { bg: "#F0F0F0", color: "#324B6E" },
-  "Not Earned Yet": { bg: "#F0F0F0", color: "#324B6E" },
+  Completed: { bg: "rgba(39, 174, 96, 0.12)", color: "#27ae60" },
+  Verified: { bg: "rgba(39, 174, 96, 0.12)", color: "#27ae60" },
+  Ongoing: { bg: "rgba(255, 107, 0, 0.12)", color: "#FF6B00" },
+  "Not Started": { bg: "rgba(107, 114, 128, 0.12)", color: "#6b7280" },
+  "Not Earned Yet": { bg: "rgba(107, 114, 128, 0.12)", color: "#6b7280" },
 };
 
 type StatusBadgeProps = {
@@ -15,7 +15,7 @@ type StatusBadgeProps = {
 };
 
 const StatusBadge = ({ status, children, style = {} }: StatusBadgeProps) => {
-  const s = STATUS_STYLES[status] || STATUS_STYLES["Not Started"];
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES["Not Started"]!;
   return (
     <span
       style={{
