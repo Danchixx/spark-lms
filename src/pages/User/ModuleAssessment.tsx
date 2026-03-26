@@ -152,7 +152,7 @@ const ModuleAssessment = () => {
 
   return (
     <>
-      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -168,9 +168,9 @@ const ModuleAssessment = () => {
                   Modules
                 </Button>
                 <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-                <span style={{ fontWeight: 600, color: "#1a1a1a" }}>Module {module.id}</span>
+                <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {module.id}</span>
                 <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-                <span style={{ fontWeight: 600, color: "#1a1a1a" }}>Assessment</span>
+                <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Assessment</span>
               </div>
 
               {/* Timer Badge */}
@@ -209,37 +209,37 @@ const ModuleAssessment = () => {
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
                 {/* Assessment Info */}
-                <div style={{ background: "white", borderRadius: 12, padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 16, borderBottom: "1px solid #eee", paddingBottom: 12 }}>
+                <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 16, borderBottom: "1px solid var(--color-border)", paddingBottom: 12 }}>
                     Assessment Info
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#888" }}>Total Questions:</span>
-                      <span style={{ fontWeight: 700 }}>{totalQuestions}</span>
+                      <span style={{ color: "var(--color-text-muted)" }}>Total Questions:</span>
+                      <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>{totalQuestions}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#888" }}>Answered:</span>
+                      <span style={{ color: "var(--color-text-muted)" }}>Answered:</span>
                       <span style={{ fontWeight: 700, color: "#FF6B00" }}>{answeredCount}/{totalQuestions}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#888" }}>Passing Score:</span>
-                      <span style={{ fontWeight: 700 }}>70%</span>
+                      <span style={{ color: "var(--color-text-muted)" }}>Passing Score:</span>
+                      <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>70%</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#888" }}>Time Left:</span>
+                      <span style={{ color: "var(--color-text-muted)" }}>Time Left:</span>
                       <span style={{ fontWeight: 700, color: "#FF6B00" }}>{formatTime(timeLeft)}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#888" }}>Attempts:</span>
-                      <span style={{ fontWeight: 700 }}>1st Attempt</span>
+                      <span style={{ color: "var(--color-text-muted)" }}>Attempts:</span>
+                      <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>1st Attempt</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Question Map */}
-                <div style={{ background: "white", borderRadius: 12, padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 16 }}>
+                <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 16 }}>
                     Question Map
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 20 }}>
@@ -254,9 +254,9 @@ const ModuleAssessment = () => {
                             width: 36, height: 36, borderRadius: 6,
                             display: "flex", alignItems: "center", justifyContent: "center",
                             fontSize: 13, fontWeight: 700, cursor: "pointer",
-                            border: isCurrent ? "2px solid #FF6B00" : "1px solid #ddd",
-                            background: isAnswered ? "#FF6B00" : "white",
-                            color: isAnswered ? "white" : isCurrent ? "#FF6B00" : "#888",
+                            border: isCurrent ? "2px solid #FF6B00" : "1px solid var(--color-border)",
+                            background: isAnswered ? "#FF6B00" : "var(--color-bg-muted)",
+                            color: isAnswered ? "white" : isCurrent ? "#FF6B00" : "var(--color-text-muted)",
                             transition: "all 0.2s"
                           }}
                         >
@@ -267,8 +267,9 @@ const ModuleAssessment = () => {
                   </div>
 
                   <div style={{
-                    background: "#fef5ec", borderRadius: 8, padding: "12px 14px",
-                    fontSize: 11, color: "#666", lineHeight: 1.5, marginBottom: 16
+                    background: "var(--color-bg-subtle)", borderRadius: 8, padding: "12px 14px",
+                    fontSize: 11, color: "var(--color-text-muted)", lineHeight: 1.5, marginBottom: 16,
+                    border: "1px solid var(--color-border)"
                   }}>
                     <strong>NOTE:</strong> You can revisit any questions before final submission.
                   </div>

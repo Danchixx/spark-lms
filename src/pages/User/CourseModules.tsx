@@ -53,7 +53,7 @@ const CourseModules = () => {
 
   return (
     <>
-      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -67,8 +67,8 @@ const CourseModules = () => {
               <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(`/${slug}/courses`)}>
                 My Courses
               </Button>
-              <span style={{ color: "#666", fontWeight: "600" }}>&gt;</span>
-              <span style={{ fontWeight: 600, color: "#1a1a1a" }}>{courseData.name}</span>
+              <span style={{ color: "var(--color-text-muted)", fontWeight: "600" }}>&gt;</span>
+              <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>{courseData.name}</span>
             </div>
 
             {/* Main Hero Banner */}
@@ -100,9 +100,9 @@ const CourseModules = () => {
             </div>
 
             {/* Progress Bar Container */}
-            <div style={{ background: "white", borderRadius: 12, padding: "16px 24px", display: "flex", alignItems: "center", gap: 24, marginBottom: 32, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
-              <span style={{ fontSize: 13, color: "#666", fontWeight: 600, whiteSpace: "nowrap" }}>Your Progress</span>
-              <div style={{ flex: 1, height: 14, background: "#f0f0f0", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "16px 24px", display: "flex", alignItems: "center", gap: 24, marginBottom: 32, boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+              <span style={{ fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>Your Progress</span>
+              <div style={{ flex: 1, height: 14, background: "var(--color-bg-muted)", borderRadius: 99, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${courseData.progress}%`, background: "linear-gradient(90deg, #FF6B00, #ff9e40)", borderRadius: 99 }} />
               </div>
               <span style={{ fontSize: 13, color: "#FF6B00", fontWeight: 700, whiteSpace: "nowrap" }}>{courseData.progress}% Complete</span>
@@ -121,11 +121,11 @@ const CourseModules = () => {
 
                 return (
                   <div key={module.id} style={{
-                    background: "white",
+                    background: "var(--color-surface)",
                     borderRadius: 12,
                     overflow: "hidden",
-                    boxShadow: isExpanded ? "0 4px 16px rgba(255, 107, 0, 0.15)" : "0 2px 8px rgba(0,0,0,0.04)",
-                    border: `1px solid ${isExpanded ? "#FF6B00" : "#eee"}`,
+                    boxShadow: isExpanded ? "0 4px 16px rgba(255, 107, 0, 0.15)" : "var(--shadow)",
+                    border: `1px solid ${isExpanded ? "#FF6B00" : "var(--color-border)"}`,
                     transition: "all 0.3s ease" // Smooth transition for the container
                   }}>
                     {/* Module Header */}
@@ -150,8 +150,8 @@ const CourseModules = () => {
                       </div>
 
                       <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700, color: "#1a1a1a" }}>Module {module.id}: {module.name}</h3>
-                        <div style={{ fontSize: 13, color: "#888" }}>
+                        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700, color: "var(--color-text-header)" }}>Module {module.id}: {module.name}</h3>
+                        <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
                           {module.unitsCount} Lessons · {module.progressText}
                         </div>
                       </div>
@@ -175,13 +175,13 @@ const CourseModules = () => {
                         <div key={unit.id} style={{
                           display: "flex", alignItems: "center", gap: 16,
                           padding: "16px", borderRadius: 8,
-                          border: "1px solid #ddd", background: "white"
+                          border: "1px solid var(--color-border)", background: "var(--color-surface)"
                         }}>
-                          <div style={{ background: "#f5f5f5", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>
+                          <div style={{ background: "var(--color-bg-muted)", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-text-muted)" }}>
                             {getUnitIcon(unit.type)}
                           </div>
 
-                          <div style={{ flex: 1, fontWeight: 600, color: "#1a1a1a", fontSize: 14 }}>
+                          <div style={{ flex: 1, fontWeight: 600, color: "var(--color-text-header)", fontSize: 14 }}>
                             {unit.title}
                           </div>
 

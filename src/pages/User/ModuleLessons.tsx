@@ -71,7 +71,7 @@ const ModuleLessons = () => {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -86,9 +86,9 @@ const ModuleLessons = () => {
               Modules
             </Button>
             <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-            <span style={{ fontWeight: 600, color: "#1a1a1a" }}>Module {module.id}</span>
+            <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {module.id}</span>
             <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-            <span style={{ fontWeight: 600, color: "#1a1a1a" }}>
+            <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>
               Lesson {currentLessonId}: {currentLesson?.title?.replace(/^(Video:|Reading:|Assessment:)\s*/, '')}
             </span>
           </div>
@@ -111,26 +111,26 @@ const ModuleLessons = () => {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               
               {/* Progress Card */}
-              <div style={{ background: "white", borderRadius: 12, padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", position: "relative", overflow: "hidden" }}>
+              <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", position: "relative", overflow: "hidden", border: "1px solid var(--color-border)" }}>
                 <div style={{ position: "absolute", top: -10, right: -10, opacity: 0.15, width: 80 }}>
                   <img src={sparkLogoImg} alt="Spark" style={{ width: "100%", height: "auto" }} />
                 </div>
                 
-                <div style={{ fontSize: 11, color: "#666", fontWeight: "700", marginBottom: 8, letterSpacing: 0.5 }}>COURSE PROGRESS</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", marginBottom: 8, letterSpacing: 0.5 }}>COURSE PROGRESS</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <div style={{ flex: 1, height: 8, background: "#f0f0f0", borderRadius: 99 }}>
+                  <div style={{ flex: 1, height: 8, background: "var(--color-bg-muted)", borderRadius: 99 }}>
                     <div style={{ height: "100%", width: `${localProgress}%`, background: "#FF6B00", borderRadius: 99 }} />
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <span style={{ fontSize: 24, fontWeight: 800, color: "#FF6B00" }}>{localProgress}%</span>
-                  <span style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>completed</span>
+                  <span style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>completed</span>
                 </div>
               </div>
 
               {/* Module Lessons List */}
-              <div style={{ background: "white", borderRadius: 12, padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                <div style={{ fontSize: 11, color: "#666", fontWeight: "700", marginBottom: 16, letterSpacing: 0.5, textTransform: "uppercase" }}>MODULE {module.id} LESSONS</div>
+              <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+                <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", marginBottom: 16, letterSpacing: 0.5, textTransform: "uppercase" }}>MODULE {module.id} LESSONS</div>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {localLessons.map((lsn, idx) => {
@@ -145,15 +145,15 @@ const ModuleLessons = () => {
                           display: "flex", alignItems: "center", justifyContent: "space-between",
                           padding: "10px 14px",
                           borderRadius: 8,
-                          background: isActive ? "#ffece0" : "#f8f8f8",
-                          border: `1px solid ${isActive ? "#ffcda8" : "transparent"}`,
+                          background: isActive ? "var(--sidebar-active-bg)" : "var(--color-bg-muted)",
+                          border: `1px solid ${isActive ? "var(--sidebar-active-border)" : "transparent"}`,
                           cursor: "pointer",
                           transition: "all 0.2s"
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: isCompleted || isActive ? "#FF6B00" : "#ccc" }} />
-                          <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#FF6B00" : "#444" }}>
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: isCompleted || isActive ? "#FF6B00" : "var(--color-bg-muted)" }} />
+                          <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#FF6B00" : "var(--color-text)" }}>
                             Lesson {idx + 1}: {lsn?.title?.split(":")[0]?.replace(/^(Video|Reading|Assessment)$/, '').trim() || lsn?.title?.split(":")[0] || ''}
                           </span>
                         </div>
@@ -165,16 +165,16 @@ const ModuleLessons = () => {
               </div>
 
               {/* Quick Notes */}
-              <div style={{ background: "white", borderRadius: 12, padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                <div style={{ fontSize: 11, color: "#666", fontWeight: "700", marginBottom: 16, letterSpacing: 0.5 }}>QUICK NOTES</div>
+              <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+                <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", marginBottom: 16, letterSpacing: 0.5 }}>QUICK NOTES</div>
                 <textarea 
                   value={quickNotes}
                   onChange={(e) => setQuickNotes(e.target.value)}
                   placeholder="Type your notes here..."
                   style={{
                     width: "100%", height: 120, resize: "none",
-                    background: "#f8f8f8", border: "1px solid #e0e0e0", borderRadius: 8,
-                    padding: "12px", fontSize: 13, color: "#333", fontFamily: "inherit",
+                    background: "var(--color-bg-muted)", border: "1px solid var(--color-border)", borderRadius: 8,
+                    padding: "12px", fontSize: 13, color: "var(--color-text)", fontFamily: "inherit",
                     outline: "none"
                   }}
                 />

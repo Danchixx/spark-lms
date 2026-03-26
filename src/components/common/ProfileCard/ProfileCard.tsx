@@ -210,7 +210,7 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
           {/* Avatar Panel */}
           <div className="avatar-panel">
             <div style={{ position: "relative", marginBottom: 16 }}>
-              <div style={{ width: 150, height: 150, borderRadius: "50%", background: "var(--color-bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 0 0 4px var(--color-surface), 0 2px 10px rgba(0,0,0,0.1)", position: "relative" }}>
+              <div style={{ width: 150, height: 150, borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 0 0 4px var(--color-surface), 0 2px 10px rgba(0,0,0,0.1)", position: "relative", border: "1px solid var(--color-border)" }}>
                 {profileData.avatarUrl ? (
                   <img src={profileData.avatarUrl} alt={fullName} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: isUploading ? 0.3 : 1, transition: "opacity 0.2s ease" }} />
                 ) : (

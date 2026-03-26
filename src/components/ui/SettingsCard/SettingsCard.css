@@ -265,14 +265,15 @@
 }
 
 .workspace-url-input .prefix {
-  padding: 10px 14px;
+  padding: 10px 16px;
   font-size: 13px;
   color: var(--color-text-muted);
-  border-right: 1px solid var(--color-border);
-  background: var(--color-bg-muted);
+  border-right: 1.5px solid var(--color-border);
+  background: var(--color-bg-subtle);
   white-space: nowrap;
   display: flex;
   align-items: center;
+  font-weight: 500;
 }
 
 .workspace-url-input input {
@@ -280,11 +281,43 @@
   background: transparent;
   flex: 1;
   font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-  padding: 10px 14px;
+  font-weight: 700;
+  color: var(--color-text-header);
+  padding: 10px 16px;
   outline: none;
   min-width: 0;
+}
+
+.copy-url-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.copy-url-btn:hover {
+  background: var(--color-bg-hover);
+  border-color: #FF6B00;
+  color: #FF6B00;
+}
+
+.copy-url-btn.copied {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: white;
 }
 
 .field-hint {

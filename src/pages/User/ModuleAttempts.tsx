@@ -74,7 +74,7 @@ const ModuleAttempts = () => {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -89,23 +89,24 @@ const ModuleAttempts = () => {
               Modules
             </Button>
             <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-            <span style={{ fontWeight: 600, color: "#1a1a1a" }}>Module {module.id}</span>
+            <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {module.id}</span>
             <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-            <span style={{ fontWeight: 600, color: "#1a1a1a" }}>Attempts</span>
+            <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Attempts</span>
           </div>
 
           {/* Header Card */}
           <div style={{
-            background: "white", borderRadius: 12, padding: "28px 32px", marginBottom: 24,
-            boxShadow: "0 2px 12px rgba(0,0,0,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center"
+            background: "var(--color-surface)", borderRadius: 12, padding: "28px 32px", marginBottom: 24,
+            boxShadow: "var(--shadow)", display: "flex", justifyContent: "space-between", alignItems: "center",
+            border: "1px solid var(--color-border)"
           }}>
             <div>
-              <h2 style={{ margin: "0 0 6px 0", fontSize: 22, fontWeight: 700 }}>
+              <h2 style={{ margin: "0 0 6px 0", fontSize: 22, fontWeight: 700, color: "var(--color-text-header)" }}>
                 Module {module.id} Assessment — {module.name}
               </h2>
-              <p style={{ margin: 0, fontSize: 14, color: "#888" }}>
+              <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)" }}>
                 Passing score: <strong style={{ color: "#FF6B00" }}>{PASSING_SCORE}%</strong> · 
-                {" "}Total attempts: <strong>{attempts.length}</strong> · 
+                {" "}Total attempts: <strong style={{color: "var(--color-text-header)"}}>{attempts.length}</strong> · 
                 {" "}Best score: <strong style={{ color: bestScore >= PASSING_SCORE ? "#27ae60" : "#e74c3c" }}>{bestScore}%</strong>
               </p>
             </div>
@@ -148,21 +149,21 @@ const ModuleAttempts = () => {
           {/* Attempts Table */}
           {attempts.length === 0 ? (
             <div style={{
-              background: "white", borderRadius: 12, padding: "60px 32px",
-              textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+              background: "var(--color-surface)", borderRadius: 12, padding: "60px 32px",
+              textAlign: "center", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)"
             }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>📝</div>
-              <h3 style={{ margin: "0 0 8px 0", fontSize: 18, color: "#1a1a1a" }}>No Attempts Yet</h3>
-              <p style={{ color: "#888", fontSize: 14, marginBottom: 24 }}>Take the assessment to see your results here.</p>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: 18, color: "var(--color-text-header)" }}>No Attempts Yet</h3>
+              <p style={{ color: "var(--color-text-muted)", fontSize: 14, marginBottom: 24 }}>Take the assessment to see your results here.</p>
               <Button variant="primary" rounded="pill" onClick={handleReAssess}>Start Assessment</Button>
             </div>
           ) : (
-            <div style={{ background: "white", borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ background: "var(--color-surface)", borderRadius: 12, overflow: "hidden", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
               {/* Table Header */}
               <div style={{
                 display: "grid", gridTemplateColumns: "80px 1fr 1fr 120px 120px 120px",
-                padding: "14px 24px", borderBottom: "2px solid #f0f0f0",
-                fontSize: 11, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: 0.5
+                padding: "14px 24px", borderBottom: "2px solid var(--color-border)",
+                fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: 0.5
               }}>
                 <span>#</span>
                 <span>Date</span>
@@ -180,14 +181,14 @@ const ModuleAttempts = () => {
                     key={attempt.id}
                     style={{
                       display: "grid", gridTemplateColumns: "80px 1fr 1fr 120px 120px 120px",
-                      padding: "18px 24px", borderBottom: "1px solid #f0f0f0",
+                      padding: "18px 24px", borderBottom: "1px solid var(--color-border)",
                       fontSize: 14, alignItems: "center",
-                      background: idx % 2 === 0 ? "white" : "#fafafa"
+                      background: idx % 2 === 0 ? "var(--color-surface)" : "var(--color-bg-muted)"
                     }}
                   >
-                    <span style={{ fontWeight: 700, color: "#1a1a1a" }}>Attempt {attempt.id}</span>
-                    <span style={{ color: "#666" }}>{attempt.date}</span>
-                    <span style={{ color: "#666" }}>{attempt.time}</span>
+                    <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>Attempt {attempt.id}</span>
+                    <span style={{ color: "var(--color-text-header)" }}>{attempt.date}</span>
+                    <span style={{ color: "var(--color-text-header)" }}>{attempt.time}</span>
                     <span style={{ fontWeight: 700, color: isPassed ? "#27ae60" : "#e74c3c", fontSize: 16 }}>
                       {attempt.score}%
                     </span>

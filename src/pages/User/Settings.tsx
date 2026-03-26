@@ -13,7 +13,7 @@ import PageTransition from "../../components/common/PageTransition";
 import { useTheme } from "../../context/ThemeContext";
 import {
   Building2, Bell, ShieldCheck, Palette,
-  Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar
+  Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar, Copy, Check
 } from "lucide-react";
 import { color } from "framer-motion";
 
@@ -29,8 +29,17 @@ const USER_TABS = [
 
 const CompanyPanel = () => {
   const { company } = useAuth();
+  const [copied, setCopied] = useState(false);
 
   if (!company) return null;
+
+  const fullUrl = `spark-ph-lms.com/${company.slug}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="section-card">
@@ -92,11 +101,21 @@ const CompanyPanel = () => {
           </div>
           <div className="form-field full-width">
             <label>Workspace URL</label>
-            <div className="workspace-url-input">
-              <span className="prefix">spark-ph-lms.com/</span>
-              <input value={company.slug || ""} readOnly />
+            <div className="workspace-url-input-container">
+              <div className="workspace-url-input">
+                <span className="prefix">spark-ph-lms.com/</span>
+                <input value={company.slug || ""} readOnly />
+                <button 
+                  className={`copy-url-btn ${copied ? 'copied' : ''}`}
+                  onClick={handleCopy}
+                  title="Copy full URL"
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{copied ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
             </div>
-            <span className="field-hint">Your learning portal URL: <strong>spark-ph-lms.com/{company.slug}</strong></span>
+            <span className="field-hint">Your learning portal URL: <strong>{fullUrl}</strong></span>
           </div>
         </div>
       </div>

@@ -18,7 +18,7 @@ const CertificateModal = ({ isOpen, onClose, userName, courseName, date, company
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      background: "rgba(0,0,0,0.5)",
+      background: "rgba(0,0,0,0.75)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 1000,
       padding: "20px",
@@ -29,13 +29,14 @@ const CertificateModal = ({ isOpen, onClose, userName, courseName, date, company
       </style>
 
       <div style={{
-        background: "white",
+        background: "var(--color-surface)",
         borderRadius: "12px",
-        width: "100%", maxWidth: "1000px", // Increased for landscape
-        height: "auto", maxHeight: "90vh", // Keep it within screen height
+        width: "100%", maxWidth: "1000px",
+        height: "auto", maxHeight: "90vh",
         display: "flex", flexDirection: "column",
         position: "relative",
-        boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+        boxShadow: "var(--shadow)",
+        border: "1px solid var(--color-border)",
         overflow: "hidden",
         fontFamily: "'Barlow', sans-serif",
         animation: "modal-scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)"
@@ -44,12 +45,12 @@ const CertificateModal = ({ isOpen, onClose, userName, courseName, date, company
         {/* Close Button */}
         <button
           onClick={onClose}
-          style={{ position: "absolute", top: 16, right: 16, background: "rgba(0,0,0,0.05)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 20 }}
+          style={{ position: "absolute", top: 16, right: 16, background: "var(--color-bg-muted)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 20 }}
         >
-          <X size={20} color="#333" />
+          <X size={20} color="var(--color-text-header)" />
         </button>
 
-        {/* Certificate Paper Canvas - takes remaining space and scrolls if needed on small screens */}
+        {/* Certificate Paper Canvas - stays white */}
         <div style={{ padding: "16px", position: "relative", background: "white", flex: 1, overflowY: "auto", overflowX: "hidden" }}>
 
           {/* Orange Corner SVG Overlays - Made slightly smaller vertically to fit screen */}
@@ -69,11 +70,12 @@ const CertificateModal = ({ isOpen, onClose, userName, courseName, date, company
             <div style={{ display: "flex", justifyContent: "center", gap: 30, marginBottom: 16, alignItems: "center" }}>
               {/* Spark Logo */}
               <img src={sparkLogoImg} alt="Spark Logo" style={{ height: 32, objectFit: "contain" }} onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                if (target.nextElementSibling) (target.nextElementSibling as HTMLElement).style.display = 'flex';
               }} />
               {/* Fallback text if image fails to load */}
-              <div style={{ display: "none", fontSize: 20, fontWeight: 900, color: "#1a1a1a", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "none", fontSize: 20, fontWeight: 900, color: "var(--color-text-header)", alignItems: "center", gap: 6 }}>
                 SPARK <span style={{ color: "#FF6B00", fontSize: 24 }}>🔥</span>
               </div>
 
@@ -144,7 +146,7 @@ const CertificateModal = ({ isOpen, onClose, userName, courseName, date, company
         </div>
 
         {/* Action Buttons Background Bar - Fixed at bottom */}
-        <div style={{ background: "#f9f9f9", padding: "16px 24px", display: "flex", justifyContent: "center", gap: 16, borderTop: "1px solid #eee", zIndex: 20 }}>
+        <div style={{ background: "var(--color-bg-muted)", padding: "16px 24px", display: "flex", justifyContent: "center", gap: 16, borderTop: "1px solid var(--color-border)", zIndex: 20 }}>
           <Button variant="outline" leftIcon={<Download size={18} />}>Download PDF</Button>
           <Button variant="outline" leftIcon={<Share2 size={18} />}>Share</Button>
           <Button variant="primary" style={{ minWidth: 120 }} onClick={onClose}>Close</Button>
