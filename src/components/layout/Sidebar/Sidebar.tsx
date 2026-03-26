@@ -258,8 +258,8 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
             title="View Company Profile"
             style={{
               width: 36, height: 36, borderRadius: "50%",
-              background: "var(--color-bg-subtle)",
-              border: "1.5px solid var(--color-border)",
+              background: "#ffffff",
+              border: "1.5px solid #e2e8f0",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 10, fontWeight: 900, color: company?.color || "#FF6B00",
               flexShrink: 0, overflow: "hidden",

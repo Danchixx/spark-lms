@@ -52,7 +52,7 @@ const CompanyPanel = () => {
           } : {}}
         >
           <div className="company-logo-overlay">
-            <div className="logo-circle" style={{ background: "var(--color-surface)", border: "1.5px solid var(--color-border)" }}>
+            <div className="logo-circle" style={{ background: "#ffffff", border: "1.5px solid #e2e8f0" }}>
               {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
                 ? <img src={company.logo_url} alt={company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
                 : <span style={{ fontSize: 24, fontWeight: 900, color: company.color || "#FF6B00" }}>{company.name?.substring(0, 2).toUpperCase()}</span>}

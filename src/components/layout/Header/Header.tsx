@@ -118,13 +118,13 @@ const Header = ({
 
         .notif-item {
           display: flex; gap: 10px; padding: 12px 16px;
-          border-bottom: 1px solid #f5f5f5; cursor: pointer;
+          border-bottom: 1px solid var(--color-border); cursor: pointer;
           transition: background 0.15s ease; position: relative;
         }
         .notif-item:last-child { border-bottom: none; }
-        .notif-item:hover { background: #fafafa; }
-        .notif-item--unread { background: #fff8f5; }
-        .notif-item--unread:hover { background: #fff2ec; }
+        .notif-item:hover { background: var(--color-bg-hover); }
+        .notif-item--unread { background: color-mix(in srgb, #FF6B00 8%, transparent); }
+        .notif-item--unread:hover { background: color-mix(in srgb, #FF6B00 12%, transparent); }
 
         .notif-dismiss {
           position: absolute; top: 8px; right: 8px;
@@ -201,8 +201,8 @@ const Header = ({
             {notifOpen && (
               <div className="notif-dropdown">
                 {/* Header */}
-                <div style={{ padding: "14px 16px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f0f0f0" }}>
-                  <span style={{ fontWeight: 700, fontSize: 15, color: "#1a1a1a" }}>Notifications</span>
+                <div style={{ padding: "14px 16px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--color-border)" }}>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: "var(--color-text-header)" }}>Notifications</span>
                   {unreadCount > 0 && (
                     <button onClick={markAllRead} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#FF6B00", fontWeight: 600, fontFamily: "inherit" }}>
                       Mark all as read
@@ -224,9 +224,9 @@ const Header = ({
                       </div>
                       {/* Content */}
                       <div style={{ flex: 1, paddingRight: 16 }}>
-                        <div style={{ fontWeight: n.read ? 500 : 700, fontSize: 13, color: "#1a1a1a", marginBottom: 2 }}>{n.title}</div>
-                        <div style={{ fontSize: 12, color: "#777", lineHeight: 1.4 }}>{n.message}</div>
-                        <div style={{ fontSize: 11, color: "#bbb", marginTop: 4 }}>{n.time}</div>
+                        <div style={{ fontWeight: n.read ? 500 : 700, fontSize: 13, color: "var(--color-text-header)", marginBottom: 2 }}>{n.title}</div>
+                        <div style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.4 }}>{n.message}</div>
+                        <div style={{ fontSize: 11, color: "var(--color-text-muted)", opacity: 0.6, marginTop: 4 }}>{n.time}</div>
                       </div>
                       {/* Dismiss */}
                       <button className="notif-dismiss" onClick={e => { e.stopPropagation(); dismiss(n.id); }}>
@@ -238,8 +238,8 @@ const Header = ({
 
                 {/* Footer */}
                 {notifications.length > 0 && (
-                  <div style={{ padding: "10px 16px", borderTop: "1px solid #f0f0f0", textAlign: "center" }}>
-                    <button onClick={() => setNotifications([])} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#aaa", fontFamily: "inherit" }}>
+                  <div style={{ padding: "10px 16px", borderTop: "1px solid var(--color-border)", textAlign: "center" }}>
+                    <button onClick={() => setNotifications([])} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--color-text-muted)", fontFamily: "inherit" }}>
                       Clear all
                     </button>
                   </div>
@@ -257,11 +257,11 @@ const Header = ({
               onMouseEnter={e => e.currentTarget.style.background = "var(--color-bg-hover)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--color-bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#ffffff", border: "1.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt={user?.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
-                  <User size={18} color="var(--color-text-muted)" />
+                  <User size={18} color="#888" />
                 )}
               </div>
               <span style={{ fontWeight: 600, fontSize: 14, color: "var(--color-text-header)" }}>{user?.name}</span>
