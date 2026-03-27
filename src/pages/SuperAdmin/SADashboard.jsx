@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MOCK_TENANTS } from "../../data/mockTenants";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
 import SparkTenants from "./Tenants/SparkTenants";
 
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
+// ... (helpers)
 const daysSince = (isoDate) =>
   Math.floor((Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24));
 
@@ -15,9 +14,7 @@ const avgProgress = (courseActivity) => {
   return Math.round(courseActivity.reduce((s, c) => s + c.progress, 0) / courseActivity.length);
 };
 
-// ─────────────────────────────────────────────────────────────
-// Top Bar  (fixed, full width)
-// ─────────────────────────────────────────────────────────────
+// ... (TopBar component)
 const TopBar = ({ onBurger, user }) => (
   <div style={{
     position: "fixed",
@@ -47,6 +44,7 @@ const TopBar = ({ onBurger, user }) => (
     </div>
 
     <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+      {/* ... (user info) */}
       <span style={{ fontWeight: 700, fontSize: 15, color: "#FF6B00" }}>
         {user?.name?.split(" ")[0] || "Ian"}
       </span>
@@ -71,9 +69,7 @@ const t = {
     fontWeight: 900, fontSize: 20, color: "#222" },
 };
 
-// ─────────────────────────────────────────────────────────────
-// Welcome animation
-// ─────────────────────────────────────────────────────────────
+// ... (WelcomeScreen component)
 const WelcomeScreen = ({ name, onDone }) => {
   useEffect(() => {
     const timer = setTimeout(onDone, 2200);
@@ -111,9 +107,7 @@ const WelcomeScreen = ({ name, onDone }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// Notify Modal
-// ─────────────────────────────────────────────────────────────
+// ... (NotifyModal component)
 const NotifyModal = ({ tenant, onClose }) => {
   const [msg, setMsg] = useState(
     `Hi ${tenant.name} team,\n\nWe noticed your team hasn't been active on the SPARK LMS platform for over a week. We'd love to check in and see how we can help support your learning journey.\n\nPlease feel free to reach out or log in to continue your courses.\n\nBest regards,\nSPARK Admin Team`
@@ -192,9 +186,7 @@ const NotifyModal = ({ tenant, onClose }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// Tenant Activeness Card
-// ─────────────────────────────────────────────────────────────
+// ... (TenantActivityCard component)
 const TenantActivityCard = ({ tenant, onNotify }) => {
   const days     = daysSince(tenant.lastActive);
   const inactive = days >= 7;
@@ -296,9 +288,6 @@ const TenantActivityCard = ({ tenant, onNotify }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// Recent Subscriptions data
-// ─────────────────────────────────────────────────────────────
 const RECENT_SUBS = [
   { name: "Department of Education", since: "Feb. 25 2026", type: "Institute",  bg: "#2980b9", abbr: "DepEd"   },
   { name: "Eleksis Marketing Corp",  since: "Jan. 10 2026", type: "Enterprise", bg: "#c0392b", abbr: "ELEKSIS" },
@@ -309,7 +298,8 @@ const RECENT_SUBS = [
 // ─────────────────────────────────────────────────────────────
 // Dashboard Home
 // ─────────────────────────────────────────────────────────────
-const DashboardHome = ({ onNavigate }) => {
+export const DashboardHome = () => {
+  const navigate = useNavigate();
   const [notifyTenant, setNotifyTenant] = useState(null);
   const inactiveCount = MOCK_TENANTS.filter((t) => daysSince(t.lastActive) >= 7).length;
 
@@ -326,7 +316,7 @@ const DashboardHome = ({ onNavigate }) => {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)",
         gap: 14, marginBottom: 24 }}>
         {STATS.map((s, i) => (
-          <div key={i} onClick={() => onNavigate(s.key)} style={d.statCard}>
+          <div key={i} onClick={() => navigate(`/superadmin/${s.key}`)} style={d.statCard}>
             <div>
               <div style={d.statLabel}>{s.label}</div>
               <div style={d.statValue}>{s.value}</div>
@@ -453,9 +443,7 @@ const d = {
     display: "flex", alignItems: "center", justifyContent: "center" },
 };
 
-// ─────────────────────────────────────────────────────────────
-// Placeholder pages
-// ─────────────────────────────────────────────────────────────
+// ... (ComingSoon component)
 const ComingSoon = ({ label }) => (
   <div style={{ flex: 1, display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center", color: "#aaa", gap: 12,
@@ -475,21 +463,12 @@ const ComingSoon = ({ label }) => (
 // ─────────────────────────────────────────────────────────────
 const SADashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [showWelcome, setShowWelcome] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activePage, setActivePage] = useState("dashboard");
 
-  const renderPage = () => {
-    switch (activePage) {
-      case "dashboard":  return <DashboardHome onNavigate={setActivePage} />;
-      case "tenants":    return <SparkTenants />;
-      case "approvals":  return <ComingSoon label="approvals" />;
-      case "users":      return <ComingSoon label="users" />;
-      case "courses":    return <ComingSoon label="courses" />;
-      case "settings":   return <ComingSoon label="settings" />;
-      default:           return <DashboardHome onNavigate={setActivePage} />;
-    }
-  };
+  // Extract active page from URL (e.g., /superadmin/tenants -> tenants)
+  const activePage = location.pathname.split("/").pop() || "dashboard";
 
   if (showWelcome) {
     return (
@@ -509,20 +488,14 @@ const SADashboard = () => {
       {/* Fixed top bar */}
       <TopBar onBurger={() => setSidebarOpen((v) => !v)} user={user} />
 
-      {/* Fixed sidebar — imported from components/layout/SASidebar */}
+      {/* Fixed sidebar */}
       <SASidebar
         open={sidebarOpen}
         activePage={activePage}
-        onNavigate={setActivePage}
         user={user}
       />
 
-      {/*
-        Page content area:
-        - marginTop pushes it below the fixed top bar
-        - marginLeft shifts it right of the fixed sidebar (with smooth transition)
-        - overflowY: auto makes only THIS area scroll — sidebar stays fixed
-      */}
+      {/* Page content area */}
       <div style={{
         marginTop: TOPBAR_HEIGHT,
         marginLeft: sidebarOpen ? SIDEBAR_WIDTH : 0,
@@ -532,10 +505,18 @@ const SADashboard = () => {
         display: "flex",
         flexDirection: "column",
       }}>
-        {renderPage()}
+        <Outlet />
       </div>
     </div>
   );
 };
+
+// Attach sub-components to SADashboard for easier access in router
+SADashboard.DashboardHome = DashboardHome;
+SADashboard.SparkTenants = SparkTenants;
+SADashboard.Approvals = () => <ComingSoon label="approvals" />;
+SADashboard.Users = () => <ComingSoon label="users" />;
+SADashboard.Courses = () => <ComingSoon label="courses" />;
+SADashboard.Settings = () => <ComingSoon label="settings" />;
 
 export default SADashboard;

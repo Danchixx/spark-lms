@@ -11,6 +11,7 @@ type AuthContextValue = {
   loading: boolean;
   selectCompany: (c: Company | null) => void;
   login: (email: string, password: string) => Promise<unknown>;
+  loginMock: (data: Partial<AppUser>) => void;
   logout: () => Promise<void>;
   updateProfile: (updates: Record<string, unknown>) => Promise<void>;
   uploadAvatar: (file: File) => Promise<string | undefined>;
@@ -99,6 +100,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return data;
   };
 
+  const loginMock = (data: Partial<AppUser>) => {
+    const fullMock: AppUser = {
+      id: -1,
+      company_id: -1,
+      email: "spark-admin@local.test",
+      firstname: "Spark",
+      lastname: "Admin",
+      name: "Spark Admin",
+      role: 'spark_admin',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      is_archived: false,
+      archived_at: null,
+      archived_by: null,
+      middlename: null,
+      avatar_url: null,
+      date_of_birth: null,
+      gender: null,
+      contact_no: null,
+      address: null,
+      employee_id: "SM001",
+      department: "SuperAdmin",
+      job_title: "Global Administrator",
+      date_hired: new Date().toISOString(),
+      ...data
+    } as AppUser;
+    
+    setUser(fullMock);
+    setLoading(false);
+  };
+
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) console.error("Logout error:", error);
@@ -174,7 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, company, selectCompany, login, logout, updateProfile, uploadAvatar, loading }}>
+    <AuthContext.Provider value={{ session, user, company, selectCompany, login, loginMock, logout, updateProfile, uploadAvatar, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,7 @@
-// src/components/layout/SASidebar/SASidebar.jsx
-// Shared sidebar for all SuperAdmin pages.
-// Fixed to the left side of the viewport so it never scrolls with page content.
+import { useNavigate } from "react-router-dom";
+
+// Fixed sidebar for all SuperAdmin pages.
+// ... (NAV and icons constants)
 
 const NAV = {
   overview: [
@@ -70,126 +71,130 @@ const icons = {
 export const SIDEBAR_WIDTH = 220;
 export const TOPBAR_HEIGHT = 52;
 
-const SASidebar = ({ open, activePage, onNavigate, user }) => (
-  <>
-    {/* Fixed sidebar */}
-    <aside style={{
-      position: "fixed",
-      top: TOPBAR_HEIGHT,        // sits below the top bar
-      left: 0,
-      bottom: 0,
-      width: open ? SIDEBAR_WIDTH : 0,
-      background: "#fff",
-      borderRight: open ? "1px solid #eee" : "none",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-      transition: "width .25s ease",
-      zIndex: 100,
-    }}>
-      {/* Nav items */}
-      <nav style={{ flex: 1, padding: "16px 0", minWidth: SIDEBAR_WIDTH, overflowY: "auto" }}>
-        {Object.entries(NAV).map(([section, items]) => (
-          <div key={section} style={{ padding: "0 14px", marginBottom: 8 }}>
-            {/* Section label — small, muted */}
-            <div style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "#bbb",
-              letterSpacing: ".18em",
-              textTransform: "uppercase",
-              padding: "8px 10px 4px",
-              whiteSpace: "nowrap",
-            }}>
-              {section}
-            </div>
+const SASidebar = ({ open, activePage, user }) => {
+  const navigate = useNavigate();
 
-            {/* Nav items — larger text */}
-            {items.map((item) => {
-              const isActive = activePage === item.key;
-              return (
-                <div
-                  key={item.key}
-                  onClick={() => onNavigate(item.key)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    cursor: "pointer",
-                    fontSize: 15,           // larger nav text
-                    color: isActive ? "#FF6B00" : "#868686",
-                    background: isActive ? "#FFF0E6" : "transparent",
-                    transition: "background .15s, color .15s",
-                    whiteSpace: "nowrap",
-                    userSelect: "none",
-                  }}
-                >
-                  <span style={{ color: isActive ? "#FF6B00" : "#888", flexShrink: 0 }}>
-                    {icons[item.key]}
-                  </span>
-                  {item.label}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </nav>
-
-      {/* User chip at the bottom */}
-      <div style={{
-        padding: "12px 14px",
-        borderTop: "1px solid #eee",
-        minWidth: SIDEBAR_WIDTH,
-        flexShrink: 0,
+  return (
+    <>
+      {/* Fixed sidebar */}
+      <aside style={{
+        position: "fixed",
+        top: TOPBAR_HEIGHT,
+        left: 0,
+        bottom: 0,
+        width: open ? SIDEBAR_WIDTH : 0,
+        background: "#fff",
+        borderRight: open ? "1px solid #eee" : "none",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        transition: "width .25s ease",
+        zIndex: 100,
       }}>
+        {/* Nav items */}
+        <nav style={{ flex: 1, padding: "16px 0", minWidth: SIDEBAR_WIDTH, overflowY: "auto" }}>
+          {Object.entries(NAV).map(([section, items]) => (
+            <div key={section} style={{ padding: "0 14px", marginBottom: 8 }}>
+              {/* Section label — small, muted */}
+              <div style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "#bbb",
+                letterSpacing: ".18em",
+                textTransform: "uppercase",
+                padding: "8px 10px 4px",
+                whiteSpace: "nowrap",
+              }}>
+                {section}
+              </div>
+
+              {/* Nav items — larger text */}
+              {items.map((item) => {
+                const isActive = activePage === item.key;
+                return (
+                  <div
+                    key={item.key}
+                    onClick={() => navigate(`/superadmin/${item.key}`)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      fontSize: 15,
+                      color: isActive ? "#FF6B00" : "#868686",
+                      background: isActive ? "#FFF0E6" : "transparent",
+                      transition: "background .15s, color .15s",
+                      whiteSpace: "nowrap",
+                      userSelect: "none",
+                    }}
+                  >
+                    <span style={{ color: isActive ? "#FF6B00" : "#888", flexShrink: 0 }}>
+                      {icons[item.key]}
+                    </span>
+                    {item.label}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* User chip at the bottom */}
         <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "10px 12px",
-          borderRadius: 10,
-          background: "#FFF0E6",
+          padding: "12px 14px",
+          borderTop: "1px solid #eee",
+          minWidth: SIDEBAR_WIDTH,
+          flexShrink: 0,
         }}>
           <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #FF8C00, #c0392b)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            fontSize: 16,
-            flexShrink: 0,
+            gap: 10,
+            padding: "10px 12px",
+            borderRadius: 10,
+            background: "#FFF0E6",
           }}>
-            🔥
-          </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#333", whiteSpace: "nowrap" }}>
-              {user?.name || "Ian Palabrica"}
-            </div>
             <div style={{
-              fontSize: 10,
-              color: "#FF6B00",
-              fontWeight: 700,
-              letterSpacing: ".1em",
-              textTransform: "uppercase",
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #FF8C00, #c0392b)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 16,
+              flexShrink: 0,
             }}>
-              Super Admin
+              🔥
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#333", whiteSpace: "nowrap" }}>
+                {user?.name || "Ian Palabrica"}
+              </div>
+              <div style={{
+                fontSize: 10,
+                color: "#FF6B00",
+                fontWeight: 700,
+                letterSpacing: ".1em",
+                textTransform: "uppercase",
+              }}>
+                Super Admin
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
 
-    {/* Invisible spacer so the page content shifts right when sidebar is open */}
-    <div style={{
-      width: open ? SIDEBAR_WIDTH : 0,
-      flexShrink: 0,
-      transition: "width .25s ease",
-    }} />
-  </>
-);
+      {/* Invisible spacer */}
+      <div style={{
+        width: open ? SIDEBAR_WIDTH : 0,
+        flexShrink: 0,
+        transition: "width .25s ease",
+      }} />
+    </>
+  );
+};
 
 export default SASidebar;
