@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import SparkLogo from "../../common/SparkLogo/sparklogo.png";
+import LogoutModal from "../../common/Modal/LogoutModal";
 
 const NAV_ITEMS = [
   { section: "MAIN",   items: ["Dashboard", "Profile", "Courses", "Certificates"] },
@@ -11,6 +12,7 @@ const BREAKPOINT = 1024;
 const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) => {
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
   const overlayRef = useRef(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   // visible controls whether the overlay DOM is mounted
   // animate controls the translateX/opacity transition
   const [visible, setVisible] = useState(isOpen);
@@ -88,8 +90,14 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }) =>
             ? <img src={user.company.logo} alt={user.company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
             : user.company.logo}
         </div>
-        <button onClick={onLogout} style={{ background: "#e74c3c", color: "white", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: 1, fontFamily: "inherit" }}>LOGOUT</button>
+        <button onClick={() => setShowLogoutModal(true)} style={{ background: "#e74c3c", color: "white", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: 1, fontFamily: "inherit" }}>LOGOUT</button>
       </div>
+
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={() => { setShowLogoutModal(false); onLogout(); }}
+      />
     </>
   );
 

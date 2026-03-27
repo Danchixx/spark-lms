@@ -11,12 +11,7 @@ import UserDashboard from "../pages/User/Dashboard";
 import UserProfile from "../pages/User/Profile";
 import UserCourses from "../pages/User/Courses";
 import UserCourseModules from "../pages/User/CourseModules";
-import UserModuleLessons from "../pages/User/ModuleLessons";
-import UserModuleAssessment from "../pages/User/ModuleAssessment";
-import UserModuleAttempts from "../pages/User/ModuleAttempts";
-import UserCertificates from "../pages/User/Certificates";
-import UserSettings from "../pages/User/Settings";
-import UserContact from "../pages/User/Contact";
+
 import SparkAdminDashboard from "../pages/SuperAdmin/SADashboard";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
@@ -80,13 +75,7 @@ const AppRoutes = () => {
         <Route path="/:company/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
         <Route path="/:company/courses" element={<ProtectedRoute><UserCourses /></ProtectedRoute>} />
         <Route path="/:company/courses/modules" element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
-        <Route path="/:company/courses/lessons" element={<ProtectedRoute><UserModuleLessons /></ProtectedRoute>} />
-        <Route path="/:company/courses/assessment" element={<ProtectedRoute><UserModuleAssessment /></ProtectedRoute>} />
-        <Route path="/:company/courses/attempts" element={<ProtectedRoute><UserModuleAttempts /></ProtectedRoute>} />
-        <Route path="/:company/certificates" element={<ProtectedRoute><UserCertificates /></ProtectedRoute>} />
-        <Route path="/:company/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
-        <Route path="/:company/contact" element={<ProtectedRoute><UserContact /></ProtectedRoute>} />
-
+        {/* Add more shared routes here e.g. /:company/courses, /:company/certificates */}
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />

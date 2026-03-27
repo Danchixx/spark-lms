@@ -3,6 +3,8 @@ import { useAuth } from "../../context/AuthContext";
 import { MOCK_TENANTS } from "../../data/mockTenants";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
 import SparkTenants from "./Tenants/SparkTenants";
+import SparkApprovals from "./Approvals/SparkApprovals";
+import SparkUsers from "./Users/SparkUsers";
 import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
 
 // ─────────────────────────────────────────────────────────────
@@ -240,10 +242,15 @@ const TenantActivityCard = ({ tenant, onNotify }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div style={{ background: "#fff", borderRadius: 10,
-      border: `1px solid ${inactive ? "#f5c6c6" : "#eee"}`,
+    <div style={{
+      background: "#fff", borderRadius: 10,
+      border: "none",
       borderLeft: `4px solid ${inactive ? "#c0392b" : "#27ae60"}`,
-      padding: "14px 16px", marginBottom: 10 }}>
+      boxShadow: inactive
+        ? "0 2px 12px rgba(192,57,43,.08), 0 1px 3px rgba(0,0,0,.04)"
+        : "0 2px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03)",
+      padding: "14px 16px", marginBottom: 10,
+    }}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <div style={{ width: 36, height: 36, borderRadius: 6,
@@ -407,8 +414,14 @@ const DashboardHome = ({ onNavigate }) => {
             key={i}
             onClick={() => onNavigate(s.key)}
             style={d.statCard}
-            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = "translateY(-4px)";
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,.12), 0 3px 8px rgba(0,0,0,.07)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)";
+            }}
           >
             <div style={{ fontSize: 11, color: "#888", fontWeight: 500,
               textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>
@@ -582,12 +595,13 @@ const DashboardHome = ({ onNavigate }) => {
 };
 
 const d = {
-  // Stat card — orange border on TOP, matching user dashboard style
+  // Stat card — shadow lifts it off the #f4f4f4 background
   statCard: {
     background: "#fff",
     borderRadius: 12,
-    border: "1px solid #eee",
+    border: "none",
     borderTop: "3px solid #FF6B00",
+    boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
     padding: "20px 22px",
     cursor: "pointer",
     transition: "transform .2s ease, box-shadow .2s ease",
@@ -600,8 +614,11 @@ const d = {
     flexShrink: 0,
   },
   panel: {
-    background: "#fff", borderRadius: 12,
-    border: "1px solid #eee", padding: "18px 20px",
+    background: "#fff",
+    borderRadius: 12,
+    border: "none",
+    boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
+    padding: "18px 20px",
   },
   panelTitle: {
     fontSize: 15, fontWeight: 700, color: "#222", marginBottom: 14,
@@ -652,9 +669,9 @@ const SADashboard = () => {
   const renderPage = () => {
     switch (activePage) {
       case "dashboard":  return <DashboardHome onNavigate={setActivePage} />;
-      case "tenants":    return <SparkTenants />;
-      case "approvals":  return <ComingSoon label="approvals" />;
-      case "users":      return <ComingSoon label="users" />;
+      case "tenants":    return <SparkTenants sidebarOpen={sidebarOpen} />;
+      case "approvals":  return <SparkApprovals />;
+      case "users":      return <SparkUsers />;
       case "courses":    return <ComingSoon label="courses" />;
       case "settings":   return <ComingSoon label="settings" />;
       default:           return <DashboardHome onNavigate={setActivePage} />;
@@ -673,7 +690,7 @@ const SADashboard = () => {
   return (
     <div style={{
       fontFamily: "'Barlow', sans-serif",
-      background: "#f0f0f0",
+      background: "#f4f4f4",
       minHeight: "100vh",
     }}>
       <style>{`
