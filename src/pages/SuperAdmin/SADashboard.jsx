@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+
 import { useAuth } from "../../context/AuthContext";
 import { MOCK_TENANTS } from "../../data/mockTenants";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
@@ -728,7 +728,6 @@ const ComingSoon = ({ label }) => (
 // ─────────────────────────────────────────────────────────────
 const SADashboard = () => {
   const { user } = useAuth();
-  const location = useLocation();
   const [showWelcome, setShowWelcome] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activePage, setActivePage] = useState("dashboard");
@@ -781,6 +780,7 @@ const SADashboard = () => {
       <SASidebar
         open={sidebarOpen}
         activePage={activePage}
+        onNavigate={setActivePage}
         user={user}
       />
 
@@ -799,18 +799,11 @@ const SADashboard = () => {
         display: "flex",
         flexDirection: "column",
       }}>
-        <Outlet />
+        {renderPage()}
       </div>
     </div>
   );
 };
 
-// Attach sub-components to SADashboard for easier access in router
-SADashboard.DashboardHome = DashboardHome;
-SADashboard.SparkTenants = SparkTenants;
-SADashboard.Approvals = () => <ComingSoon label="approvals" />;
-SADashboard.Users = () => <ComingSoon label="users" />;
-SADashboard.Courses = () => <ComingSoon label="courses" />;
-SADashboard.Settings = () => <ComingSoon label="settings" />;
 
 export default SADashboard;
