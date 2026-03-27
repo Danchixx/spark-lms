@@ -60,9 +60,9 @@ const CourseCard = ({ course }: CourseCardProps) => {
     >
       {/* Orange image area */}
       <div style={{ position: "relative", height: 120, background: "linear-gradient(180deg, #ffb152, #FF8C00, #FF6B00)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <StatusBadge 
-          status={course.status} 
-          style={{ position: "absolute", top: 10, left: 10, fontSize: 10, padding: "2px 8px", background: "white", color: course.status === "Completed" ? "#27ae60" : course.status === "Ongoing" ? "#FF6B00" : "#888" }} 
+        <StatusBadge
+          status={course.status}
+          style={{ position: "absolute", top: 10, left: 10, fontSize: 10, padding: "2px 8px", background: "var(--color-surface)", color: course.status === "Completed" ? "#27ae60" : course.status === "Ongoing" ? "#FF6B00" : "#888", border: "1.5px solid var(--color-border)" }}
         />
         <div style={{ fontSize: 52, opacity: 0.85 }}>{course.icon}</div>
       </div>

@@ -1,14 +1,14 @@
 export const COURSES = [
-  { 
-    id: 1, 
-    name: "Sales Fundamentals", 
-    modulesCount: 5, 
+  {
+    id: 1,
+    name: "Sales Fundamentals",
+    modulesCount: 5,
     unitsCount: 18,
     assessmentsCount: 5,
-    status: "Ongoing", 
-    progress: 94, 
-    assignedBy: "Admin", 
-    icon: "💼", 
+    status: "Ongoing",
+    progress: 94,
+    assignedBy: "Admin",
+    icon: "💼",
     lastModule: "Module 5 · Unit 3: The AIDA Framework",
     modules: [
       {
@@ -55,29 +55,29 @@ export const COURSES = [
       }
     ]
   },
-  { 
-    id: 2, 
-    name: "Customer Service Pro", 
-    modulesCount: 4, 
+  {
+    id: 2,
+    name: "Customer Service Pro",
+    modulesCount: 4,
     unitsCount: 12,
     assessmentsCount: 2,
-    status: "Ongoing", 
-    progress: 54, 
-    assignedBy: "Admin", 
-    icon: "👤", 
+    status: "Ongoing",
+    progress: 54,
+    assignedBy: "Admin",
+    icon: "👤",
     lastModule: "Module 3 · Unit 2: Handling Complaints",
     modules: []
   },
-  { 
-    id: 3, 
-    name: "Digital Marketing", 
-    modulesCount: 4, 
+  {
+    id: 3,
+    name: "Digital Marketing",
+    modulesCount: 4,
     unitsCount: 11,
     assessmentsCount: 4,
-    status: "Completed", 
-    progress: 100, 
-    assignedBy: "Admin", 
-    icon: "📢", 
+    status: "Completed",
+    progress: 100,
+    assignedBy: "Admin",
+    icon: "📢",
     lastModule: "Module 4 · Unit 11: Campaign Analytics",
     modules: [
       {
@@ -129,16 +129,16 @@ export const COURSES = [
       }
     ]
   },
-  { 
-    id: 4, 
-    name: "Technical Onboarding", 
-    modulesCount: 6, 
+  {
+    id: 4,
+    name: "Technical Onboarding",
+    modulesCount: 6,
     unitsCount: 22,
     assessmentsCount: 3,
-    status: "Not Started", 
-    progress: 0, 
-    assignedBy: "Admin", 
-    icon: "⚙️", 
+    status: "Not Started",
+    progress: 0,
+    assignedBy: "Admin",
+    icon: "⚙️",
     lastModule: null,
     modules: []
   },

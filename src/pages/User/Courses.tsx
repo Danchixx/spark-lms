@@ -92,7 +92,7 @@ const Courses = () => {
                     }
                   }
                 `}</style>
-                
+
                 {/* Mobile Info Row (grouped for stacking) */}
                 <div className="banner-info-row" style={{ display: "contents" }}>
                   <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#FF8C00,#FF6B00)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>
