@@ -728,6 +728,7 @@ const ComingSoon = ({ label }) => (
 // ─────────────────────────────────────────────────────────────
 const SADashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [showWelcome, setShowWelcome] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activePage, setActivePage] = useState("dashboard");
@@ -780,7 +781,6 @@ const SADashboard = () => {
       <SASidebar
         open={sidebarOpen}
         activePage={activePage}
-        onNavigate={setActivePage}
         user={user}
       />
 
@@ -799,7 +799,7 @@ const SADashboard = () => {
         display: "flex",
         flexDirection: "column",
       }}>
-        {renderPage()}
+        <Outlet />
       </div>
     </div>
   );
