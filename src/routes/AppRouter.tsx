@@ -17,7 +17,7 @@ import UserModuleAttempts from "../pages/User/ModuleAttempts";
 import UserCertificates from "../pages/User/Certificates";
 import UserSettings from "../pages/User/Settings";
 import UserContact from "../pages/User/Contact";
-import SparkAdminDashboard from "../pages/SuperAdmin/SADashboard";
+import SADashboard from "../pages/SuperAdmin/SADashboard";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 
@@ -75,14 +75,15 @@ const AppRoutes = () => {
         <Route path="/:company" element={<Login />} />
 
         {/* Super Admin */}
-        <Route
-          path="/superadmin/dashboard"
-          element={
-            <ProtectedRoute role="spark_admin">
-              <SparkAdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/superadmin" element={<ProtectedRoute role="spark_admin"><SADashboard /></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<SADashboard.DashboardHome />} />
+          <Route path="tenants" element={<SADashboard.SparkTenants />} />
+          <Route path="approvals" element={<SADashboard.Approvals />} />
+          <Route path="users" element={<SADashboard.Users />} />
+          <Route path="courses" element={<SADashboard.Courses />} />
+          <Route path="settings" element={<SADashboard.Settings />} />
+        </Route>
 
         {/* Protected — same URL, different component per role */}
         <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
