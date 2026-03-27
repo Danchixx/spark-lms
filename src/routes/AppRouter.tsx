@@ -74,16 +74,15 @@ const AppRoutes = () => {
         <Route path="/admin" element={<SparkAdminLogin />} />
         <Route path="/:company" element={<Login />} />
 
-        {/* Super Admin */}
-        <Route path="/superadmin" element={<ProtectedRoute role="spark_admin"><SADashboard /></ProtectedRoute>}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<SADashboard.DashboardHome />} />
-          <Route path="tenants" element={<SADashboard.SparkTenants />} />
-          <Route path="approvals" element={<SADashboard.Approvals />} />
-          <Route path="users" element={<SADashboard.Users />} />
-          <Route path="courses" element={<SADashboard.Courses />} />
-          <Route path="settings" element={<SADashboard.Settings />} />
-        </Route>
+        {/* Super Admin — SADashboard handles its own internal page switching */}
+        <Route
+          path="/superadmin/dashboard"
+          element={
+            <ProtectedRoute role="spark_admin">
+              <SADashboard />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected — same URL, different component per role */}
         <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
