@@ -5,7 +5,7 @@
   font-weight: 800;
   text-align: center;
   margin: 0 0 24px;
-  color: #1a1a1a;
+  color: var(--color-text-header);
 }
 
 .contact-layout {
@@ -16,23 +16,23 @@
 
 /* ── Form Card ── */
 .contact-form-card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
   padding: 32px;
 }
 
 .contact-form-heading {
   font-size: 20px;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--color-text-header);
   margin: 0 0 6px;
 }
 
 .contact-form-desc {
   font-size: 13px;
-  color: #888;
+  color: var(--color-text-muted);
   margin: 0 0 24px;
   line-height: 1.5;
 }
@@ -52,7 +52,7 @@
 .contact-field label {
   font-size: 11px;
   font-weight: 700;
-  color: #666;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -62,12 +62,12 @@
   width: 100%;
   box-sizing: border-box;
   padding: 10px 14px;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--color-border);
   border-radius: 8px;
-  background: white;
+  background: var(--color-input-bg);
   font-family: inherit;
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--color-text);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   resize: vertical;
@@ -89,7 +89,8 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #aaa;
+  color: var(--color-text-muted);
+  opacity: 0.6;
   z-index: 1;
 }
 
@@ -113,10 +114,10 @@
 
 /* ── Info Card ── */
 .contact-info-card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
   padding: 32px;
   display: flex;
   flex-direction: column;
@@ -125,13 +126,13 @@
 .contact-info-heading {
   font-size: 20px;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--color-text-header);
   margin: 0 0 6px;
 }
 
 .contact-info-desc {
   font-size: 13px;
-  color: #888;
+  color: var(--color-text-muted);
   margin: 0 0 28px;
   line-height: 1.6;
 }
@@ -152,7 +153,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #FFF3E8;
+  background: var(--color-bg-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,7 +164,7 @@
 .contact-info-label {
   font-size: 11px;
   font-weight: 700;
-  color: #999;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 2px;
@@ -172,7 +173,7 @@
 .contact-info-value {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-header);
   line-height: 1.4;
 }
 

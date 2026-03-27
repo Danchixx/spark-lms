@@ -1,13 +1,14 @@
 .lesson-card-wrapper {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
   padding: 32px 40px;
   font-family: 'Barlow', sans-serif;
-  color: #1a1a1a;
+  color: var(--color-text);
   display: flex;
   flex-direction: column;
   height: 100%;
+  border: 1px solid var(--color-border);
 }
 
 .lesson-card-title {
@@ -66,7 +67,7 @@
 .lesson-video-track {
   flex: 1;
   height: 6px;
-  background: #e0e0e0;
+  background: var(--color-bg-muted);
   border-radius: 99px;
   position: relative;
   cursor: pointer;
@@ -96,7 +97,7 @@
 
 .lesson-video-time {
   font-size: 12px;
-  color: #666;
+  color: var(--color-text-muted);
   font-weight: 600;
 }
 
@@ -105,12 +106,12 @@
   flex: 1;
   font-size: 15px;
   line-height: 1.6;
-  color: #444;
+  color: var(--color-text);
 }
 
 .lesson-content-body h3 {
   font-size: 20px;
-  color: #1a1a1a;
+  color: var(--color-text-header);
   margin: 0 0 12px 0;
 }
 
@@ -122,7 +123,7 @@
 .lesson-card-footer {
   margin-top: 40px;
   padding-top: 24px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -130,6 +131,6 @@
 
 .lesson-step-indicator {
   font-size: 14px;
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: 600;
 }
