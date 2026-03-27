@@ -39,7 +39,7 @@ const SuccessToast = ({ message, onClose }) => (
 );
 
 // ── Main component ────────────────────────────────────────────
-const SparkTenants = () => {
+const SparkTenants = ({ sidebarOpen = true }) => {
   const [tenants, setTenants] = useState(MOCK_TENANTS);
   const [view, setView] = useState("list");       // "list" | "view" | "add"
   const [selectedTenant, setSelectedTenant] = useState(null);
@@ -107,6 +107,7 @@ const SparkTenants = () => {
         <AddTenant
           onBack={handleBackToList}
           onFinish={handleFinish}
+          sidebarOpen={sidebarOpen}
         />
       )}
 
