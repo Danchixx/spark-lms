@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MOCK_TENANTS } from "../../data/mockTenants";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
@@ -7,9 +8,7 @@ import SparkApprovals from "./Approvals/SparkApprovals";
 import SparkUsers from "./Users/SparkUsers";
 import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
 
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
+// ... (helpers)
 const daysSince = (isoDate) =>
   Math.floor((Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24));
 
@@ -72,6 +71,7 @@ const TopBar = ({ onBurger, sidebarOpen, user }) => (
     </div>
 
     <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+      {/* ... (user info) */}
       <span style={{ fontWeight: 700, fontSize: 15, color: "#FF6B00" }}>
         {user?.name?.split(" ")[0] || "Ian"}
       </span>
@@ -96,9 +96,7 @@ const t = {
     fontWeight: 600, fontSize: 26, color: "#222", letterSpacing: 3 },
 };
 
-// ─────────────────────────────────────────────────────────────
-// Welcome animation
-// ─────────────────────────────────────────────────────────────
+// ... (WelcomeScreen component)
 const WelcomeScreen = ({ name, onDone }) => {
   useEffect(() => {
     const timer = setTimeout(onDone, 2200);
@@ -151,9 +149,7 @@ const WelcomeScreen = ({ name, onDone }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// Notify Modal
-// ─────────────────────────────────────────────────────────────
+// ... (NotifyModal component)
 const NotifyModal = ({ tenant, onClose }) => {
   const [msg, setMsg] = useState(
     `Hi ${tenant.name} team,\n\nWe noticed your team hasn't been active on the SPARK LMS platform for over a week. We'd love to check in and see how we can help support your learning journey.\n\nPlease feel free to reach out or log in to continue your courses.\n\nBest regards,\nSPARK Admin Team`
@@ -232,9 +228,7 @@ const NotifyModal = ({ tenant, onClose }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// Tenant Activeness Card
-// ─────────────────────────────────────────────────────────────
+// ... (TenantActivityCard component)
 const TenantActivityCard = ({ tenant, onNotify }) => {
   const days     = daysSince(tenant.lastActive);
   const inactive = days >= 7;
@@ -341,9 +335,6 @@ const TenantActivityCard = ({ tenant, onNotify }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// Recent Subscriptions data
-// ─────────────────────────────────────────────────────────────
 const RECENT_SUBS = [
   { name: "Department of Education", since: "Feb. 25 2026", type: "Institute",  bg: "#2980b9", abbr: "DepEd"   },
   { name: "Eleksis Marketing Corp",  since: "Jan. 10 2026", type: "Enterprise", bg: "#c0392b", abbr: "ELEKSIS" },
@@ -633,9 +624,7 @@ const d = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────
-// Placeholder pages
-// ─────────────────────────────────────────────────────────────
+// ... (ComingSoon component)
 const ComingSoon = ({ label }) => (
   <div style={{ flex: 1, display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center", color: "#aaa", gap: 12,
@@ -655,6 +644,7 @@ const ComingSoon = ({ label }) => (
 // ─────────────────────────────────────────────────────────────
 const SADashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [showWelcome, setShowWelcome] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activePage, setActivePage] = useState("dashboard");
@@ -703,11 +693,10 @@ const SADashboard = () => {
       {/* Fixed top bar */}
       <TopBar onBurger={() => setSidebarOpen((v) => !v)} sidebarOpen={sidebarOpen} user={user} />
 
-      {/* Fixed sidebar — imported from components/layout/SASidebar */}
+      {/* Fixed sidebar */}
       <SASidebar
         open={sidebarOpen}
         activePage={activePage}
-        onNavigate={setActivePage}
         user={user}
       />
 
@@ -726,10 +715,18 @@ const SADashboard = () => {
         display: "flex",
         flexDirection: "column",
       }}>
-        {renderPage()}
+        <Outlet />
       </div>
     </div>
   );
 };
+
+// Attach sub-components to SADashboard for easier access in router
+SADashboard.DashboardHome = DashboardHome;
+SADashboard.SparkTenants = SparkTenants;
+SADashboard.Approvals = () => <ComingSoon label="approvals" />;
+SADashboard.Users = () => <ComingSoon label="users" />;
+SADashboard.Courses = () => <ComingSoon label="courses" />;
+SADashboard.Settings = () => <ComingSoon label="settings" />;
 
 export default SADashboard;

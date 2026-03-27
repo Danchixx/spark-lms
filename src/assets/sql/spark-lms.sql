@@ -1,335 +1,264 @@
--- ============================================================
--- SPARK LMS — PostgreSQL / Supabase Schema (User Side Draft)
--- ============================================================
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
--- Enable UUID extension (Supabase has this by default)
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- ============================================================
--- ROLES
--- ============================================================
-CREATE TABLE roles (
-  id          BIGSERIAL PRIMARY KEY,
-  name        VARCHAR(50) NOT NULL UNIQUE  -- 'user', 'admin', 'approver', 'creator', 'spark_admin'
+CREATE TABLE public.assessment_attempts (
+  id bigint NOT NULL DEFAULT nextval('assessment_attempts_id_seq'::regclass),
+  assessment_id bigint NOT NULL,
+  user_id bigint NOT NULL,
+  score integer,
+  passed boolean,
+  attempted_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT assessment_attempts_pkey PRIMARY KEY (id),
+  CONSTRAINT assessment_attempts_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES public.assessments(id),
+  CONSTRAINT assessment_attempts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-
--- ============================================================
--- COMPANIES
--- Shown in: Settings > Company Profile, Sidebar footer logo,
---           Header company name (mobile), workspace URL
--- ============================================================
-CREATE TABLE companies (
-  id               BIGSERIAL PRIMARY KEY,
-  name             VARCHAR(255) NOT NULL,
-  industry         VARCHAR(255),
-  logo_url         VARCHAR(500),                 -- Supabase Storage URL
-  cover_photo_url  VARCHAR(500),                 -- Supabase Storage URL
-  slug             VARCHAR(100) UNIQUE NOT NULL, -- workspace URL slug e.g. "zoup"
-  website_url      VARCHAR(255),                 -- Settings > Company Profile
-  year_founded     INT,                          -- Settings > Company Profile
-  description      TEXT,                         -- Settings > Company Profile
-  contact_person   VARCHAR(255),                 -- Settings > Company Profile > Contact Info
-  contact_email    VARCHAR(255),                 -- Settings > Company Profile > Contact Info
-  phone_number     VARCHAR(50),                  -- Settings > Company Profile > Contact Info
-  country          VARCHAR(100),                 -- Settings > Company Profile > Contact Info
-  office_address   TEXT,                         -- Settings > Company Profile > Contact Info
-  is_archived      BOOLEAN NOT NULL DEFAULT FALSE,
-  archived_at      TIMESTAMPTZ,
-  archived_by      BIGINT                        -- FK added after users table
+CREATE TABLE public.assessment_choices (
+  id bigint NOT NULL DEFAULT nextval('assessment_choices_id_seq'::regclass),
+  question_id bigint NOT NULL,
+  choice_text text NOT NULL,
+  is_correct boolean NOT NULL DEFAULT false,
+  CONSTRAINT assessment_choices_pkey PRIMARY KEY (id),
+  CONSTRAINT assessment_choices_question_id_fkey FOREIGN KEY (question_id) REFERENCES public.assessment_questions(id)
 );
-
--- ============================================================
--- USERS
--- Shown in: Profile page (all personal + employment fields),
---           Header (name, avatar), Sidebar logout area
--- ============================================================
-CREATE TABLE users (
-  id               BIGSERIAL PRIMARY KEY,
-  company_id       BIGINT NOT NULL REFERENCES companies(id),
-  role_id          BIGINT NOT NULL REFERENCES roles(id),
-  email            VARCHAR(255) NOT NULL UNIQUE,
-  password         VARCHAR(255) NOT NULL,              -- hashed
-  lastname         VARCHAR(100) NOT NULL,
-  firstname        VARCHAR(100) NOT NULL,
-  avatar_url       VARCHAR(500),                       -- Supabase Storage URL
-  date_of_birth    DATE,                               -- Profile > Personal Info
-  gender           VARCHAR(20),                        -- Profile > Personal Info
-  contact_no       VARCHAR(50),                        -- Profile > Personal Info
-  address          TEXT,                               -- Profile > Personal Info
-  -- Employment Details (Profile page right panel)
-  employee_id      VARCHAR(50),                        -- e.g. "EMP-00142"
-  department       VARCHAR(100),                       -- Profile left panel + Employment Details
-  job_title        VARCHAR(100),                       -- Profile left panel + Employment Details
-  date_hired       DATE,                               -- Profile > Employment Details
-  status           VARCHAR(50) NOT NULL DEFAULT 'active',
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(), -- "Member Since" on Profile
-  is_archived      BOOLEAN NOT NULL DEFAULT FALSE,
-  archived_at      TIMESTAMPTZ,
-  archived_by      BIGINT REFERENCES users(id)
+CREATE TABLE public.assessment_questions (
+  id bigint NOT NULL DEFAULT nextval('assessment_questions_id_seq'::regclass),
+  assessment_id bigint NOT NULL,
+  question_text text NOT NULL,
+  position integer NOT NULL DEFAULT 1,
+  CONSTRAINT assessment_questions_pkey PRIMARY KEY (id),
+  CONSTRAINT assessment_questions_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES public.assessments(id)
 );
-
--- Now add the FKs on companies that reference users
-ALTER TABLE companies
-  ADD CONSTRAINT fk_companies_archived_by
-  FOREIGN KEY (archived_by) REFERENCES users(id);
-
--- ============================================================
--- USER APPROVALS
--- ============================================================
-CREATE TABLE user_approvals (
-  id           BIGSERIAL PRIMARY KEY,
-  user_id      BIGINT NOT NULL REFERENCES users(id),
-  approved_by  BIGINT REFERENCES users(id),
-  decision     VARCHAR(20),                -- 'approved', 'rejected'
-  reason       TEXT,
-  decided_at   TIMESTAMPTZ
+CREATE TABLE public.assessments (
+  id bigint NOT NULL DEFAULT nextval('assessments_id_seq'::regclass),
+  lesson_id bigint NOT NULL,
+  title character varying NOT NULL,
+  description text,
+  passing_score integer NOT NULL DEFAULT 70,
+  time_limit integer,
+  is_archived boolean NOT NULL DEFAULT false,
+  archived_at timestamp with time zone,
+  archived_by bigint,
+  CONSTRAINT assessments_pkey PRIMARY KEY (id),
+  CONSTRAINT assessments_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.course_lessons(id),
+  CONSTRAINT assessments_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.users(id)
 );
-
--- ============================================================
--- USER NOTIFICATION PREFERENCES
--- Shown in: Settings > Notifications (toggles)
--- ============================================================
-CREATE TABLE user_notification_preferences (
-  id                   BIGSERIAL PRIMARY KEY,
-  user_id              BIGINT NOT NULL REFERENCES users(id) UNIQUE,
-  course_assigned      BOOLEAN NOT NULL DEFAULT TRUE,
-  course_reminder      BOOLEAN NOT NULL DEFAULT TRUE,
-  assessment_due       BOOLEAN NOT NULL DEFAULT TRUE,
-  certificate_earned   BOOLEAN NOT NULL DEFAULT TRUE,
-  announcements        BOOLEAN NOT NULL DEFAULT FALSE,
-  weekly_digest        BOOLEAN NOT NULL DEFAULT FALSE
+CREATE TABLE public.attempt_answers (
+  id bigint NOT NULL DEFAULT nextval('attempt_answers_id_seq'::regclass),
+  attempt_id bigint NOT NULL,
+  question_id bigint NOT NULL,
+  choice_id bigint,
+  CONSTRAINT attempt_answers_pkey PRIMARY KEY (id),
+  CONSTRAINT attempt_answers_attempt_id_fkey FOREIGN KEY (attempt_id) REFERENCES public.assessment_attempts(id),
+  CONSTRAINT attempt_answers_question_id_fkey FOREIGN KEY (question_id) REFERENCES public.assessment_questions(id),
+  CONSTRAINT attempt_answers_choice_id_fkey FOREIGN KEY (choice_id) REFERENCES public.assessment_choices(id)
 );
-
--- ============================================================
--- COURSES
--- Shown in: My Courses cards (title, status, modules, lessons),
---           Course Modules banner (title, module count, lesson count, assessment count),
---           Dashboard > My Recent Courses table
--- ============================================================
-CREATE TABLE courses (
-  id            BIGSERIAL PRIMARY KEY,
-  company_id    BIGINT NOT NULL REFERENCES companies(id),
-  title         VARCHAR(255) NOT NULL,
-  description   TEXT,
-  thumbnail_url VARCHAR(500),            -- Supabase Storage URL for course card image
-  icon_emoji    VARCHAR(20),             -- emoji icon shown on course cards
-  created_by    BIGINT REFERENCES users(id),
-  status        VARCHAR(20) NOT NULL DEFAULT 'draft', -- 'draft','published','archived'
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  is_archived   BOOLEAN NOT NULL DEFAULT FALSE,
-  archived_at   TIMESTAMPTZ,
-  archived_by   BIGINT REFERENCES users(id)
+CREATE TABLE public.audit_logs (
+  id bigint NOT NULL DEFAULT nextval('audit_logs_id_seq'::regclass),
+  user_id bigint,
+  action character varying NOT NULL,
+  table_name character varying,
+  record_id bigint,
+  old_value text,
+  new_value text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT audit_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-
--- ============================================================
--- COURSE APPROVALS
--- ============================================================
-CREATE TABLE course_approvals (
-  id           BIGSERIAL PRIMARY KEY,
-  course_id    BIGINT NOT NULL REFERENCES courses(id),
-  approver_id  BIGINT REFERENCES users(id),
-  decision     VARCHAR(20),
-  reason       TEXT,
-  decided_at   TIMESTAMPTZ
+CREATE TABLE public.certificates (
+  id bigint NOT NULL DEFAULT nextval('certificates_id_seq'::regclass),
+  assignment_id bigint NOT NULL UNIQUE,
+  certificate_url character varying,
+  issued_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT certificates_pkey PRIMARY KEY (id),
+  CONSTRAINT certificates_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.course_assignments(id)
 );
-
--- ============================================================
--- COURSE ASSIGNMENTS
--- Shown in: Course card "Assigned by Admin", Dashboard enrolled count
--- ============================================================
-CREATE TABLE course_assignments (
-  id            BIGSERIAL PRIMARY KEY,
-  user_id       BIGINT NOT NULL REFERENCES users(id),
-  course_id     BIGINT NOT NULL REFERENCES courses(id),
-  assigned_by   BIGINT REFERENCES users(id),
-  assigned_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  status        VARCHAR(20) NOT NULL DEFAULT 'not_started', -- 'not_started','ongoing','completed'
-  is_archived   BOOLEAN NOT NULL DEFAULT FALSE,
-  archived_at   TIMESTAMPTZ,
-  archived_by   BIGINT REFERENCES users(id),
-  UNIQUE (user_id, course_id)
+CREATE TABLE public.companies (
+  id bigint NOT NULL DEFAULT nextval('companies_id_seq'::regclass),
+  name character varying NOT NULL,
+  industry character varying,
+  logo_url character varying,
+  cover_photo_url character varying,
+  slug character varying NOT NULL UNIQUE,
+  website_url character varying,
+  year_founded integer,
+  description text,
+  contact_person character varying,
+  contact_email character varying,
+  phone_number character varying,
+  country character varying,
+  office_address text,
+  is_archived boolean NOT NULL DEFAULT false,
+  archived_at timestamp with time zone,
+  archived_by bigint,
+  CONSTRAINT companies_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_companies_archived_by FOREIGN KEY (archived_by) REFERENCES public.users(id)
 );
-
--- ============================================================
--- COURSE MODULES
--- Shown in: Course Modules page (module list, module number badge,
---           status "Completed" / "In Progress", lesson count)
--- ============================================================
-CREATE TABLE course_modules (
-  id            BIGSERIAL PRIMARY KEY,
-  course_id     BIGINT NOT NULL REFERENCES courses(id),
-  title         VARCHAR(255) NOT NULL,
-  "order"       INT NOT NULL DEFAULT 1,
-  description   TEXT,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  is_archived   BOOLEAN NOT NULL DEFAULT FALSE,
-  archived_at   TIMESTAMPTZ,
-  archived_by   BIGINT REFERENCES users(id)
+CREATE TABLE public.course_approvals (
+  id bigint NOT NULL DEFAULT nextval('course_approvals_id_seq'::regclass),
+  course_id bigint NOT NULL,
+  approver_id bigint,
+  decision character varying,
+  reason text,
+  decided_at timestamp with time zone,
+  CONSTRAINT course_approvals_pkey PRIMARY KEY (id),
+  CONSTRAINT course_approvals_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id),
+  CONSTRAINT course_approvals_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.users(id)
 );
-
--- ============================================================
--- COURSE LESSONS
--- Shown in: Module lessons list (title, type icon, Open/completed),
---           Lesson viewer (video_url, content/text, breadcrumb),
---           Lesson sidebar list with completion checkmarks
--- ============================================================
-CREATE TABLE course_lessons (
-  id            BIGSERIAL PRIMARY KEY,
-  module_id     BIGINT NOT NULL REFERENCES course_modules(id),
-  title         VARCHAR(255) NOT NULL,
-  type          VARCHAR(20) NOT NULL DEFAULT 'text', -- 'video','reading','assessment'
-  content       TEXT,                                -- rich text / reading content
-  video_url     VARCHAR(500),                        -- local filename for dev e.g. 'module1-lesson1.mp4'
-                                                     -- YouTube ID for production e.g. 'dQw4w9WgXcQ'
-  position      INT NOT NULL DEFAULT 1,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  is_archived   BOOLEAN NOT NULL DEFAULT FALSE,
-  archived_at   TIMESTAMPTZ,
-  archived_by   BIGINT REFERENCES users(id)
+CREATE TABLE public.course_assignments (
+  id bigint NOT NULL DEFAULT nextval('course_assignments_id_seq'::regclass),
+  user_id bigint NOT NULL,
+  course_id bigint NOT NULL,
+  assigned_by bigint,
+  assigned_at timestamp with time zone NOT NULL DEFAULT now(),
+  status character varying NOT NULL DEFAULT 'not_started'::character varying,
+  is_archived boolean NOT NULL DEFAULT false,
+  archived_at timestamp with time zone,
+  archived_by bigint,
+  CONSTRAINT course_assignments_pkey PRIMARY KEY (id),
+  CONSTRAINT course_assignments_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT course_assignments_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id),
+  CONSTRAINT course_assignments_assigned_by_fkey FOREIGN KEY (assigned_by) REFERENCES public.users(id),
+  CONSTRAINT course_assignments_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.users(id)
 );
-
--- ============================================================
--- ASSESSMENTS
--- Shown in: Lesson > Assessment card "Lesson Assessment: Test Your Knowledge",
---           Assessment page (title, passing score, timer, question count),
---           Attempts page (passing score, total attempts, best score),
---           Dashboard > Pending Assessments
--- ============================================================
-CREATE TABLE assessments (
-  id             BIGSERIAL PRIMARY KEY,
-  lesson_id      BIGINT NOT NULL REFERENCES course_lessons(id),
-  title          VARCHAR(255) NOT NULL,
-  description    TEXT,                    -- "Answer all questions. Passing score is 70%"
-  passing_score  INT NOT NULL DEFAULT 70, -- percentage
-  time_limit     INT,                     -- minutes; NULL = no timer
-  is_archived    BOOLEAN NOT NULL DEFAULT FALSE,
-  archived_at    TIMESTAMPTZ,
-  archived_by    BIGINT REFERENCES users(id)
+CREATE TABLE public.course_lessons (
+  id bigint NOT NULL DEFAULT nextval('course_lessons_id_seq'::regclass),
+  module_id bigint NOT NULL,
+  title character varying NOT NULL,
+  type character varying NOT NULL DEFAULT 'text'::character varying,
+  content text,
+  video_url character varying,
+  position integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_archived boolean NOT NULL DEFAULT false,
+  archived_at timestamp with time zone,
+  archived_by bigint,
+  CONSTRAINT course_lessons_pkey PRIMARY KEY (id),
+  CONSTRAINT course_lessons_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.course_modules(id),
+  CONSTRAINT course_lessons_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.users(id)
 );
-
--- ============================================================
--- ASSESSMENT QUESTIONS
--- Shown in: Assessment page (question text, 4 choices, question map)
--- ============================================================
-CREATE TABLE assessment_questions (
-  id             BIGSERIAL PRIMARY KEY,
-  assessment_id  BIGINT NOT NULL REFERENCES assessments(id),
-  question_text  TEXT NOT NULL,
-  position       INT NOT NULL DEFAULT 1
+CREATE TABLE public.course_modules (
+  id bigint NOT NULL DEFAULT nextval('course_modules_id_seq'::regclass),
+  course_id bigint NOT NULL,
+  title character varying NOT NULL,
+  order integer NOT NULL DEFAULT 1,
+  description text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_archived boolean NOT NULL DEFAULT false,
+  archived_at timestamp with time zone,
+  archived_by bigint,
+  CONSTRAINT course_modules_pkey PRIMARY KEY (id),
+  CONSTRAINT course_modules_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id),
+  CONSTRAINT course_modules_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.users(id)
 );
-
--- ============================================================
--- ASSESSMENT CHOICES
--- Shown in: Assessment page (radio button options per question)
--- ============================================================
-CREATE TABLE assessment_choices (
-  id           BIGSERIAL PRIMARY KEY,
-  question_id  BIGINT NOT NULL REFERENCES assessment_questions(id),
-  choice_text  TEXT NOT NULL,
-  is_correct   BOOLEAN NOT NULL DEFAULT FALSE
+CREATE TABLE public.course_progress (
+  id bigint NOT NULL DEFAULT nextval('course_progress_id_seq'::regclass),
+  assignment_id bigint NOT NULL UNIQUE,
+  progress_pct integer NOT NULL DEFAULT 0,
+  is_completed boolean NOT NULL DEFAULT false,
+  completed_at timestamp with time zone,
+  CONSTRAINT course_progress_pkey PRIMARY KEY (id),
+  CONSTRAINT course_progress_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.course_assignments(id)
 );
-
--- ============================================================
--- ASSESSMENT ATTEMPTS
--- Shown in: Attempts page (score, passed, attempted_at),
---           Assessment page sidebar (attempts count, "1st Attempt")
--- ============================================================
-CREATE TABLE assessment_attempts (
-  id             BIGSERIAL PRIMARY KEY,
-  assessment_id  BIGINT NOT NULL REFERENCES assessments(id),
-  user_id        BIGINT NOT NULL REFERENCES users(id),
-  score          INT,       -- percentage score
-  passed         BOOLEAN,
-  attempted_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.courses (
+  id bigint NOT NULL DEFAULT nextval('courses_id_seq'::regclass),
+  company_id bigint NOT NULL,
+  title character varying NOT NULL,
+  description text,
+  thumbnail_url character varying,
+  icon_emoji character varying,
+  created_by bigint,
+  status character varying NOT NULL DEFAULT 'draft'::character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_archived boolean NOT NULL DEFAULT false,
+  archived_at timestamp with time zone,
+  archived_by bigint,
+  CONSTRAINT courses_pkey PRIMARY KEY (id),
+  CONSTRAINT courses_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT courses_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT courses_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.users(id)
 );
-
--- ============================================================
--- ATTEMPT ANSWERS
--- Per-question answers within an attempt
--- ============================================================
-CREATE TABLE attempt_answers (
-  id           BIGSERIAL PRIMARY KEY,
-  attempt_id   BIGINT NOT NULL REFERENCES assessment_attempts(id),
-  question_id  BIGINT NOT NULL REFERENCES assessment_questions(id),
-  choice_id    BIGINT REFERENCES assessment_choices(id)  -- NULL if skipped
+CREATE TABLE public.lessons_progress (
+  id bigint NOT NULL DEFAULT nextval('lessons_progress_id_seq'::regclass),
+  assignment_id bigint NOT NULL,
+  lesson_id bigint NOT NULL,
+  is_completed boolean NOT NULL DEFAULT false,
+  completed_at timestamp with time zone,
+  CONSTRAINT lessons_progress_pkey PRIMARY KEY (id),
+  CONSTRAINT lessons_progress_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.course_assignments(id),
+  CONSTRAINT lessons_progress_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.course_lessons(id)
 );
-
--- ============================================================
--- LESSONS PROGRESS
--- Shown in: Lesson sidebar checkmarks, module "X/Y Done"
--- ============================================================
-CREATE TABLE lessons_progress (
-  id             BIGSERIAL PRIMARY KEY,
-  assignment_id  BIGINT NOT NULL REFERENCES course_assignments(id),
-  lesson_id      BIGINT NOT NULL REFERENCES course_lessons(id),
-  is_completed   BOOLEAN NOT NULL DEFAULT FALSE,
-  completed_at   TIMESTAMPTZ,
-  UNIQUE (assignment_id, lesson_id)
+CREATE TABLE public.module_progress (
+  id bigint NOT NULL DEFAULT nextval('module_progress_id_seq'::regclass),
+  assignment_id bigint NOT NULL,
+  module_id bigint NOT NULL,
+  is_completed boolean NOT NULL DEFAULT false,
+  completed_at timestamp with time zone,
+  CONSTRAINT module_progress_pkey PRIMARY KEY (id),
+  CONSTRAINT module_progress_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.course_assignments(id),
+  CONSTRAINT module_progress_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.course_modules(id)
 );
-
--- ============================================================
--- MODULE PROGRESS
--- Shown in: Course Modules page (Completed badge, "In Progress", % Done),
---           Lesson sidebar progress panel
--- ============================================================
-CREATE TABLE module_progress (
-  id             BIGSERIAL PRIMARY KEY,
-  assignment_id  BIGINT NOT NULL REFERENCES course_assignments(id),
-  module_id      BIGINT NOT NULL REFERENCES course_modules(id),
-  is_completed   BOOLEAN NOT NULL DEFAULT FALSE,
-  completed_at   TIMESTAMPTZ,
-  UNIQUE (assignment_id, module_id)
+CREATE TABLE public.quick_notes (
+  id bigint NOT NULL DEFAULT nextval('quick_notes_id_seq'::regclass),
+  user_id bigint NOT NULL,
+  lesson_id bigint NOT NULL,
+  content text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT quick_notes_pkey PRIMARY KEY (id),
+  CONSTRAINT quick_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT quick_notes_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.course_lessons(id)
 );
-
--- ============================================================
--- COURSE PROGRESS
--- Shown in: Course card progress bar + %, Dashboard stats,
---           Course Modules "Your Progress" bar
--- ============================================================
-CREATE TABLE course_progress (
-  id             BIGSERIAL PRIMARY KEY,
-  assignment_id  BIGINT NOT NULL REFERENCES course_assignments(id) UNIQUE,
-  progress_pct   INT NOT NULL DEFAULT 0,  -- 0-100
-  is_completed   BOOLEAN NOT NULL DEFAULT FALSE,
-  completed_at   TIMESTAMPTZ
+CREATE TABLE public.roles (
+  id bigint NOT NULL DEFAULT nextval('roles_id_seq'::regclass),
+  name character varying NOT NULL UNIQUE,
+  CONSTRAINT roles_pkey PRIMARY KEY (id)
 );
-
--- ============================================================
--- CERTIFICATES
--- Shown in: Certificates page (issued_at, certificate_url,
---           "Issued by SPARK LMS · Company", Verified badge),
---           Course card "Certificate Earned" footer
--- ============================================================
-CREATE TABLE certificates (
-  id                BIGSERIAL PRIMARY KEY,
-  assignment_id     BIGINT NOT NULL REFERENCES course_assignments(id) UNIQUE,
-  certificate_url   VARCHAR(500),
-  issued_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.user_approvals (
+  id bigint NOT NULL DEFAULT nextval('user_approvals_id_seq'::regclass),
+  user_id bigint NOT NULL,
+  approved_by bigint,
+  decision character varying,
+  reason text,
+  decided_at timestamp with time zone,
+  CONSTRAINT user_approvals_pkey PRIMARY KEY (id),
+  CONSTRAINT user_approvals_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT user_approvals_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id)
 );
-
--- ============================================================
--- QUICK NOTES
--- Shown in: Lesson viewer sidebar "Quick Notes" textarea
--- ============================================================
-CREATE TABLE quick_notes (
-  id             BIGSERIAL PRIMARY KEY,
-  user_id        BIGINT NOT NULL REFERENCES users(id),
-  lesson_id      BIGINT NOT NULL REFERENCES course_lessons(id),
-  content        TEXT,
-  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, lesson_id)
+CREATE TABLE public.user_notification_preferences (
+  id bigint NOT NULL DEFAULT nextval('user_notification_preferences_id_seq'::regclass),
+  user_id bigint NOT NULL UNIQUE,
+  course_assigned boolean NOT NULL DEFAULT true,
+  course_reminder boolean NOT NULL DEFAULT true,
+  assessment_due boolean NOT NULL DEFAULT true,
+  certificate_earned boolean NOT NULL DEFAULT true,
+  announcements boolean NOT NULL DEFAULT false,
+  weekly_digest boolean NOT NULL DEFAULT false,
+  CONSTRAINT user_notification_preferences_pkey PRIMARY KEY (id),
+  CONSTRAINT user_notification_preferences_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-
--- ============================================================
--- AUDIT LOGS
--- ============================================================
-CREATE TABLE audit_logs (
-  id           BIGSERIAL PRIMARY KEY,
-  user_id      BIGINT REFERENCES users(id),
-  action       VARCHAR(100) NOT NULL,
-  table_name   VARCHAR(100),
-  record_id    BIGINT,
-  old_value    TEXT,
-  new_value    TEXT,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.users (
+  id bigint NOT NULL DEFAULT nextval('users_id_seq'::regclass),
+  company_id bigint NOT NULL,
+  role_id bigint NOT NULL,
+  email character varying NOT NULL UNIQUE,
+  password character varying NOT NULL,
+  lastname character varying NOT NULL,
+  firstname character varying NOT NULL,
+  avatar_url character varying,
+  date_of_birth date,
+  gender character varying,
+  contact_no character varying,
+  address text,
+  employee_id character varying,
+  department character varying,
+  job_title character varying,
+  date_hired date,
+  status character varying NOT NULL DEFAULT 'active'::character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_archived boolean NOT NULL DEFAULT false,
+  archived_at timestamp with time zone,
+  archived_by bigint,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT users_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT users_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id),
+  CONSTRAINT users_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.users(id)
 );
