@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import useInactivityTimeout from "../hooks/useInactivityTimeout";
 import SessionExpiredModal from "../components/common/Modal/SessionExpiredModal";
@@ -11,7 +11,12 @@ import UserDashboard from "../pages/User/Dashboard";
 import UserProfile from "../pages/User/Profile";
 import UserCourses from "../pages/User/Courses";
 import UserCourseModules from "../pages/User/CourseModules";
-
+import UserModuleLessons from "../pages/User/ModuleLessons";
+import UserModuleAssessment from "../pages/User/ModuleAssessment";
+import UserModuleAttempts from "../pages/User/ModuleAttempts";
+import UserCertificates from "../pages/User/Certificates";
+import UserSettings from "../pages/User/Settings";
+import UserContact from "../pages/User/Contact";
 import SparkAdminDashboard from "../pages/SuperAdmin/SADashboard";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
@@ -42,6 +47,7 @@ const ProtectedRoute = ({ children, role }) => {
 const AppRoutes = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
 
   // Inactivity timeout — only active when user is logged in
@@ -54,8 +60,8 @@ const AppRoutes = () => {
 
   return (
     <>
-      <Routes>
-        {/* Public */}
+      <Routes location={location}>
+          {/* Public */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<SparkAdminLogin />} />
@@ -75,7 +81,13 @@ const AppRoutes = () => {
         <Route path="/:company/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
         <Route path="/:company/courses" element={<ProtectedRoute><UserCourses /></ProtectedRoute>} />
         <Route path="/:company/courses/modules" element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
-        {/* Add more shared routes here e.g. /:company/courses, /:company/certificates */}
+        <Route path="/:company/courses/lessons" element={<ProtectedRoute><UserModuleLessons /></ProtectedRoute>} />
+        <Route path="/:company/courses/assessment" element={<ProtectedRoute><UserModuleAssessment /></ProtectedRoute>} />
+        <Route path="/:company/courses/attempts" element={<ProtectedRoute><UserModuleAttempts /></ProtectedRoute>} />
+        <Route path="/:company/certificates" element={<ProtectedRoute><UserCertificates /></ProtectedRoute>} />
+        <Route path="/:company/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
+        <Route path="/:company/contact" element={<ProtectedRoute><UserContact /></ProtectedRoute>} />
+
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />

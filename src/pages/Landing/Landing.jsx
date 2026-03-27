@@ -1,26 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
 import SparkHeader from "../../components/layout/SparkHeader/SparkHeader";
 import LeftPanel from "../../components/layout/LeftPanel/LeftPanel";
 import CompanyBadge from "../../components/common/CompanyLogo/CompanyBadge";
 import Button from "../../components/ui/Button/Button";
-import { COMPANIES } from "../../utils/mockData";
 
 const Landing = () => {
-  const { selectCompany } = useAuth();
+  const { user, company: authCompany, selectCompany } = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
+  const [companies, setCompanies] = useState([]);
 
-  const filtered = COMPANIES.filter(
+  // Auto-redirect if already logged in!
+  useEffect(() => {
+    if (user && authCompany) {
+      const slug = authCompany.name.toLowerCase().replace(/\s+/g, "-");
+      navigate(`/${slug}/dashboard`, { replace: true });
+    }
+  }, [user, authCompany, navigate]);
+
+  // Fetch companies from Supabase
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      const { data } = await supabase.from('companies').select('*').eq('is_archived', false);
+      if (data) setCompanies(data);
+    };
+    fetchCompanies();
+  }, []);
+
+  const filtered = companies.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.industry.toLowerCase().includes(search.toLowerCase())
+      (c.industry && c.industry.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleContinue = () => {
     if (!selected) return;
+    // Set transient state so Login page knows which company they picked
     selectCompany(selected);
     navigate("/login", { state: { company: selected } });
   };

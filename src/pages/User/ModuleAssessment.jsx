@@ -11,6 +11,7 @@ import TimeUpModal from "../../components/common/Modal/TimeUpModal";
 import AssessmentSuccessModal from "../../components/common/Modal/AssessmentSuccessModal";
 import { ArrowLeft, Timer } from "lucide-react";
 import { COURSES } from "../../data/mockCourses";
+import PageTransition from "../../components/common/PageTransition";
 
 // ── Mock Questions ────────────────────────────────────────────
 const MOCK_QUESTIONS = [
@@ -156,14 +157,15 @@ const ModuleAssessment = () => {
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
+          <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
 
           <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+            <PageTransition>
 
             {/* Breadcrumb + Timer Row */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 16 }}>
-                <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
+                <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId } })}>
                   Modules
                 </Button>
                 <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
@@ -284,6 +286,7 @@ const ModuleAssessment = () => {
               </div>
             </div>
 
+            </PageTransition>
           </div>
         </div>
       </div>

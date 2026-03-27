@@ -1,185 +1,144 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import Button from "../../components/ui/Button/Button";
-import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import SettingsCard from "../../components/ui/SettingsCard/SettingsCard";
 import {
-  Building2, Bell, ShieldCheck, Palette, Users, CreditCard,
-  Lock, Eye, EyeOff, Check, X, Camera, Globe, Mail, Phone, MapPin
+  Toggle, getStrength, STRENGTH_COLORS, STRENGTH_LABELS, ReqRow
+} from "../../components/ui/SettingsCard/SettingsHelpers";
+import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
+import PageTransition from "../../components/common/PageTransition";
+import {
+  Building2, Bell, ShieldCheck, Palette,
+  Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar
 } from "lucide-react";
-import "./Settings.css";
 
-/* ── Mock company data ── */
-const COMPANY = {
-  name: "ZOUP",
-  industry: "Sales and Marketing",
-  website: "https://zoup.com",
-  address: "Suite B, 3rd Floor, Rose Industries Building, Pasig City",
-  logo: "ZP",
-  color: "#2980b9",
-  memberSince: "January 2024",
-  plan: "Pro Plan",
-};
-
-/* ── Toggle component ── */
-const Toggle = ({ checked, onChange }) => (
-  <label className="toggle-switch">
-    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-    <span className="toggle-track" />
-  </label>
-);
-
-/* ── Password strength ── */
-const getStrength = (pw) => {
-  const checks = {
-    length: pw.length >= 8, number: /[0-9]/.test(pw),
-    letter: /[a-zA-Z]/.test(pw), uppercase: /[A-Z]/.test(pw),
-    symbol: /[^a-zA-Z0-9]/.test(pw),
-  };
-  const passed = Object.values(checks).filter(Boolean).length;
-  const strength = pw.length === 0 ? null : passed <= 2 ? "weak" : passed <= 4 ? "medium" : "strong";
-  return { checks, strength };
-};
-const SC = { weak: "#e74c3c", medium: "#f39c12", strong: "#27ae60" };
-const SL = { weak: "Weak", medium: "Medium", strong: "Strong" };
-
-const ReqRow = ({ met, label }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-    <div style={{ width: 16, height: 16, borderRadius: "50%", background: met ? "#f0fdf4" : "#fef2f2", border: `1.5px solid ${met ? "#22c55e" : "#fca5a5"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      {met ? <Check size={9} color="#22c55e" /> : <X size={9} color="#f87171" />}
-    </div>
-    <span style={{ fontSize: 11, color: met ? "#16a34a" : "#888" }}>{label}</span>
-  </div>
-);
-
-/* ── Nav items ── */
-const NAV = [
+/* ── Nav items (User-only: no Organization, no Billing) ── */
+const USER_TABS = [
   { key: "company", label: "Company Profile", icon: Building2 },
-  { key: "organization", label: "Organization", icon: Users },
   { key: "notifications", label: "Notifications", icon: Bell },
   { key: "security", label: "Security", icon: ShieldCheck },
   { key: "appearance", label: "Appearance", icon: Palette },
-  { key: "billing", label: "Billing", icon: CreditCard },
 ];
 
 /* ── Panels ── */
 
-const CompanyPanel = () => (
-  <div className="section-card">
-    <div className="section-header-wrap">
-      <h2 className="settings-panel-title">Company Profile</h2>
-      <p className="settings-panel-subtitle">Manage your company's identity - logo, cover, contacts.</p>
-    </div>
+const CompanyPanel = () => {
+  const { company } = useAuth();
 
-    <div className="settings-divider" />
+  if (!company) return null;
 
-    <div className="company-visuals">
-      <div className="label-small">Cover Photo and Logo</div>
-      <div className="company-cover-edit">
-        <div className="cover-placeholder">
-          <button className="cover-edit-btn">
-            <Camera size={14} /> Cover Photo
-          </button>
-        </div>
-        <div className="company-logo-overlay">
-          <div className="logo-circle">
-            <span style={{ fontSize: 24, fontWeight: 900, color: "#2980b9" }}>ZP</span>
-          </div>
-          <button className="logo-edit-btn">
-            <Camera size={12} />
-          </button>
-        </div>
+  return (
+    <div className="section-card">
+      <div className="section-header-wrap">
+        <h2 className="settings-panel-title">Company Profile</h2>
+        <p className="settings-panel-subtitle">Your company's identity - logo, cover, contacts.</p>
       </div>
-    </div>
 
-    <div className="form-section">
-      <div className="form-section-title">Company Details</div>
-      <div className="form-grid">
-        <div className="form-field">
-          <label>Company Name</label>
-          <input value={COMPANY.name} readOnly />
-        </div>
-        <div className="form-field">
-          <label>Industry</label>
-          <input value={COMPANY.industry} readOnly />
-        </div>
-        <div className="form-field">
-          <label>Year Founded</label>
-          <input value="2018" readOnly />
-        </div>
-        <div className="form-field">
-          <label>Company Website</label>
-          <div className="input-with-icon">
-            <Globe size={14} />
-            <input value={COMPANY.website} readOnly />
-          </div>
-        </div>
-        <div className="form-field full-width">
-          <label>Company Description</label>
-          <textarea rows={3} value="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus eget sapien bibendum varius. Curabitur vehicula, nisl a fermentum aliquet, nunc urna tincidunt nisi." readOnly />
-        </div>
-        <div className="form-field full-width">
-          <label>Workspace URL</label>
-          <div className="workspace-url-input">
-            <span className="prefix">spark-ph-lms.com/</span>
-            <input value="zoup" readOnly />
-          </div>
-          <span className="field-hint">Your learning portal URL: <strong>spark-ph-lms.com/zoup</strong></span>
-        </div>
-      </div>
-    </div>
+      <div className="settings-divider" />
 
-    <div className="form-section">
-      <div className="form-section-title">Contact Information</div>
-      <div className="form-grid">
-        <div className="form-field">
-          <label>Contact Person</label>
-          <input value="Danchi D." readOnly />
-        </div>
-        <div className="form-field">
-          <label>Contact Email</label>
-          <div className="input-with-icon">
-            <Mail size={14} />
-            <input value="email@zoup.com" readOnly />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Phone Number</label>
-          <div className="input-with-icon">
-            <Phone size={14} />
-            <input value="0999-999-999" readOnly />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Country</label>
-          <select value="Phillipines" disabled>
-            <option>Phillipines</option>
-          </select>
-        </div>
-        <div className="form-field full-width">
-          <label>Office Address</label>
-          <div className="input-with-icon">
-            <MapPin size={14} />
-            <input value={COMPANY.address} readOnly />
+      <div className="company-visuals">
+        <div className="label-small">Logo and Cover Photo</div>
+        <div
+          className="company-cover-edit"
+          style={company?.cover_photo_url ? {
+            backgroundImage: `url(${company.cover_photo_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          } : {}}
+        >
+          <div className="company-logo-overlay">
+            <div className="logo-circle" style={{ background: "white", border: "1.5px solid #e0e0e0" }}>
+              {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
+                ? <img src={company.logo_url} alt={company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+                : <span style={{ fontSize: 24, fontWeight: 900, color: company.color || "#FF6B00" }}>{company.name?.substring(0, 2).toUpperCase()}</span>}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-);
 
-const OrganizationPanel = () => (
-  <div className="section-card">
-    <h2 className="settings-panel-title">Organization</h2>
-    <p className="settings-panel-subtitle">Manage your company departments and branches.</p>
-    <div className="settings-divider" />
-    <div style={{ padding: 40, textAlign: "center", color: "#888" }}>
-      Organization structure management coming soon.
+      <div className="form-section">
+        <div className="form-section-title">Company Details</div>
+        <div className="form-grid">
+          <div className="form-field">
+            <label>Company Name</label>
+            <input value={company.name || ""} readOnly />
+          </div>
+          <div className="form-field">
+            <label>Industry</label>
+            <input value={company.industry || ""} readOnly />
+          </div>
+          <div className="form-field">
+            <label>Year Founded</label>
+            <div className="input-with-icon">
+              <Calendar size={14} />
+              <input value={company.year_founded || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Company Website</label>
+            <div className="input-with-icon">
+              <Globe size={14} />
+              <input value={company.website_url || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field full-width">
+            <label>Company Description</label>
+            <textarea rows={3} value={company.description || ""} readOnly />
+          </div>
+          <div className="form-field full-width">
+            <label>Workspace URL</label>
+            <div className="workspace-url-input">
+              <span className="prefix">spark-ph-lms.com/</span>
+              <input value={company.slug || ""} readOnly />
+            </div>
+            <span className="field-hint">Your learning portal URL: <strong>spark-ph-lms.com/{company.slug}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <div className="form-section-title">Contact Information</div>
+        <div className="form-grid">
+          <div className="form-field">
+            <label>Contact Person</label>
+            <div className="input-with-icon">
+              <User size={14} />
+              <input value={company.contact_person || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Contact Email</label>
+            <div className="input-with-icon">
+              <Mail size={14} />
+              <input value={company.contact_email || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Phone Number</label>
+            <div className="input-with-icon">
+              <Phone size={14} />
+              <input value={company.phone_number || ""} readOnly />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Country</label>
+            <input value={company.country || ""} readOnly />
+          </div>
+          <div className="form-field full-width">
+            <label>Office Address</label>
+            <div className="input-with-icon">
+              <MapPin size={14} />
+              <input value={company.office_address || ""} readOnly />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const NotificationsPanel = () => {
   const [notifs, setNotifs] = useState({
@@ -231,6 +190,21 @@ const NotificationsPanel = () => {
   );
 };
 
+const PwField = ({ label, value, onChange, show, onToggle, placeholder }) => (
+  <div className="settings-field">
+    <div className="settings-field-label">{label}</div>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", background: "white", transition: "border-color 0.15s" }}
+      onFocus={(e) => e.currentTarget.style.borderColor = "#FF6B00"}
+      onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}>
+      <Lock size={15} color="#aaa" style={{ flexShrink: 0 }} />
+      <input type={show ? "text" : "password"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
+      <button onClick={onToggle} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex", alignItems: "center" }}>
+        {show ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+    </div>
+  </div>
+);
+
 const SecurityPanel = () => {
   const [sessionTimeout, setSessionTimeout] = useState(true);
   const [currentPw, setCurrentPw] = useState("");
@@ -242,21 +216,6 @@ const SecurityPanel = () => {
 
   const { checks, strength } = getStrength(newPw);
   const canSave = currentPw && Object.values(checks).every(Boolean) && newPw === confirmPw;
-
-  const PwField = ({ label, value, onChange, show, onToggle, placeholder }) => (
-    <div className="settings-field">
-      <div className="settings-field-label">{label}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", background: "white", transition: "border-color 0.15s" }}
-        onFocus={(e) => e.currentTarget.style.borderColor = "#FF6B00"}
-        onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}>
-        <Lock size={15} color="#aaa" style={{ flexShrink: 0 }} />
-        <input type={show ? "text" : "password"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "inherit", background: "transparent", color: "#1a1a1a", minWidth: 0 }} />
-        <button onClick={onToggle} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex", alignItems: "center" }}>
-          {show ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="section-card">
@@ -288,10 +247,10 @@ const SecurityPanel = () => {
           <div style={{ padding: "0 20px 8px" }}>
             <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
               {["weak", "medium", "strong"].map((level, i) => (
-                <div key={level} style={{ flex: 1, height: 4, borderRadius: 4, background: strength && (i === 0 || (i === 1 && strength !== "weak") || (i === 2 && strength === "strong")) ? SC[strength] : "#e0e0e0", transition: "background 0.3s" }} />
+                <div key={level} style={{ flex: 1, height: 4, borderRadius: 4, background: strength && (i === 0 || (i === 1 && strength !== "weak") || (i === 2 && strength === "strong")) ? STRENGTH_COLORS[strength] : "#e0e0e0", transition: "background 0.3s" }} />
               ))}
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: SC[strength] }}>{SL[strength]}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: STRENGTH_COLORS[strength] }}>{STRENGTH_LABELS[strength]}</span>
             <div style={{ marginTop: 8, padding: "10px 12px", background: "#f9f9f9", borderRadius: 8, border: "1px solid #f0f0f0" }}>
               <ReqRow met={checks.length} label="At least 8 characters" />
               <ReqRow met={checks.letter} label="Contains a letter" />
@@ -385,17 +344,6 @@ const AppearancePanel = () => {
   );
 };
 
-const BillingPanel = () => (
-  <div className="section-card">
-    <h2 className="settings-panel-title">Billing</h2>
-    <p className="settings-panel-subtitle">Manage your subscription and billing information.</p>
-    <div className="settings-divider" />
-    <div style={{ padding: 40, textAlign: "center", color: "#888" }}>
-      Billing and Subscription details coming soon.
-    </div>
-  </div>
-);
-
 /* ── Main Settings Page ── */
 const Settings = () => {
   const { user, company, logout } = useAuth();
@@ -404,64 +352,35 @@ const Settings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   useSidebarAutoClose(setSidebarOpen);
 
-  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "company");
-
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page) => navigate(`/${slug}/${page.toLowerCase()}`);
 
-  // Refs for scrolling
-  const sectionRefs = {
-    company: useRef(null),
-    organization: useRef(null),
-    notifications: useRef(null),
-    security: useRef(null),
-    appearance: useRef(null),
-    billing: useRef(null),
-  };
-
-  const handleTabClick = (key) => {
-    setActiveTab(key);
-    sectionRefs[key].current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const defaultTab = location.state?.activeTab || "company";
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "#f4f4f4", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Settings" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search settings ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 24px", color: "#1a1a1a" }}>Settings</h1>
-
-          <div className="settings-grid-layout">
-            {/* Floating Nav Container */}
-            <aside className="settings-sidebar-nav">
-              <div className="settings-nav-card-fixed">
-                {NAV.map(({ key, label }) => (
-                  <div
-                    key={key}
-                    className={`settings-nav-card-item ${activeTab === key ? "active" : ""}`}
-                    onClick={() => handleTabClick(key)}
-                  >
-                    {label}
-                  </div>
-                ))}
-              </div>
-            </aside>
-
-            {/* Scrollable Sections Area */}
-            <main className="settings-content-sections">
-              <div ref={sectionRefs.company}><CompanyPanel /></div>
-              <div ref={sectionRefs.organization}><OrganizationPanel /></div>
-              <div ref={sectionRefs.notifications}><NotificationsPanel /></div>
-              <div ref={sectionRefs.security}><SecurityPanel /></div>
-              <div ref={sectionRefs.appearance}><AppearancePanel /></div>
-              <div ref={sectionRefs.billing}><BillingPanel /></div>
-
-              <div style={{ height: 200 }} /> {/* Spacer at bottom */}
-            </main>
-          </div>
+          <PageTransition>
+            <SettingsCard tabs={USER_TABS} defaultTab={defaultTab} title="Settings">
+              <SettingsCard.Section sectionKey="company">
+                <CompanyPanel />
+              </SettingsCard.Section>
+              <SettingsCard.Section sectionKey="notifications">
+                <NotificationsPanel />
+              </SettingsCard.Section>
+              <SettingsCard.Section sectionKey="security">
+                <SecurityPanel />
+              </SettingsCard.Section>
+              <SettingsCard.Section sectionKey="appearance">
+                <AppearancePanel />
+              </SettingsCard.Section>
+            </SettingsCard>
+          </PageTransition>
         </div>
       </div>
     </div>

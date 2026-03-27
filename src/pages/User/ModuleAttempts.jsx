@@ -7,6 +7,7 @@ import useSidebarAutoClose from "../../hooks/useSidebarAutoClose";
 import Button from "../../components/ui/Button/Button";
 import { ArrowLeft, Check, X, RotateCcw, Send } from "lucide-react";
 import { COURSES } from "../../data/mockCourses";
+import PageTransition from "../../components/common/PageTransition";
 
 const PASSING_SCORE = 70; // Change this to adjust the passing score
 
@@ -78,9 +79,10 @@ const ModuleAttempts = () => {
       <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} searchPlaceholder="Search courses, lessons ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+          <PageTransition>
 
           {/* Breadcrumbs */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, fontSize: 16 }}>
@@ -218,6 +220,7 @@ const ModuleAttempts = () => {
             </div>
           )}
 
+          </PageTransition>
         </div>
       </div>
     </div>
