@@ -1,12 +1,13 @@
 .assessment-card-wrapper {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
   padding: 32px 40px;
   font-family: 'Barlow', sans-serif;
-  color: #1a1a1a;
+  color: var(--color-text);
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--color-border);
 }
 
 .assessment-card-header h2 {
@@ -17,7 +18,7 @@
 
 .assessment-card-header p {
   font-size: 13px;
-  color: #888;
+  color: var(--color-text-muted);
   margin: 0 0 24px 0;
 }
 
@@ -34,7 +35,7 @@
 .assessment-question-text {
   font-size: 16px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--color-text-header);
   line-height: 1.5;
   margin-bottom: 24px;
 }
@@ -53,32 +54,32 @@
   gap: 14px;
   padding: 14px 20px;
   border-radius: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
-  background: white;
+  color: var(--color-text);
+  background: var(--color-bg-muted);
 }
 
 .assessment-choice:hover {
   border-color: #FF6B00;
-  background: #fff9f5;
+  background: var(--sidebar-active-bg);
 }
 
 .assessment-choice--selected {
-  background: linear-gradient(90deg, #fff0e0, #ffe8ce);
+  background: var(--sidebar-active-bg);
   border-color: #FF6B00;
-  color: #1a1a1a;
-  font-weight: 600;
+  color: #FF6B00;
+  font-weight: 700;
 }
 
 .assessment-choice-radio {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid #ccc;
+  border: 2px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,7 +110,7 @@
   align-items: center;
   justify-content: space-between;
   padding-top: 24px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--color-border);
 }
 
 /* ── Dot Nav ── */
@@ -123,7 +124,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #ddd;
+  background: var(--color-bg-muted);
   cursor: pointer;
   transition: all 0.2s;
 }

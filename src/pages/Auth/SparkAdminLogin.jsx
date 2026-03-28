@@ -47,7 +47,7 @@ const SUPERADMIN_CREDENTIALS = {
 // ── Component ─────────────────────────────────────────────────
 const SparkAdminLogin = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginMock } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -70,8 +70,8 @@ const SparkAdminLogin = () => {
       username === SUPERADMIN_CREDENTIALS.username &&
       password === SUPERADMIN_CREDENTIALS.password
     ) {
-      // Call AuthContext login with spark_admin role
-      login({ name: "Ian Palabrica", role: "spark_admin", username });
+      // Use AuthContext loginMock for local admin authentication
+      loginMock({ name: "Ian Palabrica", role: "spark_admin" });
       navigate("/superadmin/dashboard");
     } else {
       setError("Invalid admin credentials.");

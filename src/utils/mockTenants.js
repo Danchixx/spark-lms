@@ -12,7 +12,6 @@ export const MOCK_TENANTS = [
     phone: "08-2249",
     facebook: "depedofficialfbpage",
     stats: { subscriptions: 3, management: 10, learners: 200, courses: 13 },
-    // Activeness: each course has a progress % (0-100) representing combined user progress
     courseActivity: [
       { name: "Sales Fundamentals",     progress: 82, totalUsers: 40 },
       { name: "Customer Service Pro",   progress: 65, totalUsers: 38 },
@@ -20,7 +19,7 @@ export const MOCK_TENANTS = [
       { name: "Technical Onboarding",   progress: 30, totalUsers: 35 },
       { name: "Leadership Basics",      progress: 55, totalUsers: 30 },
     ],
-    lastActive: "2026-03-19", // ISO date — within a week = active
+    lastActive: "2026-03-19",
   },
   {
     id: 2,
@@ -41,7 +40,7 @@ export const MOCK_TENANTS = [
       { name: "Content Creation",       progress: 20, totalUsers: 50 },
       { name: "SEO Fundamentals",       progress: 10, totalUsers: 48 },
     ],
-    lastActive: "2026-03-10", // > 7 days ago = inactive
+    lastActive: "2026-03-10",
   },
   {
     id: 3,
@@ -64,7 +63,7 @@ export const MOCK_TENANTS = [
       { name: "Ethics in Tech",         progress: 44, totalUsers: 100 },
       { name: "Project Management",     progress: 70, totalUsers: 95  },
     ],
-    lastActive: "2026-03-20", // today = active
+    lastActive: "2026-03-20",
   },
   {
     id: 4,
@@ -84,7 +83,7 @@ export const MOCK_TENANTS = [
       { name: "CRM Basics",             progress: 40, totalUsers: 9  },
       { name: "Cold Calling Mastery",   progress: 15, totalUsers: 8  },
     ],
-    lastActive: "2026-03-08", // > 7 days = inactive
+    lastActive: "2026-03-08",
   },
   {
     id: 5,
@@ -100,6 +99,6 @@ export const MOCK_TENANTS = [
     facebook: "",
     stats: { subscriptions: 1, management: 0, learners: 0, courses: 0 },
     courseActivity: [],
-    lastActive: "2026-02-28", // very old = inactive
+    lastActive: "2026-02-28",
   },
 ];
