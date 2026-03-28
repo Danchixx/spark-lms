@@ -3,6 +3,7 @@
 // - Mobile (≤768px): topbar burger opens an animated slide-down dropdown
 
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../../context/ThemeContext";
 
 const NAV = {
@@ -74,10 +75,14 @@ export const TOPBAR_HEIGHT = 70;
 
 // ── Nav item — smooth active transition ───────────────────────
 const NavItem = ({ item, isActive, onClick, showSidebarIcons }) => {
+  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   return (
     <div
-      onClick={onClick}
+      onClick={() => {
+        if (onClick) onClick();
+        navigate("/superadmin/" + item.key);
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -162,7 +167,7 @@ const UserChip = ({ user }) => (
 );
 
 // ── Nav content (shared between desktop + mobile) ─────────────
-const NavContent = ({ activePage, onNavigate, showSidebarIcons }) => (
+const NavContent = ({ activePage, showSidebarIcons, onItemClick }) => (
   <>
     {Object.entries(NAV).map(([section, items]) => (
       <div key={section} style={{ marginBottom: 4 }}>
@@ -172,7 +177,7 @@ const NavContent = ({ activePage, onNavigate, showSidebarIcons }) => (
             key={item.key}
             item={item}
             isActive={activePage === item.key}
-            onClick={() => onNavigate(item.key)}
+            onClick={() => onItemClick && onItemClick(item.key)}
             showSidebarIcons={showSidebarIcons}
           />
         ))}
@@ -184,7 +189,8 @@ const NavContent = ({ activePage, onNavigate, showSidebarIcons }) => (
 // ── Animated mobile dropdown ──────────────────────────────────
 // Uses a CSS keyframe for slide-down + fade-in on open,
 // and manages its own closing animation before unmounting.
-const MobileDropdown = ({ open, activePage, onNavigate, onClose, user }) => {
+const MobileDropdown = ({ open, activePage, onClose, user }) => {
+  const { showSidebarIcons } = useTheme();
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const closeTimer = useRef(null);
@@ -280,10 +286,7 @@ const MobileDropdown = ({ open, activePage, onNavigate, onClose, user }) => {
         {/* Nav items */}
         <NavContent
           activePage={activePage}
-          onNavigate={(key) => {
-            onNavigate(key);
-            onClose();
-          }}
+          onItemClick={onClose}
           showSidebarIcons={showSidebarIcons}
         />
 
@@ -352,7 +355,7 @@ const SASidebar = ({ open, activePage, onNavigate, user }) => {
           opacity: open ? 1 : 0,
           transition: "opacity 0.2s ease",
         }}>
-          <NavContent activePage={activePage} onNavigate={onNavigate} showSidebarIcons={showSidebarIcons} />
+          <NavContent activePage={activePage} showSidebarIcons={showSidebarIcons} />
         </nav>
         <div style={{
           borderTop: "1px solid #eee",
