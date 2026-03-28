@@ -21,7 +21,6 @@ import SADashboard, { DashboardHome, ComingSoon } from "../pages/SuperAdmin/SADa
 import SparkTenants from "../pages/SuperAdmin/Tenants/SparkTenants";
 import SparkApprovals from "../pages/SuperAdmin/Approvals/SparkApprovals";
 import SparkUsers from "../pages/SuperAdmin/Users/SparkUsers";
-import SparkCourses from "../pages/SuperAdmin/Courses/SparkCourses";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 
@@ -73,7 +72,7 @@ const AppRoutes = () => {
   return (
     <>
       <Routes location={location}>
-          {/* Public */}
+        {/* Public */}
         <Route path="/" element={<Landing />} />
         <Route path="/admin" element={<SparkAdminLogin />} />
         <Route path="/:company" element={<Login />} />
@@ -92,7 +91,7 @@ const AppRoutes = () => {
           <Route path="tenants" element={<SparkTenants />} />
           <Route path="approvals" element={<SparkApprovals />} />
           <Route path="users" element={<SparkUsers />} />
-          <Route path="courses" element={<SparkCourses />} />
+          <Route path="courses" element={<ComingSoon label="courses" />} />
           <Route path="settings" element={<ComingSoon label="settings" />} />
         </Route>
 
