@@ -3,6 +3,24 @@ import { useNavigate } from "react-router-dom";
 import SparkLogo from "../../common/SparkLogo/sparklogo.png";
 import LogoutModal from "../../common/Modal/LogoutModal";
 import { useAuth } from "../../../context/AuthContext";
+import { useTheme } from "../../../context/ThemeContext";
+import {
+  LayoutDashboard,
+  UserCircle,
+  BookOpen,
+  Award,
+  Settings as SettingsIcon,
+  Mail
+} from "lucide-react";
+
+const ICON_MAP: Record<string, any> = {
+  Dashboard: LayoutDashboard,
+  Profile: UserCircle,
+  Courses: BookOpen,
+  Certificates: Award,
+  Settings: SettingsIcon,
+  Contact: Mail,
+};
 
 const NAV_ITEMS = [
   { section: "MAIN", items: ["Dashboard", "Profile", "Courses", "Certificates"] },
@@ -22,6 +40,7 @@ type SidebarProps = {
 
 const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: SidebarProps) => {
   const { company } = useAuth();
+  const { showSidebarIcons } = useTheme();
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
   const overlayRef = useRef(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -213,8 +232,15 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
                 style={{
                   color: activePage === item ? "var(--sidebar-active-text)" : "var(--sidebar-text-muted)",
                   fontWeight: activePage === item ? 700 : 400,
+                  gap: showSidebarIcons ? 12 : 0
                 }}
               >
+                {showSidebarIcons && (
+                  (() => {
+                    const Icon = ICON_MAP[item];
+                    return Icon ? <Icon size={20} strokeWidth={activePage === item ? 2.5 : 2} /> : null;
+                  })()
+                )}
                 {item}
               </div>
             ))}

@@ -3,6 +3,8 @@
 // - Mobile (≤768px): topbar burger opens an animated slide-down dropdown
 
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../../context/ThemeContext";
 
 const NAV = {
   overview: [
@@ -72,24 +74,27 @@ export const SIDEBAR_WIDTH = 220;
 export const TOPBAR_HEIGHT = 70;
 
 // ── Nav item — smooth active transition ───────────────────────
-const NavItem = ({ item, isActive, onClick }) => {
+const NavItem = ({ item, isActive, onClick, showSidebarIcons }) => {
+  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   return (
     <div
-      onClick={onClick}
+      onClick={() => {
+        if (onClick) onClick();
+        navigate("/superadmin/" + item.key);
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: showSidebarIcons ? 10 : 0,
         padding: "11px 20px",
         cursor: "pointer",
         fontSize: 15,
         fontWeight: 500,
         color: isActive ? "#FF6B00" : hovered ? "#FF6B00" : "#444",
         background: isActive ? "#FFF0E6" : hovered ? "#FFF8F3" : "transparent",
-        // Smooth colour + background transitions
         transition: "background 0.25s cubic-bezier(.4,0,.2,1), color 0.25s cubic-bezier(.4,0,.2,1)",
         whiteSpace: "nowrap",
         userSelect: "none",
@@ -97,13 +102,19 @@ const NavItem = ({ item, isActive, onClick }) => {
         boxSizing: "border-box",
       }}
     >
-      <span style={{
-        color: isActive ? "#FF6B00" : hovered ? "#FF6B00" : "#888",
-        flexShrink: 0,
-        transition: "color 0.25s cubic-bezier(.4,0,.2,1)",
-      }}>
-        {icons[item.key]}
-      </span>
+      {showSidebarIcons && (
+        <span style={{
+          color: isActive ? "#FF6B00" : hovered ? "#FF6B00" : "#888",
+          flexShrink: 0,
+          transition: "color 0.25s cubic-bezier(.4,0,.2,1)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 20
+        }}>
+          {icons[item.key]}
+        </span>
+      )}
       {item.label}
     </div>
   );
@@ -156,7 +167,7 @@ const UserChip = ({ user }) => (
 );
 
 // ── Nav content (shared between desktop + mobile) ─────────────
-const NavContent = ({ activePage, onNavigate }) => (
+const NavContent = ({ activePage, showSidebarIcons, onItemClick }) => (
   <>
     {Object.entries(NAV).map(([section, items]) => (
       <div key={section} style={{ marginBottom: 4 }}>
@@ -166,7 +177,8 @@ const NavContent = ({ activePage, onNavigate }) => (
             key={item.key}
             item={item}
             isActive={activePage === item.key}
-            onClick={() => onNavigate(item.key)}
+            onClick={() => onItemClick && onItemClick(item.key)}
+            showSidebarIcons={showSidebarIcons}
           />
         ))}
       </div>
@@ -177,7 +189,8 @@ const NavContent = ({ activePage, onNavigate }) => (
 // ── Animated mobile dropdown ──────────────────────────────────
 // Uses a CSS keyframe for slide-down + fade-in on open,
 // and manages its own closing animation before unmounting.
-const MobileDropdown = ({ open, activePage, onNavigate, onClose, user }) => {
+const MobileDropdown = ({ open, activePage, onClose, user }) => {
+  const { showSidebarIcons } = useTheme();
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const closeTimer = useRef(null);
@@ -273,10 +286,8 @@ const MobileDropdown = ({ open, activePage, onNavigate, onClose, user }) => {
         {/* Nav items */}
         <NavContent
           activePage={activePage}
-          onNavigate={(key) => {
-            onNavigate(key);
-            onClose();
-          }}
+          onItemClick={onClose}
+          showSidebarIcons={showSidebarIcons}
         />
 
         {/* User chip */}
@@ -290,6 +301,7 @@ const MobileDropdown = ({ open, activePage, onNavigate, onClose, user }) => {
 
 // ── Main SASidebar ────────────────────────────────────────────
 const SASidebar = ({ open, activePage, onNavigate, user }) => {
+  const { showSidebarIcons } = useTheme();
   return (
     <>
       <style>{`
@@ -340,11 +352,10 @@ const SASidebar = ({ open, activePage, onNavigate, user }) => {
           paddingTop: 8,
           minWidth: SIDEBAR_WIDTH,
           overflowY: "auto",
-          // Fade content in/out as sidebar opens/closes
           opacity: open ? 1 : 0,
           transition: "opacity 0.2s ease",
         }}>
-          <NavContent activePage={activePage} onNavigate={onNavigate} />
+          <NavContent activePage={activePage} showSidebarIcons={showSidebarIcons} />
         </nav>
         <div style={{
           borderTop: "1px solid #eee",

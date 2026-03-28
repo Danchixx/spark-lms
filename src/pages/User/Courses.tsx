@@ -18,6 +18,7 @@ interface MockCourse {
   progress: number;
   assignedBy: string;
   icon: string;
+  thumbnail?: string;
   lastModule: string | null;
 }
 
@@ -95,8 +96,12 @@ const Courses = () => {
 
                 {/* Mobile Info Row (grouped for stacking) */}
                 <div className="banner-info-row" style={{ display: "contents" }}>
-                  <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#FF8C00,#FF6B00)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>
-                    {lastOngoing.icon}
+                  <div style={{ width: 62, height: 62, borderRadius: 10, background: "var(--color-bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, overflow: "hidden", border: "1.5px solid var(--color-border)" }}>
+                    {lastOngoing.thumbnail ? (
+                      <img src={lastOngoing.thumbnail} alt={lastOngoing.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      lastOngoing.icon
+                    )}
                   </div>
                   <div className="banner-content" style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 800, fontSize: 15, color: "var(--color-text-header)" }}>Continue: {lastOngoing.name}</div>

@@ -1,0 +1,40 @@
+.side-info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  width: 100%;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.side-info-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin: 0;
+  text-align: left;
+}
+
+.side-info-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-header);
+  margin: 0;
+  text-align: left;
+}
+
+/* ── Mobile / Small Screens (Up to 1024px) ── */
+@media (max-width: 1024px) {
+  .side-info-row {
+    align-items: center;
+    text-align: center;
+  }
+  
+  .side-info-label,
+  .side-info-value {
+    text-align: center;
+  }
+}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
 import { MOCK_TENANTS } from "../../data/mockTenants";
@@ -433,7 +434,8 @@ const StatIcons = {
   ),
 };
 
-const DashboardHome = ({ onNavigate }) => {
+export const DashboardHome = () => {
+  const navigate = useNavigate();
   const [notifyTenant, setNotifyTenant] = useState(null);
   const inactiveCount = MOCK_TENANTS.filter((t) => daysSince(t.lastActive) >= 7).length;
 
@@ -463,7 +465,7 @@ const DashboardHome = ({ onNavigate }) => {
         {STATS.map((s, i) => (
           <div
             key={i}
-            onClick={() => onNavigate(s.key)}
+            onClick={() => navigate("/superadmin/" + s.key)}
             style={d.statCard}
             onMouseEnter={e => {
               e.currentTarget.style.transform = "translateY(-4px)";
@@ -706,8 +708,7 @@ const d = {
   },
 };
 
-// ... (ComingSoon component)
-const ComingSoon = ({ label }) => (
+export const ComingSoon = ({ label }) => (
   <div style={{
     flex: 1, display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center", color: "#aaa", gap: 12,
@@ -731,32 +732,25 @@ const SADashboard = () => {
   const location = useLocation();
   const [showWelcome, setShowWelcome] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activePage, setActivePage] = useState("dashboard");
 
-  // Close mobile dropdown when a nav item is selected
+  // Derive activePage from path (e.g., /superadmin/tenants -> tenants)
+  const pathParts = location.pathname.split("/");
+  const activePage = pathParts[pathParts.length - 1] || "dashboard";
+
+  const handleWelcomeDone = useCallback(() => {
+    setShowWelcome(false);
+  }, []);
   useEffect(() => {
     const handler = () => setSidebarOpen(false);
     window.addEventListener("sa-mobile-nav-close", handler);
     return () => window.removeEventListener("sa-mobile-nav-close", handler);
   }, []);
 
-  const renderPage = () => {
-    switch (activePage) {
-      case "dashboard": return <DashboardHome onNavigate={setActivePage} />;
-      case "tenants": return <SparkTenants sidebarOpen={sidebarOpen} />;
-      case "approvals": return <SparkApprovals />;
-      case "users": return <SparkUsers />;
-      case "courses": return <ComingSoon label="courses" />;
-      case "settings": return <ComingSoon label="settings" />;
-      default: return <DashboardHome onNavigate={setActivePage} />;
-    }
-  };
-
   if (showWelcome) {
     return (
       <WelcomeScreen
         name={user?.name?.split(" ")[0] || "Admin"}
-        onDone={() => setShowWelcome(false)}
+        onDone={handleWelcomeDone}
       />
     );
   }
