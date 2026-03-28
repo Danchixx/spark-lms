@@ -26,12 +26,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Check active session on mount
+    // 1. Check for persisted mock user or active session on mount
+    const savedMock = localStorage.getItem("spark_mock_user");
+    if (savedMock) {
+      try {
+        setUser(JSON.parse(savedMock));
+        setLoading(false);
+      } catch (e) {
+        localStorage.removeItem("spark_mock_user");
+      }
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) {
+      if (session && !savedMock) {
         fetchUserProfile(session.user.email!);
-      } else {
+      } else if (!savedMock) {
         setLoading(false);
       }
     });
@@ -128,10 +138,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } as AppUser;
     
     setUser(fullMock);
+    localStorage.setItem("spark_mock_user", JSON.stringify(fullMock));
     setLoading(false);
   };
 
   const logout = async () => {
+    localStorage.removeItem("spark_mock_user");
     const { error } = await supabase.auth.signOut();
     if (error) console.error("Logout error:", error);
   };

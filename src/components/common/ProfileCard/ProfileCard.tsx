@@ -1,12 +1,13 @@
 import { useState, useRef, type ReactNode } from "react";
 import {
-  UserCircle, Pencil, Building2, Briefcase, BookOpen, Loader2,
+  UserCircle, Pencil, Briefcase, Loader2,
 } from "lucide-react";
+import "./ProfileCard.css";
 import type { LucideIcon } from "lucide-react";
 
 const LABEL_W = 150;
 
-/* ── Types ── */
+/* Types  */
 interface ProfileData {
   firstName: string;
   middleName: string;
@@ -34,7 +35,7 @@ interface ProfileCardProps {
   isUploading?: boolean;
 }
 
-/* ── Field components ── */
+
 
 const FieldRow = ({ label, value }: { label: string; value: string | ReactNode }) => (
   <div className="field-row-inner" style={{ display: "flex", borderBottom: "1px solid var(--color-border)" }}>
@@ -125,13 +126,10 @@ const SectionTitle = ({ icon: Icon, title }: { icon: LucideIcon; title: string }
   </div>
 );
 
-const SideInfoRow = ({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) => (
-  <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--color-border)" }}>
-    <Icon size={13} color="#FF6B00" style={{ marginTop: 2, flexShrink: 0 }} />
-    <div>
-      <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.12em", margin: 0 }}>{label}</p>
-      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)", margin: "2px 0 0" }}>{value || "—"}</p>
-    </div>
+const SideInfoRow = ({ label, value }: { label: string; value: string }) => (
+  <div className="side-info-row">
+    <p className="side-info-label">{label}</p>
+    <p className="side-info-value">{value || "—"}</p>
   </div>
 );
 
@@ -226,15 +224,15 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
               </div>
 
               {/* Hidden File Input */}
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                accept="image/*" 
-                style={{ display: "none" }} 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                style={{ display: "none" }}
               />
 
-              <button 
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 style={{ position: "absolute", bottom: 4, right: 4, width: 30, height: 30, borderRadius: "50%", background: isUploading ? "#ccc" : "#FF6B00", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isUploading ? "not-allowed" : "pointer", zIndex: 5, boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }}
@@ -246,10 +244,10 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
             <p style={{ fontWeight: 800, fontSize: 14, textAlign: "center", lineHeight: 1.4, color: "var(--color-text-header)", marginBottom: 2 }}>{fullName}</p>
             <p style={{ fontSize: 11, fontWeight: 700, color: "#FF6B00", letterSpacing: 2, marginBottom: 16 }}>{profileData.role?.toUpperCase() || "USER"}</p>
 
-            <div style={{ width: "100%", borderTop: "1px solid var(--color-border)", paddingTop: 12 }}>
-              <SideInfoRow icon={Building2} label="Department" value={profileData.department} />
-              <SideInfoRow icon={Briefcase} label="Job Title" value={profileData.jobTitle} />
-              <SideInfoRow icon={BookOpen} label="Courses" value={`${profileData.coursesAssigned ?? 0} assigned`} />
+            <div style={{ width: "100%", paddingTop: 8 }}>
+              <SideInfoRow label="Department" value={profileData.department} />
+              <SideInfoRow label="Job Title" value={profileData.jobTitle} />
+              <SideInfoRow label="Courses" value={`${profileData.coursesAssigned ?? 0} assigned`} />
             </div>
 
             {editable && (

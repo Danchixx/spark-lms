@@ -17,7 +17,11 @@ import UserModuleAttempts from "../pages/User/ModuleAttempts";
 import UserCertificates from "../pages/User/Certificates";
 import UserSettings from "../pages/User/Settings";
 import UserContact from "../pages/User/Contact";
-import SADashboard from "../pages/SuperAdmin/SADashboard";
+import SADashboard, { DashboardHome, ComingSoon } from "../pages/SuperAdmin/SADashboard";
+import SparkTenants from "../pages/SuperAdmin/Tenants/SparkTenants";
+import SparkApprovals from "../pages/SuperAdmin/Approvals/SparkApprovals";
+import SparkUsers from "../pages/SuperAdmin/Users/SparkUsers";
+import SparkCourses from "../pages/SuperAdmin/Courses/SparkCourses";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 
@@ -74,15 +78,23 @@ const AppRoutes = () => {
         <Route path="/admin" element={<SparkAdminLogin />} />
         <Route path="/:company" element={<Login />} />
 
-        {/* Super Admin — SADashboard handles its own internal page switching */}
+        {/* Super Admin — SADashboard layout with nested routes */}
         <Route
-          path="/superadmin/dashboard"
+          path="/superadmin"
           element={
             <ProtectedRoute role="spark_admin">
               <SADashboard />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardHome />} />
+          <Route path="tenants" element={<SparkTenants />} />
+          <Route path="approvals" element={<SparkApprovals />} />
+          <Route path="users" element={<SparkUsers />} />
+          <Route path="courses" element={<SparkCourses />} />
+          <Route path="settings" element={<ComingSoon label="settings" />} />
+        </Route>
 
         {/* Protected — same URL, different component per role */}
         <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
@@ -98,7 +110,21 @@ const AppRoutes = () => {
 
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to={user && slug ? `/${slug}/dashboard` : "/"} replace />} />
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to={
+                user?.role === "spark_admin"
+                  ? "/superadmin/dashboard"
+                  : user && slug
+                    ? `/${slug}/dashboard`
+                    : "/"
+              }
+              replace
+            />
+          }
+        />
       </Routes>
 
       {/* Session expired overlay */}

@@ -304,10 +304,9 @@ const SecurityPanel = () => {
 };
 
 const AppearancePanel = () => {
-  const { theme, setTheme, sidebarTheme, setSidebarTheme } = useTheme();
+  const { theme, setTheme, sidebarTheme, setSidebarTheme, showSidebarIcons, setShowSidebarIcons } = useTheme();
   const [font, setFont] = useState("DM Sans");
   const [collapseSidebar, setCollapseSidebar] = useState(false);
-  const [showLabels, setShowLabels] = useState(true);
 
   const fonts = ["DM Sans", "Inter", "Georgia", "DM Mono"];
 
@@ -387,7 +386,7 @@ const AppearancePanel = () => {
             <div className="toggle-label">Show Icons</div>
             <div className="toggle-desc">Display icons alongside text labels</div>
           </div>
-          <Toggle checked={showLabels} onChange={setShowLabels} />
+          <Toggle checked={showSidebarIcons} onChange={setShowSidebarIcons} />
         </div>
       </div>
 

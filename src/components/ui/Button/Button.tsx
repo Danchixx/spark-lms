@@ -17,8 +17,8 @@
 const VARIANTS = {
   primary:   { bg: "#FF6B00", color: "white",   border: "none",                    hoverBg: "#e55a00" },
   secondary: { bg: "#1e1e1e", color: "white",   border: "none",                    hoverBg: "#333"    },
-  outline:   { bg: "white",   color: "#FF6B00", border: "1.5px solid #FF6B00",     hoverBg: "#fff3e8" },
-  ghost:     { bg: "white",   color: "#555",    border: "1.5px solid #e0e0e0",     hoverBg: "#f5f5f5" },
+  outline:   { bg: "var(--color-surface)", color: "#FF6B00", border: "1.5px solid #FF6B00",     hoverBg: "var(--color-bg-hover)" },
+  ghost:     { bg: "var(--color-surface)", color: "#555",    border: "1.5px solid var(--color-border)",     hoverBg: "var(--color-bg-hover)" },
   danger:    { bg: "#e74c3c", color: "white",   border: "none",                    hoverBg: "#c0392b" },
 };
 

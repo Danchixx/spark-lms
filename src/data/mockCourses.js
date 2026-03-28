@@ -1,3 +1,8 @@
+import salesImg from "../assets/images/sales_fundamentals.png";
+import customerImg from "../assets/images/customer_service_pro.png";
+import digitalImg from "../assets/images/digital_marketing.png";
+import technicalImg from "../assets/images/technical_onboarding.png";
+
 export const COURSES = [
   {
     id: 1,
@@ -9,6 +14,7 @@ export const COURSES = [
     progress: 94,
     assignedBy: "Admin",
     icon: "💼",
+    thumbnail: salesImg,
     lastModule: "Module 5 · Unit 3: The AIDA Framework",
     modules: [
       {
@@ -65,6 +71,7 @@ export const COURSES = [
     progress: 54,
     assignedBy: "Admin",
     icon: "👤",
+    thumbnail: customerImg,
     lastModule: "Module 3 · Unit 2: Handling Complaints",
     modules: []
   },
@@ -78,6 +85,7 @@ export const COURSES = [
     progress: 100,
     assignedBy: "Admin",
     icon: "📢",
+    thumbnail: digitalImg,
     lastModule: "Module 4 · Unit 11: Campaign Analytics",
     modules: [
       {
@@ -139,6 +147,7 @@ export const COURSES = [
     progress: 0,
     assignedBy: "Admin",
     icon: "⚙️",
+    thumbnail: technicalImg,
     lastModule: null,
     modules: []
   },
