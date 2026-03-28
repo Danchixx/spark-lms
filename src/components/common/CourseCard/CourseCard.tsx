@@ -27,6 +27,7 @@ interface CourseCardProps {
     progress: number;
     assignedBy: string;
     icon: string;
+    thumbnail?: string;
   };
 }
 
@@ -58,13 +59,27 @@ const CourseCard = ({ course }: CourseCardProps) => {
       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-lg)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "var(--shadow)"; }}
     >
-      {/* Orange image area */}
-      <div style={{ position: "relative", height: 120, background: "linear-gradient(180deg, #ffb152, #FF8C00, #FF6B00)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {/* Image area */}
+      <div style={{ position: "relative", height: 160, overflow: "hidden" }}>
+        {course.thumbnail ? (
+          <img 
+            src={course.thumbnail} 
+            alt={course.name} 
+            style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+          />
+        ) : (
+          <div style={{ height: "100%", background: "linear-gradient(180deg, #ffb152, #FF8C00, #FF6B00)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ fontSize: 52, opacity: 0.85 }}>{course.icon}</div>
+          </div>
+        )}
+        
+        {/* Gradient Overlay for better contrast */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)" }} />
+
         <StatusBadge
           status={course.status}
-          style={{ position: "absolute", top: 10, left: 10, fontSize: 10, padding: "2px 8px", background: "var(--color-surface)", color: course.status === "Completed" ? "#27ae60" : course.status === "Ongoing" ? "#FF6B00" : "#888", border: "1.5px solid var(--color-border)" }}
+          style={{ position: "absolute", top: 12, left: 12, fontSize: 10, padding: "2px 10px", background: "white", color: course.status === "Completed" ? "#27ae60" : course.status === "Ongoing" ? "#FF6B00" : "#888", border: "none", fontWeight: 700, borderRadius: 6, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
         />
-        <div style={{ fontSize: 52, opacity: 0.85 }}>{course.icon}</div>
       </div>
 
       {/* White body */}

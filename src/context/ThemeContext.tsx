@@ -9,6 +9,8 @@ type ThemeContextType = {
   toggleTheme: () => void;
   sidebarTheme: SidebarTheme;
   setSidebarTheme: (theme: SidebarTheme) => void;
+  showSidebarIcons: boolean;
+  setShowSidebarIcons: (show: boolean) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -25,6 +27,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return saved || 'light';
   });
 
+  const [showSidebarIcons, setShowSidebarIconsState] = useState<boolean>(() => {
+    const saved = localStorage.getItem('showSidebarIcons');
+    return saved === null ? true : saved === 'true';
+  });
+
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem('theme', newTheme);
@@ -33,6 +40,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const setSidebarTheme = (newTheme: SidebarTheme) => {
     setSidebarThemeState(newTheme);
     localStorage.setItem('sidebarTheme', newTheme);
+  };
+
+  const setShowSidebarIcons = (show: boolean) => {
+    setShowSidebarIconsState(show);
+    localStorage.setItem('showSidebarIcons', String(show));
   };
 
   const toggleTheme = () => {
@@ -51,7 +63,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, [theme, sidebarTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, sidebarTheme, setSidebarTheme }}>
+    <ThemeContext.Provider value={{ 
+      theme, setTheme, toggleTheme, 
+      sidebarTheme, setSidebarTheme,
+      showSidebarIcons, setShowSidebarIcons
+    }}>
       {children}
     </ThemeContext.Provider>
   );

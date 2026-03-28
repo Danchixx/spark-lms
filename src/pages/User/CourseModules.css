@@ -1,0 +1,118 @@
+.module-hero-banner {
+  background: linear-gradient(90deg, #FF6B00, #ffb152);
+  border-radius: 20px;
+  padding: 40px 48px;
+  color: white;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 24px;
+  min-height: 240px;
+  align-items: center;
+}
+
+.module-hero-image-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 60%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.module-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  mask-image: linear-gradient(to right, black 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 40%, transparent 100%);
+}
+
+.module-hero-content {
+  z-index: 1;
+  margin-left: auto;
+  max-width: 60%;
+  text-align: right;
+}
+
+.module-hero-title {
+  margin: 0 0 16px 0;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.module-hero-stats {
+  display: flex;
+  gap: 24px;
+  font-size: 16px;
+  font-weight: 700;
+  opacity: 0.95;
+  justify-content: flex-end;
+}
+
+.module-hero-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.module-hero-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+}
+
+/* ── Tablet / Mobile ── */
+@media (max-width: 768px) {
+  .module-hero-banner {
+    flex-direction: column;
+    padding: 0;
+    min-height: auto;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .module-hero-image-container {
+    position: relative;
+    width: 100%;
+    height: 180px;
+  }
+
+  .module-hero-image {
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  }
+
+  .module-hero-content {
+    margin: 0;
+    max-width: 100%;
+    padding: 24px 20px 32px;
+    text-align: center;
+  }
+
+  .module-hero-title {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .module-hero-stats {
+    justify-content: center;
+    gap: 16px;
+    font-size: 14px;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .module-hero-title {
+    font-size: 24px;
+  }
+  
+  .module-hero-stats {
+    gap: 12px;
+  }
+}

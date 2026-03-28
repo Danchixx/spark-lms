@@ -55,9 +55,11 @@ const Certificates = () => {
               {/* ── Earned Certificates ── */}
               {earnedCourses.map((course) => (
                 <div key={course.id} className="certificate-card certificate-card--earned">
-                  <div className="certificate-card-banner certificate-card-banner--earned">
-                    <img src={sparkLogoImg} alt="" className="certificate-card-flame" />
-                    <div className="certificate-card-icon">{course.icon}</div>
+                  <div 
+                    className="certificate-card-banner certificate-card-banner--earned"
+                    style={{ backgroundImage: `url(${course.thumbnail})` }}
+                  >
+                    <img src={sparkLogoImg} alt="" className="certificate-card-flame" style={{ zIndex: 2 }} />
                     <h3 className="certificate-card-name">{course.name}</h3>
                     <p className="certificate-card-issuer">Issued by SPARK LMS · {company?.name?.toUpperCase() || "Company"} Corp.</p>
                   </div>
@@ -87,11 +89,13 @@ const Certificates = () => {
               {/* ── In-Progress (Not Earned) ── */}
               {inProgressCourses.map((course) => (
                 <div key={course.id} className="certificate-card certificate-card--not-earned">
-                  <div className="certificate-card-banner certificate-card-banner--not-earned">
-                    <img src={sparkLogoImg} alt="" className="certificate-card-flame" />
-                    <div className="certificate-card-icon--not-earned">{course.icon}</div>
-                    <h3 className="certificate-card-name" style={{ color: "var(--color-text-header)" }}>{course.name}</h3>
-                    <p className="certificate-card-issuer">Complete the course to earn this certificate</p>
+                  <div 
+                    className="certificate-card-banner certificate-card-banner--not-earned"
+                    style={{ backgroundImage: `url(${course.thumbnail})` }}
+                  >
+                    <img src={sparkLogoImg} alt="" className="certificate-card-flame" style={{ zIndex: 2 }} />
+                    <h3 className="certificate-card-name" style={{ color: "white" }}>{course.name}</h3>
+                    <p className="certificate-card-issuer" style={{ color: "rgba(255,255,255,0.8)" }}>Complete the course to earn this certificate</p>
                   </div>
                   <div className="certificate-card-details">
                     <div className="certificate-progress">

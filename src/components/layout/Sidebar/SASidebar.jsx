@@ -3,6 +3,7 @@
 // - Mobile (≤768px): topbar burger opens an animated slide-down dropdown
 
 import { useState, useEffect, useRef } from "react";
+import { useTheme } from "../../../context/ThemeContext";
 
 const NAV = {
   overview: [
@@ -72,7 +73,7 @@ export const SIDEBAR_WIDTH = 220;
 export const TOPBAR_HEIGHT = 70;
 
 // ── Nav item — smooth active transition ───────────────────────
-const NavItem = ({ item, isActive, onClick }) => {
+const NavItem = ({ item, isActive, onClick, showSidebarIcons }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -82,14 +83,13 @@ const NavItem = ({ item, isActive, onClick }) => {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: showSidebarIcons ? 10 : 0,
         padding: "11px 20px",
         cursor: "pointer",
         fontSize: 15,
         fontWeight: 500,
         color: isActive ? "#FF6B00" : hovered ? "#FF6B00" : "#444",
         background: isActive ? "#FFF0E6" : hovered ? "#FFF8F3" : "transparent",
-        // Smooth colour + background transitions
         transition: "background 0.25s cubic-bezier(.4,0,.2,1), color 0.25s cubic-bezier(.4,0,.2,1)",
         whiteSpace: "nowrap",
         userSelect: "none",
@@ -97,13 +97,19 @@ const NavItem = ({ item, isActive, onClick }) => {
         boxSizing: "border-box",
       }}
     >
-      <span style={{
-        color: isActive ? "#FF6B00" : hovered ? "#FF6B00" : "#888",
-        flexShrink: 0,
-        transition: "color 0.25s cubic-bezier(.4,0,.2,1)",
-      }}>
-        {icons[item.key]}
-      </span>
+      {showSidebarIcons && (
+        <span style={{
+          color: isActive ? "#FF6B00" : hovered ? "#FF6B00" : "#888",
+          flexShrink: 0,
+          transition: "color 0.25s cubic-bezier(.4,0,.2,1)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 20
+        }}>
+          {icons[item.key]}
+        </span>
+      )}
       {item.label}
     </div>
   );
@@ -156,7 +162,7 @@ const UserChip = ({ user }) => (
 );
 
 // ── Nav content (shared between desktop + mobile) ─────────────
-const NavContent = ({ activePage, onNavigate }) => (
+const NavContent = ({ activePage, onNavigate, showSidebarIcons }) => (
   <>
     {Object.entries(NAV).map(([section, items]) => (
       <div key={section} style={{ marginBottom: 4 }}>
@@ -167,6 +173,7 @@ const NavContent = ({ activePage, onNavigate }) => (
             item={item}
             isActive={activePage === item.key}
             onClick={() => onNavigate(item.key)}
+            showSidebarIcons={showSidebarIcons}
           />
         ))}
       </div>
@@ -277,6 +284,7 @@ const MobileDropdown = ({ open, activePage, onNavigate, onClose, user }) => {
             onNavigate(key);
             onClose();
           }}
+          showSidebarIcons={showSidebarIcons}
         />
 
         {/* User chip */}
@@ -290,6 +298,7 @@ const MobileDropdown = ({ open, activePage, onNavigate, onClose, user }) => {
 
 // ── Main SASidebar ────────────────────────────────────────────
 const SASidebar = ({ open, activePage, onNavigate, user }) => {
+  const { showSidebarIcons } = useTheme();
   return (
     <>
       <style>{`
@@ -340,11 +349,10 @@ const SASidebar = ({ open, activePage, onNavigate, user }) => {
           paddingTop: 8,
           minWidth: SIDEBAR_WIDTH,
           overflowY: "auto",
-          // Fade content in/out as sidebar opens/closes
           opacity: open ? 1 : 0,
           transition: "opacity 0.2s ease",
         }}>
-          <NavContent activePage={activePage} onNavigate={onNavigate} />
+          <NavContent activePage={activePage} onNavigate={onNavigate} showSidebarIcons={showSidebarIcons} />
         </nav>
         <div style={{
           borderTop: "1px solid #eee",
