@@ -27,7 +27,7 @@ interface CourseCardProps {
     progress: number;
     assignedBy: string;
     icon: string;
-    thumbnail?: string;
+    thumbnail?: string | null;
   };
 }
 

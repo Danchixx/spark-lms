@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
@@ -10,39 +10,13 @@ import SubmitAssessmentModal from "../../components/common/Modal/SubmitAssessmen
 import TimeUpModal from "../../components/common/Modal/TimeUpModal";
 import AssessmentSuccessModal from "../../components/common/Modal/AssessmentSuccessModal";
 import { ArrowLeft, Timer } from "lucide-react";
-import { COURSES } from "../../data/mockCourses";
+import { useCourseById } from "../../hooks/useCourses";
+import { supabase } from "../../lib/supabase";
 import PageTransition from "../../components/common/PageTransition";
-
-// ── Mock Questions ────────────────────────────────────────────
-const MOCK_QUESTIONS = [
-  { id: 1, question: "Which component of the AIDA framework is primarily responsible for creating emotional desire for product or service in the prospect's mind?",
-    choices: ["Attention — grabbing initial awareness", "Interest — explaining product relevance", "Desire — creating emotional pull toward the offer", "Action — motivating the purchase decision"] },
-  { id: 2, question: "What is the first step in the consultative selling process?",
-    choices: ["Present the solution immediately", "Build rapport and trust with the client", "Close the deal as quickly as possible", "Offer discounts to incentivize purchase"] },
-  { id: 3, question: "Which technique is most effective for handling price objections?",
-    choices: ["Lower the price immediately", "Ignore the objection and move on", "Reframe the value proposition", "Add more products to justify cost"] },
-  { id: 4, question: "In the SPIN selling methodology, what does the 'S' stand for?",
-    choices: ["Solution", "Situation", "Strategy", "Selling"] },
-  { id: 5, question: "What is the primary benefit of active listening in sales conversations?",
-    choices: ["It makes the sales call longer", "It helps identify customer pain points", "It shows the salesperson is smart", "It allows time to prepare rebuttals"] },
-  { id: 6, question: "Which closing technique involves offering two positive choices?",
-    choices: ["Hard close", "Alternative close", "Assumptive close", "Urgency close"] },
-  { id: 7, question: "What is the purpose of a follow-up email after a sales meeting?",
-    choices: ["To send the invoice", "To reinforce key discussion points", "To apologize for any mistakes", "To share competitor information"] },
-  { id: 8, question: "Which metric best measures the effectiveness of a sales pipeline?",
-    choices: ["Number of contacts", "Conversion rate by stage", "Total emails sent", "Social media followers"] },
-  { id: 9, question: "What does a value proposition primarily communicate?",
-    choices: ["Company history and background", "Product technical specifications", "Why a customer should choose this solution", "Price comparisons with competitors"] },
-  { id: 10, question: "Which approach helps build long-term client relationships?",
-    choices: ["Aggressive upselling on every call", "Consistent value delivery and check-ins", "Avoiding all post-sale contact", "Sending automated bulk messages"] },
-];
-
-// ── Correct answers (0-indexed choice) ── for mock scoring ──
-const CORRECT_ANSWERS: Record<number, number> = { 0: 2, 1: 1, 2: 2, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 2, 9: 1 };
+import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
 // ── Timer Config ──────────────────────────────────────────────
-// Change ASSESSMENT_TIME_SECONDS to adjust the assessment duration.
-const ASSESSMENT_TIME_SECONDS = 15 * 60; // 15 minutes
+const DEFAULT_TIME_SECONDS = 15 * 60; // 15 minutes fallback
 
 const ModuleAssessment = () => {
   const { user, company, logout } = useAuth();
@@ -54,21 +28,107 @@ const ModuleAssessment = () => {
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   const { courseId, moduleId } = location.state || {};
-  const course = COURSES.find((c) => c.id === parseInt(courseId));
-  const module = course?.modules?.find((m) => m.id === parseInt(moduleId));
+  const { course: courseData, loading: courseLoading } = useCourseById(courseId);
+  const moduleData = courseData?.modules?.find((m) => m.id === Number(moduleId));
+  const moduleIndex = courseData?.modules?.findIndex(m => m.id === Number(moduleId)) ?? -1;
+
+  // Assessment data from DB
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [assessmentId, setAssessmentId] = useState<number | null>(null);
+  const [assessmentTimeLimit, setAssessmentTimeLimit] = useState(DEFAULT_TIME_SECONDS);
+  const [loadingAssessment, setLoadingAssessment] = useState(true);
 
   // Assessment state
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [timeLeft, setTimeLeft] = useState(ASSESSMENT_TIME_SECONDS);
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_TIME_SECONDS);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showTimeUpModal, setShowTimeUpModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // --- Shuffle Utility ---
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = shuffled[i] as T;
+      shuffled[i] = shuffled[j] as T;
+      shuffled[j] = temp;
+    }
+    return shuffled;
+  };
+
+  // Fetch assessment questions from Supabase
+  useEffect(() => {
+    if (!moduleData) return;
+
+    const fetchAssessment = async () => {
+      setLoadingAssessment(true);
+      try {
+        // Find the assessment lesson in this module
+        const assessmentLesson = moduleData.lessons.find(l => l.type === 'assessment');
+        if (!assessmentLesson) {
+          setLoadingAssessment(false);
+          return;
+        }
+
+        // Get the assessment linked to this lesson
+        const { data: assessmentData, error: assessErr } = await supabase
+          .from('assessments')
+          .select('id, passing_score, time_limit')
+          .eq('lesson_id', assessmentLesson.id)
+          .single();
+
+        if (assessErr) throw assessErr;
+        if (!assessmentData) return;
+
+        setAssessmentId(assessmentData.id);
+        const timeLimitMinutes = assessmentData.time_limit || 15;
+        setAssessmentTimeLimit(timeLimitMinutes * 60);
+        setTimeLeft(timeLimitMinutes * 60);
+
+        // Get questions with choices
+        const { data: questionData, error: qErr } = await supabase
+          .from('assessment_questions')
+          .select(`
+            id, question_text, position,
+            assessment_choices ( id, choice_text, is_correct )
+          `)
+          .eq('assessment_id', assessmentData.id);
+
+        if (qErr) throw qErr;
+
+        // 1. Shuffle Questions
+        const shuffledQuestions = shuffleArray(questionData || []);
+
+        // 2. Format and Shuffle Choices for each question
+        const formattedQuestions = shuffledQuestions.map(q => {
+          const shuffledChoices = shuffleArray(q.assessment_choices || []);
+          return {
+            id: q.id,
+            question: q.question_text,
+            choices: shuffledChoices.map((c: any) => c.choice_text),
+            choiceIds: shuffledChoices.map((c: any) => c.id),
+            correctIndex: shuffledChoices.findIndex((c: any) => c.is_correct),
+          };
+        });
+
+        setQuestions(formattedQuestions);
+      } catch (err) {
+        console.error('Error fetching assessment:', err);
+      } finally {
+        setLoadingAssessment(false);
+      }
+    };
+
+    fetchAssessment();
+  }, [moduleData]);
+
   // Start countdown
   useEffect(() => {
+    if (loadingAssessment || questions.length === 0) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -79,7 +139,7 @@ const ModuleAssessment = () => {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  }, [loadingAssessment, questions.length]);
 
   // When time hits 0
   useEffect(() => {
@@ -88,11 +148,8 @@ const ModuleAssessment = () => {
     }
   }, [timeLeft]);
 
-  if (!course || !module) {
-    return <Navigate to={`/${slug}/courses`} replace />;
-  }
+  const isReady = !courseLoading && !loadingAssessment && courseData && moduleData;
 
-  const questions = MOCK_QUESTIONS;
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentQIndex];
   const answeredCount = Object.keys(answers).length;
@@ -121,16 +178,31 @@ const ModuleAssessment = () => {
   const calcScore = () => {
     let correct = 0;
     for (let i = 0; i < totalQuestions; i++) {
-      if (answers[i] === CORRECT_ANSWERS[i]) correct++;
+      if (answers[i] === questions[i]?.correctIndex) correct++;
     }
     return Math.round((correct / totalQuestions) * 100);
   };
 
-  const handleConfirmSubmit = () => {
+  const saveAttempt = async (score: number) => {
+    if (!assessmentId || !user?.id) return;
+    try {
+      await supabase.from('assessment_attempts').insert({
+        assessment_id: assessmentId,
+        user_id: user.id,
+        score,
+        passed: score >= 70,
+      });
+    } catch (err) {
+      console.error('Error saving attempt:', err);
+    }
+  };
+
+  const handleConfirmSubmit = async () => {
     setShowSubmitModal(false);
     if (timerRef.current) clearInterval(timerRef.current);
     const score = calcScore();
     setLastScore(score);
+    await saveAttempt(score);
     setShowSuccessModal(true);
   };
 
@@ -141,14 +213,32 @@ const ModuleAssessment = () => {
     });
   };
 
-  const handleTimeUpClose = () => {
+  const handleTimeUpClose = async () => {
     setShowTimeUpModal(false);
     if (timerRef.current) clearInterval(timerRef.current);
     const score = calcScore();
+    await saveAttempt(score);
     navigate(`/${slug}/courses/attempts`, {
       state: { courseId, moduleId, newScore: score }
     });
   };
+
+  if (totalQuestions === 0) {
+    return (
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+        <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search courses, lessons ..." role="User" />
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontSize: 48 }}>📝</div>
+            <h2 style={{ color: "var(--color-text-header)" }}>No Questions Available</h2>
+            <p style={{ color: "var(--color-text-muted)" }}>This assessment has no questions yet.</p>
+            <Button rounded="pill" onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId } })}>Back to Modules</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -168,30 +258,56 @@ const ModuleAssessment = () => {
                   Modules
                 </Button>
                 <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-                <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {module.id}</span>
-                <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-                <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Assessment</span>
+                {isReady ? (
+                  <>
+                    <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {moduleIndex + 1}</span>
+                    <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
+                    <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Assessment</span>
+                  </>
+                ) : (
+                  <Skeleton width={200} height={20} />
+                )}
               </div>
 
               {/* Timer Badge */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: timeLeft <= 60 ? "#FF6B00" : "#FF6B00",
-                color: "white", padding: "8px 20px", borderRadius: 99,
-                fontSize: 16, fontWeight: 700,
-                boxShadow: "0 4px 12px rgba(255, 107, 0, 0.3)"
-              }}>
-                <Timer size={18} />
-                {formatTime(timeLeft)}
-              </div>
+              {isReady && totalQuestions > 0 && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  background: timeLeft <= 60 ? "#FF6B00" : "#FF6B00",
+                  color: "white", padding: "8px 20px", borderRadius: 99,
+                  fontSize: 16, fontWeight: 700,
+                  boxShadow: "0 4px 12px rgba(255, 107, 0, 0.3)"
+                }}>
+                  <Timer size={18} />
+                  {formatTime(timeLeft)}
+                </div>
+              )}
             </div>
 
-            {/* Main Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 24, alignItems: "start" }}>
+            {!isReady ? (
+              // SKELETON LOADING STATE
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 24, alignItems: "start" }}>
+                <Skeleton height={400} borderRadius={16} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <Skeleton height={200} borderRadius={16} />
+                  <Skeleton height={200} borderRadius={16} />
+                </div>
+              </div>
+            ) : totalQuestions === 0 ? (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, height: "60vh" }}>
+                <div style={{ fontSize: 48 }}>📝</div>
+                <h2 style={{ color: "var(--color-text-header)" }}>No Questions Available</h2>
+                <p style={{ color: "var(--color-text-muted)" }}>This assessment has no questions yet.</p>
+                <Button rounded="pill" onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId } })}>Back to Modules</Button>
+              </div>
+            ) : (
+              <>
+                {/* Main Grid */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 24, alignItems: "start" }}>
 
-              {/* Left: Assessment Card */}
-              <AssessmentCard
-                moduleName={`Module ${module.id} Assessment - ${module.name}`}
+                  {/* Left: Assessment Card */}
+                  <AssessmentCard
+                    moduleName={`Module ${moduleIndex + 1} Assessment – ${moduleData.title}`}
                 currentQuestion={currentQuestion}
                 currentIndex={currentQIndex}
                 totalQuestions={totalQuestions}
@@ -229,10 +345,6 @@ const ModuleAssessment = () => {
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ color: "var(--color-text-muted)" }}>Time Left:</span>
                       <span style={{ fontWeight: 700, color: "#FF6B00" }}>{formatTime(timeLeft)}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "var(--color-text-muted)" }}>Attempts:</span>
-                      <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>1st Attempt</span>
                     </div>
                   </div>
                 </div>
@@ -285,6 +397,8 @@ const ModuleAssessment = () => {
                 </div>
               </div>
             </div>
+            </>
+            )}
 
             </PageTransition>
           </div>

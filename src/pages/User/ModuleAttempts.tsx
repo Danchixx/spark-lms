@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
@@ -6,10 +6,12 @@ import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import { ArrowLeft, Check, X, RotateCcw, Send } from "lucide-react";
-import { COURSES } from "../../data/mockCourses";
+import { useCourseById } from "../../hooks/useCourses";
+import { supabase } from "../../lib/supabase";
 import PageTransition from "../../components/common/PageTransition";
+import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
-const PASSING_SCORE = 70; // Change this to adjust the passing score
+const PASSING_SCORE = 70;
 
 const ModuleAttempts = () => {
   const { user, company, logout } = useAuth();
@@ -21,43 +23,104 @@ const ModuleAttempts = () => {
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   const { courseId, moduleId, newScore } = location.state || {};
-  const course = COURSES.find((c) => c.id === parseInt(courseId));
-  const module = course?.modules?.find((m) => m.id === parseInt(moduleId));
+  const { course: courseData, loading: courseLoading, refetch } = useCourseById(courseId);
+  const moduleData = courseData?.modules?.find((m) => m.id === Number(moduleId));
+  const moduleIndex = courseData?.modules?.findIndex(m => m.id === Number(moduleId)) ?? -1;
 
-  // Build mock attempts list (seed with previous + new one if score passed from assessment)
-  const [attempts, setAttempts] = useState(() => {
-    const initial = [];
-    if (newScore !== null && newScore !== undefined) {
-      initial.push({
-        id: 1,
-        date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
-        time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-        score: newScore,
-        status: newScore >= PASSING_SCORE ? "Passed" : "Failed",
-        submitted: false
-      });
-    }
-    return initial;
-  });
-
+  const [attempts, setAttempts] = useState<any[]>([]);
+  const [loadingAttempts, setLoadingAttempts] = useState(true);
   const [assessmentCompleted, setAssessmentCompleted] = useState(false);
 
-  if (!course || !module) {
-    return <Navigate to={`/${slug}/courses`} replace />;
-  }
+  // Fetch attempts from DB
+  useEffect(() => {
+    if (!moduleData || !user?.id) return;
+
+    const fetchAttempts = async () => {
+      setLoadingAttempts(true);
+      try {
+        // Find the assessment lesson in this module
+        const assessmentLesson = moduleData.lessons.find(l => l.type === 'assessment');
+        if (!assessmentLesson) {
+          setLoadingAttempts(false);
+          return;
+        }
+
+        // Get assessment ID
+        const { data: assessmentData } = await supabase
+          .from('assessments')
+          .select('id')
+          .eq('lesson_id', assessmentLesson.id)
+          .single();
+
+        if (!assessmentData) {
+          setLoadingAttempts(false);
+          return;
+        }
+
+        // Get attempts
+        const { data: attemptData, error } = await supabase
+          .from('assessment_attempts')
+          .select('*')
+          .eq('assessment_id', assessmentData.id)
+          .eq('user_id', user.id)
+          .order('attempted_at', { ascending: false });
+
+        if (error) throw error;
+
+        const formatted = (attemptData || []).map((a, idx) => ({
+          id: attemptData.length - idx,
+          date: new Date(a.attempted_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+          time: new Date(a.attempted_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+          score: a.score || 0,
+          status: a.passed ? "Passed" : "Failed",
+          submitted: false,
+          dbId: a.id,
+        }));
+
+        setAttempts(formatted);
+      } catch (err) {
+        console.error('Error fetching attempts:', err);
+      } finally {
+        setLoadingAttempts(false);
+      }
+    };
+
+    fetchAttempts();
+  }, [moduleData, user?.id]);
+
+  const isReady = !courseLoading && !loadingAttempts && courseData && moduleData;
 
   const hasPassingAttempt = attempts.some((a) => a.score >= PASSING_SCORE);
   const bestScore = attempts.length > 0 ? Math.max(...attempts.map((a) => a.score)) : 0;
 
   const handleReAssess = () => {
     navigate(`/${slug}/courses/assessment`, {
-      state: { courseId, moduleId }
+      state: { courseId, moduleId: moduleData?.id || moduleId }
     });
   };
 
-  const handleSubmitAttempt = () => {
+  const handleSubmitAttempt = async () => {
     setAssessmentCompleted(true);
-    // Mark the best passing attempt as submitted
+    // Mark the assessment lesson as completed
+    if (courseData?.assignmentId) {
+      const assessmentLesson = moduleData?.lessons?.find(l => l.type === 'assessment');
+      if (assessmentLesson) {
+        try {
+          await supabase.from('lessons_progress').upsert(
+            {
+              assignment_id: courseData.assignmentId,
+              lesson_id: assessmentLesson.id,
+              is_completed: true,
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: 'assignment_id,lesson_id' }
+          );
+          await refetch();
+        } catch (err) {
+          console.error('Error marking assessment complete:', err);
+        }
+      }
+    }
     setAttempts((prev) =>
       prev.map((a) =>
         a.score >= PASSING_SCORE && !a.submitted
@@ -89,27 +152,39 @@ const ModuleAttempts = () => {
               Modules
             </Button>
             <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-            <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {module.id}</span>
+            <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {moduleIndex + 1}</span>
             <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
             <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Attempts</span>
           </div>
 
-          {/* Header Card */}
-          <div style={{
-            background: "var(--color-surface)", borderRadius: 12, padding: "28px 32px", marginBottom: 24,
-            boxShadow: "var(--shadow)", display: "flex", justifyContent: "space-between", alignItems: "center",
-            border: "1px solid var(--color-border)"
-          }}>
-            <div>
-              <h2 style={{ margin: "0 0 6px 0", fontSize: 22, fontWeight: 700, color: "var(--color-text-header)" }}>
-                Module {module.id} Assessment — {module.name}
-              </h2>
-              <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)" }}>
-                Passing score: <strong style={{ color: "#FF6B00" }}>{PASSING_SCORE}%</strong> · 
-                {" "}Total attempts: <strong style={{color: "var(--color-text-header)"}}>{attempts.length}</strong> · 
-                {" "}Best score: <strong style={{ color: bestScore >= PASSING_SCORE ? "#27ae60" : "#e74c3c" }}>{bestScore}%</strong>
-              </p>
+          {!isReady ? (
+            // SKELETON LOADING STATE
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              <Skeleton height={140} borderRadius={12} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <Skeleton height={60} borderRadius={12} />
+                <Skeleton height={60} borderRadius={12} />
+                <Skeleton height={60} borderRadius={12} />
+              </div>
             </div>
+          ) : (
+            <>
+              {/* Header Card */}
+              <div style={{
+                background: "var(--color-surface)", borderRadius: 12, padding: "28px 32px", marginBottom: 24,
+                boxShadow: "var(--shadow)", display: "flex", justifyContent: "space-between", alignItems: "center",
+                border: "1px solid var(--color-border)"
+              }}>
+                <div>
+                  <h2 style={{ margin: "0 0 6px 0", fontSize: 22, fontWeight: 700, color: "var(--color-text-header)" }}>
+                    Module {moduleIndex + 1} Assessment — {moduleData.title}
+                  </h2>
+                  <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)" }}>
+                    Passing score: <strong style={{ color: "#FF6B00" }}>{PASSING_SCORE}%</strong> · 
+                    {" "}Total attempts: <strong style={{color: "var(--color-text-header)"}}>{attempts.length}</strong> · 
+                    {" "}Best score: <strong style={{ color: bestScore >= PASSING_SCORE ? "#27ae60" : "#e74c3c" }}>{bestScore}%</strong>
+                  </p>
+                </div>
 
             {assessmentCompleted ? (
               <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#e0ffec", padding: "10px 24px", borderRadius: 99 }}>
@@ -178,7 +253,7 @@ const ModuleAttempts = () => {
                 const isPassed = attempt.score >= PASSING_SCORE;
                 return (
                   <div
-                    key={attempt.id}
+                    key={attempt.dbId || attempt.id}
                     style={{
                       display: "grid", gridTemplateColumns: "80px 1fr 1fr 120px 120px 120px",
                       padding: "18px 24px", borderBottom: "1px solid var(--color-border)",
@@ -218,6 +293,8 @@ const ModuleAttempts = () => {
                 );
               })}
             </div>
+          )}
+          </>
           )}
 
           </PageTransition>

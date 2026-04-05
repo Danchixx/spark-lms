@@ -21,7 +21,13 @@ import SADashboard, { DashboardHome, ComingSoon } from "../pages/SuperAdmin/SADa
 import SparkTenants from "../pages/SuperAdmin/Tenants/SparkTenants";
 import SparkApprovals from "../pages/SuperAdmin/Approvals/SparkApprovals";
 import SparkUsers from "../pages/SuperAdmin/Users/SparkUsers";
-// import AdminDashboard      from "../pages/Admin/Dashboard";
+import AdminDashboard from "../pages/Admin/Dashboard";
+import AdminProfile from "../pages/Admin/Profile";
+import AdminUsers from "../pages/Admin/Users";
+import AdminApprovals from "../pages/Admin/Approvals";
+import AdminReports from "../pages/Admin/Reports";
+import AdminAuditLogs from "../pages/Admin/AuditLogs";
+
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 
 import type { ReactNode } from "react";
@@ -33,11 +39,29 @@ const DashboardRouter = () => {
   if (!user) return <Navigate to="/" replace />;
 
   switch (user.role) {
-    case "admin": return <div>Admin Dashboard — coming soon</div>;
+    case "admin": return <AdminDashboard />;
     case "approver": return <div>Approver Dashboard — coming soon</div>;
     case "creator": return <div>Creator Dashboard — coming soon</div>;
-    case "spark_admin": return <div>Spark Admin Dashboard — coming soon</div>;
+    case "spark_admin": return <Navigate to="/superadmin/dashboard" replace />;
     default: return <UserDashboard />;
+  }
+};
+
+const ProfileRouter = () => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/" replace />;
+  switch (user.role) {
+    case "admin": return <AdminProfile />;
+    default: return <UserProfile />;
+  }
+};
+
+const UsersRouter = () => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/" replace />;
+  switch (user.role) {
+    case "admin": return <AdminUsers />;
+    default: return <Navigate to="dashboard" replace />;
   }
 };
 
@@ -97,7 +121,11 @@ const AppRoutes = () => {
 
         {/* Protected — same URL, different component per role */}
         <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
-        <Route path="/:company/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+        <Route path="/:company/profile" element={<ProtectedRoute><ProfileRouter /></ProtectedRoute>} />
+        <Route path="/:company/users" element={<ProtectedRoute><UsersRouter /></ProtectedRoute>} />
+        <Route path="/:company/approvals" element={<ProtectedRoute><AdminApprovals /></ProtectedRoute>} />
+        <Route path="/:company/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
+        <Route path="/:company/audit-logs" element={<ProtectedRoute><AdminAuditLogs /></ProtectedRoute>} />
         <Route path="/:company/courses" element={<ProtectedRoute><UserCourses /></ProtectedRoute>} />
         <Route path="/:company/courses/modules" element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
         <Route path="/:company/courses/lessons" element={<ProtectedRoute><UserModuleLessons /></ProtectedRoute>} />
