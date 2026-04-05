@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, BookMarked, CheckCircle, Award, ClipboardList, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -11,6 +10,7 @@ import ProgressBar from "../../components/ui/ProgressBar/ProgressBar";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import DashboardCard from "../../components/ui/DashboardCard/DashboardCard";
 import PageTransition from "../../components/common/PageTransition";
+import { useCourses } from "../../hooks/useCourses";
 import "./Dashboard.css";
 
 import type { LucideIcon } from "lucide-react";
@@ -24,27 +24,6 @@ type StatItem = {
   subColor: string;
 };
 
-const STATS_TEMPLATE: StatItem[] = [
-  { label: "Enrolled Courses", defaultVal: 0, icon: BookOpen, sub: "0 this month", subColor: "#888" },
-  { label: "Ongoing Courses", defaultVal: 0, icon: BookMarked, sub: "0 not started", subColor: "#888" },
-  { label: "Completed Courses", defaultVal: 0, icon: CheckCircle, sub: "0 this week", subColor: "#888" },
-  { label: "Certificate Earned", defaultVal: 0, icon: Award, sub: "0 new", subColor: "#888" },
-];
-
-const Dashboard = () => {
-  const { user, company, logout } = useAuth();
-  const navigate = useNavigate();
-  const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
-  const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
-
-type RecentCourse = {
-  name: string;
-  status: string;
-  progress: number;
-  remark: string;
-};
-
 type PendingAssessment = {
   id: number | string;
   title?: string;
@@ -56,70 +35,38 @@ type ActivityItem = {
   time: string;
 };
 
-  const [stats, setStats] = useState<StatItem[]>(STATS_TEMPLATE);
-  const [recentCourses, setRecentCourses] = useState<RecentCourse[]>([]);
+const Dashboard = () => {
+  const { user, company, logout } = useAuth();
+  const navigate = useNavigate();
+  const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
+  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
+
+  const { courses, loading: loadingDb } = useCourses();
   const [pendingAssessments, setPendingAssessments] = useState<PendingAssessment[]>([]);
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-  const [loadingDb, setLoadingDb] = useState(true);
+  const [recentActivity] = useState<ActivityItem[]>([]);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user) return;
-      try {
-        setLoadingDb(true);
+  // Derive stats from live course data
+  const enrolled = courses.length;
+  const ongoing = courses.filter(c => c.status === 'Ongoing').length;
+  const completed = courses.filter(c => c.status === 'Completed').length;
+  const notStarted = courses.filter(c => c.status === 'Not Started').length;
+  const certificates = completed;
 
-        // Fetch user's assigned courses
-        const { data: assignments, error: assignErr } = await supabase
-          .from('course_assignments')
-          .select(`
-            status,
-            progress,
-            courses ( id, title )
-          `)
-          .eq('user_id', user.id);
+  const stats: StatItem[] = [
+    { label: "Enrolled Courses", value: enrolled, icon: BookOpen, sub: `${notStarted} not started`, subColor: "#888" },
+    { label: "Ongoing Courses", value: ongoing, icon: BookMarked, sub: "In progress", subColor: "#FF6B00" },
+    { label: "Completed Courses", value: completed, icon: CheckCircle, sub: "All lessons done", subColor: "#27ae60" },
+    { label: "Certificate Earned", value: certificates, icon: Award, sub: completed > 0 ? "View certificates" : "Complete a course", subColor: completed > 0 ? "#27ae60" : "#888" },
+  ];
 
-        if (assignErr) {
-            console.warn("Could not fetch course assignments - tables might be empty.", assignErr);
-            setRecentCourses([]);
-        } else if (assignments) {
-            const enrolled = assignments.length;
-            const ongoing = assignments.filter(a => a.status === 'in_progress').length;
-            const completed = assignments.filter(a => a.status === 'completed').length;
-            
-            setStats([
-                { label: "Enrolled Courses", value: enrolled, icon: BookOpen, sub: "Live data", subColor: "#27ae60" },
-                { label: "Ongoing Courses", value: ongoing, icon: BookMarked, sub: "Live data", subColor: "#888" },
-                { label: "Completed Courses", value: completed, icon: CheckCircle, sub: "Live data", subColor: "#27ae60" },
-                { label: "Certificate Earned", value: 0, icon: Award, sub: "Live data", subColor: "#888" },
-            ]);
-
-            // Map recent courses
-            setRecentCourses(assignments.slice(0, 5).map(a => ({
-                name: (a.courses as any)?.title || 'Unknown Course',
-                status: a.status === 'in_progress' ? 'Ongoing' : a.status === 'completed' ? 'Completed' : 'Not Started',
-                progress: a.progress || 0,
-                remark: a.status === 'completed' ? 'Passed' : '-'
-            })));
-        }
-
-        // Fetch assessments 
-        const { data: assessments, error: asdErr } = await supabase
-          .from('assessments')
-          .select('*')
-          .limit(3);
-          
-        if (!asdErr && assessments) {
-            setPendingAssessments(assessments);
-        }
-
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-      } finally {
-        setLoadingDb(false);
-      }
-    };
-    fetchDashboardData();
-  }, [user]);
+  // Derive recent courses from the hook data
+  const recentCourses = courses.slice(0, 5).map(c => ({
+    name: c.name,
+    status: c.status,
+    progress: c.progress,
+    remark: c.status === 'Completed' ? 'Passed' : '-',
+  }));
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>

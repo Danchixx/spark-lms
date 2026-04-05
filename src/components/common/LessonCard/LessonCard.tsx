@@ -1,8 +1,17 @@
 import { Play, ArrowRight } from "lucide-react";
-import Button from "../Button/Button";
+import Button from "../../ui/Button/Button";
 import "./LessonCard.css";
 
-const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProceedAssessment }) => {
+interface LessonCardProps {
+  lesson: any;
+  onBack: () => void;
+  onNext: () => void;
+  currentIndex: number;
+  totalLessons: number;
+  onProceedAssessment?: () => void;
+}
+
+const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProceedAssessment }: LessonCardProps) => {
   if (!lesson) return null;
 
   return (
