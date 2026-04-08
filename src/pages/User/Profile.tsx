@@ -110,12 +110,14 @@ const Profile = () => {
     avatarUrl: user?.avatar_url || null,
   };
 
-  const handleSaveDetails = async (updated: { contactNumber: string; address: string }) => {
+  const handleSaveDetails = async (updated: any) => {
     try {
-      await updateProfile({
-        contact_no: updated.contactNumber,
-        address: updated.address
-      });
+      const updates: Record<string, any> = {};
+      
+      if (updated.contactNumber !== undefined) updates.contact_no = updated.contactNumber;
+      if (updated.address !== undefined) updates.address = updated.address;
+
+      await updateProfile(updates);
       setSuccessMessage("Your contact details have been updated successfully.");
       setShowSuccessModal(true);
     } catch (err) {
@@ -171,7 +173,7 @@ const Profile = () => {
 
             {/* ── Account Settings ── */}
             <div style={{ background: "var(--color-surface)", borderRadius: 14, overflow: "hidden", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)", marginBottom: 28 }}>
-              <div style={{ height: 5, background: "var(--color-bg-muted)" }} />
+
               <SectionTitle icon={ShieldCheck} title="Account Settings" />
 
               <div className="acct-row">
