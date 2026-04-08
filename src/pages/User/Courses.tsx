@@ -6,6 +6,7 @@ import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import CourseCard, { CourseFilterNav } from "../../components/common/CourseCard/CourseCard";
+import CourseCardSkeleton from "../../components/common/CourseCard/CourseCardSkeleton";
 import { useCourses } from "../../hooks/useCourses";
 import PageTransition from "../../components/common/PageTransition";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
@@ -50,9 +51,9 @@ const Courses = () => {
 
             {loading ? (
               <div className="courses-grid">
-                <Skeleton height={320} borderRadius={16} />
-                <Skeleton height={320} borderRadius={16} />
-                <Skeleton height={320} borderRadius={16} />
+                <CourseCardSkeleton />
+                <CourseCardSkeleton />
+                <CourseCardSkeleton />
               </div>
             ) : (
               <div className="courses-grid">

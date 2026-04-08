@@ -90,13 +90,22 @@ const AdminProfile = () => {
     avatarUrl: user?.avatar_url || null,
   };
 
-  const handleSaveDetails = async (updated: { contactNumber: string; address: string }) => {
+  const handleSaveDetails = async (updated: any) => {
     try {
-      await updateProfile({
-        contact_no: updated.contactNumber,
-        address: updated.address
-      });
-      setSuccessMessage("Your contact details have been updated successfully.");
+      const updates: Record<string, any> = {};
+      
+      if (updated.firstName !== undefined) updates.firstname = updated.firstName;
+      if (updated.middleName !== undefined) updates.middlename = updated.middleName;
+      if (updated.lastName !== undefined) updates.lastname = updated.lastName;
+      if (updated.contactNumber !== undefined) updates.contact_no = updated.contactNumber;
+      if (updated.address !== undefined) updates.address = updated.address;
+      if (updated.employeeId !== undefined) updates.employee_id = updated.employeeId;
+      if (updated.jobTitle !== undefined) updates.job_title = updated.jobTitle;
+      if (updated.department !== undefined) updates.department = updated.department;
+      if (updated.dateHired !== undefined) updates.date_hired = updated.dateHired;
+
+      await updateProfile(updates);
+      setSuccessMessage("Your profile have been updated successfully.");
       setShowSuccessModal(true);
     } catch (err) {
       console.error("Failed to update profile:", err);
@@ -155,7 +164,7 @@ const AdminProfile = () => {
 
             {/* ── Account Settings ── */}
             <div style={{ background: "var(--color-surface)", borderRadius: 14, overflow: "hidden", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)", marginBottom: 28 }}>
-              <div style={{ height: 5, background: "var(--color-bg-muted)" }} />
+
               <SectionTitle icon={ShieldCheck} title="Account Settings" />
 
               <div className="acct-row">
