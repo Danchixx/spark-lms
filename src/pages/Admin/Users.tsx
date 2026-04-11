@@ -128,9 +128,9 @@ const AdminUsers = () => {
             <div className="dash-top">
               <div className="dash-top-greeting"></div>
               <h1 className="dash-top-title" style={{ color: "var(--color-text-header)" }}>Users</h1>
-              <div className="dash-top-btn-wrap">
-                <Button size="sm" rounded="pill" leftIcon={<Plus size={16} />}>Add User</Button>
-              </div>
+                <div className="dash-top-btn-wrap">
+                  <Button size="sm" rounded="pill" leftIcon={<Plus size={16} />} onClick={() => navigate(`/${slug}/users/add`)}>Add User</Button>
+                </div>
             </div>
 
             <div className="dash-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 24 }}>
