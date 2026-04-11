@@ -3,6 +3,7 @@ import { MOCK_TENANTS } from "../../../data/mockTenants";
 import TenantList from "./components/TenantList";
 import ViewTenant from "./components/ViewTenant";
 import AddTenant from "./components/AddTenant";
+import PageTransition from "../../../components/common/PageTransition/PageTransition";
 
 // ── Types ─────────────────────────────────────────────────────
 interface TenantStats {
@@ -28,6 +29,7 @@ export interface Tenant {
   stats: TenantStats;
   lastActive?: string;
   courseActivity?: Array<{ name: string; progress: number; totalUsers: number }>;
+  archived_at?: string;
 }
 
 interface FinishPayload {
@@ -100,6 +102,19 @@ const SparkTenants = ({ sidebarOpen = true }: { sidebarOpen?: boolean }) => {
     setSelectedTenant(null);
   };
 
+  const handleEdit = (id: number, updates: Partial<Tenant>) => {
+    setTenants(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    setToast("Tenant updated successfully");
+    setTimeout(() => setToast(null), 2800);
+  };
+
+  const handleArchive = (id: number) => {
+    const archiveDate = new Date().toISOString();
+    setTenants(prev => prev.map(t => t.id === id ? { ...t, status: "Archived", archived_at: archiveDate } : t));
+    setToast("Tenant archived successfully");
+    setTimeout(() => setToast(null), 2800);
+  };
+
   const handleFinish = ({ form, selectedPlan }: FinishPayload) => {
     const now = new Date();
     const next = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
@@ -130,12 +145,15 @@ const SparkTenants = ({ sidebarOpen = true }: { sidebarOpen?: boolean }) => {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+    <PageTransition style={{ height: "100%", display: "flex" }}>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%" }}>
       {view === "list" && (
         <TenantList
           tenants={tenants}
           onAdd={handleAdd}
           onView={handleView}
+          onEdit={handleEdit}
+          onArchive={handleArchive}
         />
       )}
 
@@ -161,6 +179,7 @@ const SparkTenants = ({ sidebarOpen = true }: { sidebarOpen?: boolean }) => {
         />
       )}
     </div>
+    </PageTransition>
   );
 };
 

@@ -6,7 +6,7 @@
 .sap-root {
   padding: 24px 28px;
   min-height: 100%;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   background: var(--color-bg);
 }
 
@@ -21,9 +21,9 @@
 }
 
 .sap-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900;
-  font-size: 28px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
   color: var(--color-text-header);
   margin: 0;
   letter-spacing: 0.5px;
@@ -44,7 +44,7 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 700;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   cursor: pointer;
   transition: background 0.15s;
   white-space: nowrap;
@@ -63,7 +63,7 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   cursor: pointer;
   transition: all 0.15s;
   outline: none;
@@ -169,7 +169,7 @@
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   letter-spacing: 0.04em;
   transition: opacity 0.15s;
   outline: none;
@@ -202,7 +202,7 @@
   outline: none;
   flex: 1;
   font-size: 13px;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   color: #333;
   background: transparent;
 }
@@ -224,7 +224,7 @@
   border-radius: 8px;
   padding: 8px 32px 8px 12px;
   font-size: 13px;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   color: #333;
   cursor: pointer;
   outline: none;
@@ -274,7 +274,7 @@
   cursor: pointer;
   transition: all 0.15s;
   outline: none;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 .sap-page-btn:hover:not(:disabled) { border-color: #FF6B00; color: #FF6B00; }
 .sap-page-btn.active { background: #FF6B00; color: white; border-color: #FF6B00; }
@@ -362,7 +362,7 @@
   font-weight: 700;
   color: #FF6B00;
   cursor: pointer;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: background 0.15s;
   outline: none;
 }
@@ -386,7 +386,7 @@
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: all 0.15s;
   outline: none;
 }
@@ -401,7 +401,7 @@
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: all 0.15s;
   outline: none;
 }

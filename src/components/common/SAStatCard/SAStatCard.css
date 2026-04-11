@@ -1,0 +1,121 @@
+/* src/components/common/SAStatCard/SAStatCard.css */
+/*
+  Wipe transition: on hover the ::before pseudo-element (the gradient overlay)
+  slides from translateX(-100%) → translateX(0), filling the card left-to-right.
+  All child text/icon colours transition to white via CSS :hover selectors.
+*/
+
+/* ── Base card ────────────────────────────────────────────────── */
+.sa-stat-card {
+  position: relative;
+  overflow: hidden;                   /* clips the sliding overlay */
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: 'Inter', sans-serif;
+  transition: none;
+}
+
+/* ── Sliding gradient overlay (the "wipe") ────────────────────── */
+.sa-stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #FF8C00 0%, #FF6B00 55%, #e85d00 100%);
+
+  /* Start fully off-screen to the left (extra 1% to hide the gradient's leading edge) */
+  transform: translateX(-101%);
+  /* No transition here — snap back to white instantly on mouse-leave */
+  transition: none;
+
+  /* Sit behind all card content */
+  z-index: 0;
+}
+
+/* On hover: animate the overlay sliding in left-to-right */
+.sa-stat-card:hover::before {
+  transform: translateX(0);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Lift + deepen shadow on hover (only animate in, not out) */
+.sa-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 36px rgba(255, 107, 0, 0.30), 0 4px 12px rgba(255, 107, 0, 0.15);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── All content must sit above the overlay ───────────────────── */
+.sa-stat-card__body,
+.sa-stat-card__icon-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Card body ────────────────────────────────────────────────── */
+.sa-stat-card__body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Label */
+.sa-stat-card__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  transition: color 0.3s ease;
+}
+.sa-stat-card:hover .sa-stat-card__label {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* Value */
+.sa-stat-card__value {
+  font-size: 32px;
+  font-weight: 900;
+  color: #222;
+  line-height: 1;
+  margin-bottom: 6px;
+  transition: color 0.3s ease;
+}
+.sa-stat-card:hover .sa-stat-card__value {
+  color: #fff;
+}
+
+/* Sub-text — uses CSS var so the resting colour is set inline via style prop */
+.sa-stat-card__sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sub-color, #FF6B00);
+  transition: color 0.3s ease;
+}
+.sa-stat-card:hover .sa-stat-card__sub {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Icon bubble ──────────────────────────────────────────────── */
+.sa-stat-card__icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #FFF0E6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FF6B00;
+  flex-shrink: 0;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+.sa-stat-card:hover .sa-stat-card__icon-wrap {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}

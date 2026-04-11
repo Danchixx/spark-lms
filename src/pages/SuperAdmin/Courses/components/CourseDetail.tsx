@@ -81,7 +81,7 @@ const RemoveConfirmModal = ({ user, onClose, onConfirm }: RemoveConfirmModalProp
             background: "#e8e8e8", color: "#555",
             border: "none", borderRadius: 10,
             fontWeight: 700, fontSize: 14, cursor: "pointer",
-            fontFamily: "'Barlow', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             transition: "background .15s",
           }}
             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#d8d8d8"}
@@ -94,7 +94,7 @@ const RemoveConfirmModal = ({ user, onClose, onConfirm }: RemoveConfirmModalProp
             background: "#e74c3c", color: "#fff",
             border: "none", borderRadius: 10,
             fontWeight: 700, fontSize: 14, cursor: "pointer",
-            fontFamily: "'Barlow', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             transition: "opacity .15s",
           }}
             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".85"}
@@ -206,11 +206,11 @@ const CourseDetail = ({ course, onBack }: CourseDetailProps) => {
     fontSize: 12, fontWeight: 500,
     color: disabled ? "#ccc" : "#555",
     opacity: disabled ? 0.5 : 1,
-    fontFamily: "'Barlow', sans-serif",
+    fontFamily: "'Inter', sans-serif",
   });
 
   return (
-    <div style={{ padding: 24, fontFamily: "'Barlow', sans-serif" }}>
+    <div style={{ padding: 24, fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Breadcrumb ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
@@ -219,13 +219,13 @@ const CourseDetail = ({ course, onBack }: CourseDetailProps) => {
           background: "#FFF0E6", color: "#FF6B00",
           border: "1.5px solid #FF6B00", borderRadius: 20,
           padding: "7px 16px", fontWeight: 700, fontSize: 12,
-          cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+          cursor: "pointer", fontFamily: "'Inter', sans-serif",
         }}>
           ← COURSES
         </button>
         <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900, fontSize: 24, color: "#222",
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 800, fontSize: 24, color: "#222",
           textTransform: "uppercase", letterSpacing: ".04em",
         }}>
           Course Detail
@@ -387,7 +387,7 @@ const CourseDetail = ({ course, onBack }: CourseDetailProps) => {
                 onChange={e => { setSearch(e.target.value); setPage(1); }}
                 style={{
                   border: "none", outline: "none", width: 200,
-                  fontSize: 13, fontFamily: "'Barlow', sans-serif",
+                  fontSize: 13, fontFamily: "'Inter', sans-serif",
                   color: "#333", background: "transparent",
                 }}
               />
@@ -541,7 +541,7 @@ const CourseDetail = ({ course, onBack }: CourseDetailProps) => {
               background: "#FF6B00", color: "#fff",
               border: "none", borderRadius: 20,
               padding: "9px 20px", fontWeight: 700, fontSize: 13,
-              cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+              cursor: "pointer", fontFamily: "'Inter', sans-serif",
               transition: "opacity .15s",
             }}
             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".88"}

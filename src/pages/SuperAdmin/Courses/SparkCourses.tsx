@@ -6,6 +6,7 @@ import type { MockCourse, MockCompanyCourse } from "../../../data/mockSACourses"
 
 import CourseCard from "./components/CourseCard";
 import CourseDetail from "./components/CourseDetail";
+import PageTransition from "../../../components/common/PageTransition/PageTransition";
 
 type TabKey = "all" | "active" | "pending";
 
@@ -43,10 +44,12 @@ const SparkCourses = () => {
 
   if (view === "detail" && selected) {
     return (
+      <PageTransition style={{ display: "flex", flexDirection: "column", flex: 1, height: "100%" }}>
       <CourseDetail
         course={selected}
         onBack={() => { setView("list"); setSelected(null); }}
       />
+      </PageTransition>
     );
   }
 
@@ -57,16 +60,17 @@ const SparkCourses = () => {
   ];
 
   return (
+    <PageTransition style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: "100%" }}>
     <div style={{
-      padding: 24, minHeight: "100%",
+      padding: 24, minHeight: "100%", flex: 1,
       background: "#f4f4f4",
-      fontFamily: "'Barlow', sans-serif",
+      fontFamily: "'Inter', sans-serif",
     }}>
 
       {/* ── Page title ── */}
       <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontWeight: 900, fontSize: 28, color: "#222",
+        fontFamily: "'Inter', sans-serif",
+        fontWeight: 700, fontSize: 32, color: "#222",
         textTransform: "uppercase", letterSpacing: ".05em",
         marginBottom: 20,
       }}>
@@ -90,7 +94,7 @@ const SparkCourses = () => {
               border: "1.5px solid #e0e0e0",
               borderRadius: 8, cursor: "pointer",
               fontSize: 13, fontWeight: 600, color: "#333",
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               transition: "border-color .2s",
               boxShadow: "0 1px 4px rgba(0,0,0,.05)",
               minWidth: 130,
@@ -155,7 +159,7 @@ const SparkCourses = () => {
               border: `1.5px solid ${tab === t.key ? "#FF6B00" : "#ddd"}`,
               borderRadius: 8, cursor: "pointer",
               fontSize: 12, fontWeight: 700,
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               letterSpacing: ".04em",
               transition: "all .15s",
               boxShadow: tab === t.key
@@ -206,6 +210,7 @@ const SparkCourses = () => {
         </div>
       )}
     </div>
+    </PageTransition>
   );
 };
 

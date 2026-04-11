@@ -83,8 +83,8 @@ const AssignUsersModal = ({
         }}>
           <div>
             <div style={{
-              fontSize: 18, fontWeight: 800, color: "#222",
-              fontFamily: "'Barlow Condensed', sans-serif",
+              fontSize: 22, fontWeight: 700, color: "#222",
+              fontFamily: "'Inter', sans-serif",
               letterSpacing: ".02em",
             }}>
               Assign Users to Course
@@ -115,7 +115,7 @@ const AssignUsersModal = ({
               onChange={e => setSearch(e.target.value)}
               style={{
                 border: "none", outline: "none", flex: 1,
-                fontSize: 12, fontFamily: "'Barlow', sans-serif",
+                fontSize: 12, fontFamily: "'Inter', sans-serif",
                 color: "#333", background: "transparent",
               }}
             />
@@ -160,7 +160,7 @@ const AssignUsersModal = ({
                 borderRadius: 8, cursor: "pointer",
                 fontSize: 13, fontWeight: companyId ? 700 : 400,
                 color: companyId ? "#FF6B00" : "#888",
-                fontFamily: "'Barlow', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 transition: "all .15s",
               }}
             >
@@ -363,7 +363,7 @@ const AssignUsersModal = ({
               padding: "9px 22px", background: "#f0f0f0",
               color: "#555", border: "none", borderRadius: 8,
               fontWeight: 600, fontSize: 13, cursor: "pointer",
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               transition: "background .15s",
             }}
               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#e0e0e0"}
@@ -380,7 +380,7 @@ const AssignUsersModal = ({
                 color: "#fff", border: "none", borderRadius: 8,
                 fontWeight: 700, fontSize: 13,
                 cursor: selected.length > 0 ? "pointer" : "not-allowed",
-                fontFamily: "'Barlow', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 transition: "opacity .15s",
               }}
               onMouseEnter={e => { if (selected.length > 0) (e.currentTarget as HTMLButtonElement).style.opacity = ".88"; }}

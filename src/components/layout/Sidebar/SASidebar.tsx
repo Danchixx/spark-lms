@@ -119,6 +119,8 @@ const icons: Record<NavKey, React.ReactElement> = {
 export const SIDEBAR_WIDTH = 220;
 export const TOPBAR_HEIGHT = 70;
 
+import SparkLogo from "../../../components/common/SparkLogo/sparklogo.png";
+
 // ── Nav item — smooth active transition ───────────────────────
 const NavItemComponent = ({ item, isActive, onClick, showSidebarIcons }: NavItemProps) => {
   const navigate = useNavigate();
@@ -137,8 +139,9 @@ const NavItemComponent = ({ item, isActive, onClick, showSidebarIcons }: NavItem
         gap: showSidebarIcons ? 10 : 0,
         padding: "11px 20px",
         cursor: "pointer",
-        fontSize: 15,
-        fontWeight: 500,
+        fontSize: 17,
+        fontWeight: isActive ? 600 : 100,
+        fontFamily: "'Inter', sans-serif",
         color: isActive ? "#FF6B00" : hovered ? "#FF6B00" : "#444",
         background: isActive ? "#FFF0E6" : hovered ? "#FFF8F3" : "transparent",
         transition: "background 0.25s cubic-bezier(.4,0,.2,1), color 0.25s cubic-bezier(.4,0,.2,1)",
@@ -176,6 +179,7 @@ const SectionLabel = ({ label }: { label: string }) => (
     textTransform: "uppercase",
     padding: "10px 20px 4px",
     whiteSpace: "nowrap",
+    fontFamily: "'Inter', sans-serif",
   }}>
     {label}
   </div>
@@ -185,28 +189,33 @@ const SectionLabel = ({ label }: { label: string }) => (
 const UserChip = ({ user }: UserChipProps) => (
   <div style={{
     display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "14px 20px",
-    background: "#FFF0E6",
+    justifyContent: "center",
+    padding: "12px 16px",
+    margin: 0,
   }}>
     <div style={{
-      width: 32, height: 32, borderRadius: "50%",
-      background: "linear-gradient(135deg, #FF8C00, #c0392b)",
-      display: "flex", alignItems: "center",
-      justifyContent: "center", fontSize: 16, flexShrink: 0,
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      padding: "5px 16px 5px 5px",
+      background: "#ffe5d9c7",
+      borderRadius: 10,
     }}>
-      🔥
-    </div>
-    <div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: "#333", whiteSpace: "nowrap" }}>
-        {user?.name || "Spark Admin"}
-      </div>
       <div style={{
-        fontSize: 10, color: "#FF6B00", fontWeight: 700,
-        letterSpacing: ".1em", textTransform: "uppercase"
+        width: 32, height: 32, borderRadius: "50%",
+        background: "#fff",
+        display: "flex", alignItems: "center",
+        justifyContent: "center", flexShrink: 0,
       }}>
-        Super Admin
+        <img src={SparkLogo} alt="Spark" style={{ width: 18, height: "auto" }} />
+      </div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#111", letterSpacing: "-0.01em", lineHeight: 1.1, fontFamily: "'Inter', sans-serif" }}>
+          {user?.name || "Ian Palabrica"}
+        </div>
+        <div style={{ fontSize: 9, color: "#FF6B00", fontWeight: 800, textTransform: "uppercase", marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
+          {user?.role === 'spark_admin' ? 'SUPER ADMIN' : (user?.role || 'SUPER ADMIN')}
+        </div>
       </div>
     </div>
   </div>
@@ -375,17 +384,25 @@ const SASidebar = ({ open, activePage, onNavigate, user }: SASidebarProps) => {
         className="sa-sidebar-desktop-aside"
         style={{
           position: "fixed",
-          top: TOPBAR_HEIGHT,
+          top: 0,
           left: 0,
           bottom: 0,
           width: open ? SIDEBAR_WIDTH : 0,
           background: "#fff",
-          borderRight: "1px solid #eee",
+          borderRight: "1px solid #e0e0e0",
+          boxShadow: open ? "4px 0 24px rgba(0,0,0,0.06)" : "none",
           overflow: "hidden",
           transition: `width 0.3s cubic-bezier(.4,0,.2,1), border-color 0.3s ease`,
-          zIndex: 100,
+          zIndex: 120,
         }}
       >
+        <div style={{ height: TOPBAR_HEIGHT, boxSizing: "border-box", display: "flex", alignItems: "center", padding: "5px 18px 0 18px", borderBottom: "1px solid #d4d4d4ff", minWidth: SIDEBAR_WIDTH, opacity: open ? 1 : 0, transition: "opacity 0.2s ease" }}>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center", marginRight: 0 }}>
+            <span style={{ color: "#222", fontWeight: 750, fontSize: 34, letterSpacing: 2, fontFamily: "'Sora', sans-serif" }}>SPARK</span>
+            <span style={{ color: "#888", fontFamily: "'Open Sans', sans-serif", fontSize: 7, textTransform: "uppercase", whiteSpace: "nowrap", marginTop: 1 }}>YES TO LEARNING & DEVELOPMENT</span>
+          </div>
+          <img src={SparkLogo} alt="Spark Logo" style={{ height: 70, width: "auto", paddingBottom: 12 }} />
+        </div>
         <nav style={{
           flex: 1,
           paddingTop: 8,

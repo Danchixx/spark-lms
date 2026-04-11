@@ -6,8 +6,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MOCK_TENANTS } from "../../data/mockTenants";
+import PageTransition from "../../components/common/PageTransition/PageTransition";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
 import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
+import SAStatCard from "../../components/common/SAStatCard/SAStatCard";
 import type { AppUser } from "../../types";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -97,10 +99,12 @@ const t = {
 };
 
 // ── Top Bar ───────────────────────────────────────────────────
-const TopBar = ({ onBurger, sidebarOpen, user }: TopBarProps) => (
+const TopBar = ({ onBurger, sidebarOpen, user }: TopBarProps) => {
+  const isDesktop = typeof window !== "undefined" && window.innerWidth > 768;
+  return (
   <div style={{
     position: "fixed",
-    top: 0, left: 0, right: 0,
+    top: 0, left: isDesktop && sidebarOpen ? SIDEBAR_WIDTH : 0, right: 0,
     height: TOPBAR_HEIGHT,
     background: "#fff",
     borderBottom: "2px solid #FF6B00",
@@ -109,6 +113,7 @@ const TopBar = ({ onBurger, sidebarOpen, user }: TopBarProps) => (
     padding: "0 24px",
     gap: 12,
     zIndex: 110,
+    transition: "left 0.3s cubic-bezier(.4,0,.2,1)",
   }}>
     <button className="sa-burger-btn" onClick={onBurger} style={t.burgerBtn}>
       <span style={{
@@ -129,41 +134,48 @@ const TopBar = ({ onBurger, sidebarOpen, user }: TopBarProps) => (
       }} />
     </button>
 
-    <div style={{ display: "flex", alignItems: "center" }}>
-      <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center" }}>
-        <span style={t.logoText}>SPARK</span>
-        <span style={{
-          color: "#9e9e9e",
-          fontFamily: "'Open Sans', sans-serif",
-          fontSize: 6.4,
-          textTransform: "uppercase",
-          whiteSpace: "nowrap",
-          marginTop: 2,
-          letterSpacing: ".12em",
-        }}>
-          Yes to Learning and Development
-        </span>
-      </div>
-      <img src={SparkLogo} alt="Spark Logo" style={{ height: 44, width: "auto" }} />
-    </div>
+    {/* Logo removed and being pushed to SASidebar instead */}
+    <div style={{ display: "flex", alignItems: "center" }}></div>
 
-    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontWeight: 700, fontSize: 15, color: "#FF6B00" }}>
-        {user?.name?.split(" ")[0] || "Admin"}
-      </span>
-      <div style={{
-        width: 36, height: 36, borderRadius: "50%",
-        background: "#e8e0d8", border: "2px solid #ddd", overflow: "hidden"
+    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 18 }}>
+
+      {/* Notification Bell */}
+      <button style={{
+        background: "none", border: "none", cursor: "pointer",
+        position: "relative", width: 32, height: 32,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 0
       }}>
-        <svg viewBox="0 0 100 100" width="36" height="36">
-          <circle cx="50" cy="50" r="50" fill="#e8e0d8" />
-          <circle cx="50" cy="36" r="18" fill="#b0a090" />
-          <ellipse cx="50" cy="85" rx="28" ry="20" fill="#b0a090" />
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
         </svg>
+        <div style={{
+          position: "absolute", top: 2, right: 4,
+          width: 8, height: 8, background: "#c0392b",
+          borderRadius: "50%", border: "2px solid #fff"
+        }} />
+      </button>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontWeight: 700, fontSize: 15, color: "#FF6B00" }}>
+          {user?.name?.split(" ")[0] || "Admin"}
+        </span>
+        <div style={{
+          width: 36, height: 36, borderRadius: "50%",
+          background: "#e8e0d8", border: "2px solid #ddd", overflow: "hidden"
+        }}>
+          <svg viewBox="0 0 100 100" width="36" height="36">
+            <circle cx="50" cy="50" r="50" fill="#e8e0d8" />
+            <circle cx="50" cy="36" r="18" fill="#b0a090" />
+            <ellipse cx="50" cy="85" rx="28" ry="20" fill="#b0a090" />
+          </svg>
+        </div>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // ── Welcome Screen ────────────────────────────────────────────
 const WelcomeScreen = ({ name, onDone }: WelcomeScreenProps) => {
@@ -204,8 +216,8 @@ const WelcomeScreen = ({ name, onDone }: WelcomeScreenProps) => {
         justifyContent: "center"
       }}>
         <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900, fontSize: 52,
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 800, fontSize: 52,
           animation: "slideUp .7s .3s cubic-bezier(.22,1,.36,1) both",
         }}>
           <span style={{ color: "#222" }}>WELCOME </span>
@@ -270,8 +282,8 @@ const NotifyModal = ({ tenant, onClose }: NotifyModalProps) => {
             }}>
               <div>
                 <div style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontWeight: 900, fontSize: 20, color: "#222"
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: 800, fontSize: 20, color: "#222"
                 }}>
                   Notify Tenant Admin
                 </div>
@@ -293,7 +305,7 @@ const NotifyModal = ({ tenant, onClose }: NotifyModalProps) => {
               style={{
                 width: "100%", height: 160, padding: "10px 14px",
                 border: "1.5px solid #FF6B00", borderRadius: 8,
-                fontSize: 13, fontFamily: "'Barlow', sans-serif",
+                fontSize: 13, fontFamily: "'Inter', sans-serif",
                 outline: "none", resize: "vertical",
                 boxSizing: "border-box", color: "#333", marginBottom: 16
               }}
@@ -303,7 +315,7 @@ const NotifyModal = ({ tenant, onClose }: NotifyModalProps) => {
                 background: "#f0f0f0", color: "#555",
                 border: "none", borderRadius: 8, padding: "9px 18px",
                 fontWeight: 600, fontSize: 13, cursor: "pointer",
-                fontFamily: "'Barlow', sans-serif"
+                fontFamily: "'Inter', sans-serif"
               }}>
                 Cancel
               </button>
@@ -311,7 +323,7 @@ const NotifyModal = ({ tenant, onClose }: NotifyModalProps) => {
                 background: "#FF6B00", color: "#fff",
                 border: "none", borderRadius: 8, padding: "9px 18px",
                 fontWeight: 700, fontSize: 13, cursor: "pointer",
-                fontFamily: "'Barlow', sans-serif"
+                fontFamily: "'Inter', sans-serif"
               }}>
                 Send Notification
               </button>
@@ -368,7 +380,7 @@ const TenantActivityCard = ({ tenant, onNotify }: TenantActivityCardProps) => {
                 background: "#c0392b", color: "#fff", border: "none",
                 borderRadius: 6, padding: "5px 10px", fontSize: 11,
                 fontWeight: 700, cursor: "pointer",
-                fontFamily: "'Barlow', sans-serif", whiteSpace: "nowrap"
+                fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap"
               }}>
               🔔 Notify
             </button>
@@ -377,7 +389,7 @@ const TenantActivityCard = ({ tenant, onNotify }: TenantActivityCardProps) => {
             style={{
               background: "none", border: "1px solid #ddd", borderRadius: 6,
               padding: "5px 10px", fontSize: 11, cursor: "pointer", color: "#888",
-              fontFamily: "'Barlow', sans-serif"
+              fontFamily: "'Inter', sans-serif"
             }}>
             {expanded ? "▲ Less" : "▼ More"}
           </button>
@@ -505,11 +517,12 @@ export const DashboardHome = () => {
   ];
 
   return (
-    <div style={{ padding: 20 }}>
+    <PageTransition style={{ height: "100%" }}>
+      <div style={{ padding: 20, height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* Dashboard title */}
       <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontWeight: 900, fontSize: 28, color: "#222", marginBottom: 20
+        fontFamily: "'Inter', sans-serif",
+        fontWeight: 700, fontSize: 32, color: "#222", marginBottom: 20
       }}>
         Dashboard
       </div>
@@ -520,42 +533,15 @@ export const DashboardHome = () => {
         gap: 16, marginBottom: 24
       }}>
         {STATS.map((s, i) => (
-          <div
+          <SAStatCard
             key={i}
+            label={s.label}
+            value={s.count}
+            sub={`↑ ${s.sub}`}
+            subColor="#FF6B00"
+            icon={StatIcons[s.iconKey]}
             onClick={() => navigate("/superadmin/" + s.key)}
-            style={d.statCard}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 24px rgba(0,0,0,.12), 0 3px 8px rgba(0,0,0,.07)";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)";
-            }}
-          >
-            <div style={{
-              fontSize: 11, color: "#888", fontWeight: 500,
-              textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8
-            }}>
-              {s.label}
-            </div>
-            <div style={{
-              display: "flex", alignItems: "flex-end",
-              justifyContent: "space-between"
-            }}>
-              <div>
-                <div style={{ fontSize: 36, fontWeight: 700, color: "#222", lineHeight: 1 }}>
-                  {s.count}
-                </div>
-                <div style={{ fontSize: 12, color: "#FF6B00", marginTop: 6, fontWeight: 500 }}>
-                  ↑ {s.sub}
-                </div>
-              </div>
-              <div style={d.statIconWrap}>
-                {StatIcons[s.iconKey]}
-              </div>
-            </div>
-          </div>
+          />
         ))}
       </div>
 
@@ -585,7 +571,7 @@ export const DashboardHome = () => {
       }}>
 
         {/* LEFT — Tenant Activeness */}
-        <div style={d.panel}>
+        <div style={{ ...d.panel, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <div style={d.panelTitle}>Tenant Activeness</div>
           <style>{`
             .tenant-scroll::-webkit-scrollbar { width: 4px; }
@@ -615,15 +601,15 @@ export const DashboardHome = () => {
         </div>
 
         {/* RIGHT — Recent Subscriptions + System Updates */}
-        <div className="sa-right-col" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="sa-right-col" style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minHeight: 0 }}>
 
           {/* Recent Subscriptions */}
-          <div style={d.panel}>
+          <div style={{ ...d.panel }}>
             <div style={d.panelTitle}>Recent Subscriptions</div>
-            {RECENT_SUBS.map((sub, i) => (
+            {RECENT_SUBS.slice(0, 3).map((sub, i, arr) => (
               <div key={sub.name} style={{
                 ...d.subItem,
-                borderBottom: i < RECENT_SUBS.length - 1
+                borderBottom: i < arr.length - 1
                   ? "1px solid #f2f2f2" : "none",
               }}>
                 <div style={{ ...d.subLogo, background: sub.bg }}>
@@ -654,37 +640,40 @@ export const DashboardHome = () => {
                 </div>
               </div>
             ))}
+            <div style={{ textAlign: "center", marginTop: 8, paddingTop: 12, borderTop: "1px solid #ddd" }}>
+              <span onClick={() => navigate("/superadmin/tenants")} style={{ fontSize: 12, fontWeight: 700, color: "#FF6B00", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}>
+                View all
+              </span>
+            </div>
           </div>
 
           {/* System Updates */}
-          <div style={d.panel}>
+          <div style={{ ...d.panel, display: "flex", flexDirection: "column" }}>
             <div style={d.panelTitle}>System Updates</div>
-            {([
-              { icon: "🆕", text: "New tenant registered: Build Hub PH", time: "2h ago", color: "#2980b9" },
-              { icon: "✅", text: "Course approved: Sales Fundamentals", time: "5h ago", color: "#27ae60" },
-              { icon: "⚠️", text: "Eleksis inactive for 10 days", time: "1d ago", color: "#c0392b" },
-              { icon: "💳", text: "DLSU renewed Institute subscription", time: "2d ago", color: "#FF6B00" },
-              { icon: "👤", text: "New admin role assigned at DepEd", time: "3d ago", color: "#8e44ad" },
-            ] as SystemUpdate[]).map((u, i, arr) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "flex-start",
-                gap: 10, padding: "9px 0",
-                borderBottom: i < arr.length - 1 ? "1px solid #f5f5f5" : "none"
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 8,
-                  background: u.color + "18", display: "flex",
-                  alignItems: "center", justifyContent: "center",
-                  fontSize: 15, flexShrink: 0
+            <div className="tenant-scroll" style={{ maxHeight: 115, overflowY: "auto", paddingRight: 6 }}>
+              {([
+                { text: "New tenant registered: Build Hub PH", time: "2h ago" },
+                { text: "Course approved: Sales Fundamentals", time: "5h ago" },
+                { text: "Eleksis inactive for 10 days", time: "1d ago" },
+                { text: "DLSU renewed Institute subscription", time: "2d ago" },
+                { text: "New admin role assigned at DepEd", time: "3d ago" },
+              ]).map((u, i, arr) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "flex-start",
+                  gap: 12, padding: "9px 0",
+                  borderBottom: i < arr.length - 1 ? "1px solid #f5f5f5" : "none"
                 }}>
-                  {u.icon}
+                  <div style={{
+                    width: 8, height: 8, borderRadius: "50%",
+                    background: "#FF6B00", flexShrink: 0, marginTop: 4
+                  }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, color: "#333", lineHeight: 1.5 }}>{u.text}</div>
+                    <div style={{ fontSize: 11, color: "#bbb", marginTop: 2 }}>{u.time}</div>
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "#333", lineHeight: 1.5 }}>{u.text}</div>
-                  <div style={{ fontSize: 11, color: "#bbb", marginTop: 2 }}>{u.time}</div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -693,28 +682,12 @@ export const DashboardHome = () => {
         <NotifyModal tenant={notifyTenant} onClose={() => setNotifyTenant(null)} />
       )}
     </div>
+    </PageTransition>
   );
 };
 
 // ── Panel/card styles ─────────────────────────────────────────
 const d: Record<string, React.CSSProperties> = {
-  statCard: {
-    background: "#fff",
-    borderRadius: 12,
-    border: "none",
-    borderTop: "3px solid #FF6B00",
-    boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
-    padding: "20px 22px",
-    cursor: "pointer",
-    transition: "transform .2s ease, box-shadow .2s ease",
-  },
-  statIconWrap: {
-    width: 52, height: 52,
-    background: "#FFF0E6",
-    borderRadius: 12,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    flexShrink: 0,
-  },
   panel: {
     background: "#fff",
     borderRadius: 12,
@@ -783,7 +756,7 @@ const SADashboard = () => {
 
   return (
     <div style={{
-      fontFamily: "'Barlow', sans-serif",
+      fontFamily: "'Inter', sans-serif",
       background: "#f4f4f4",
       minHeight: "100vh",
     }}>
@@ -810,8 +783,8 @@ const SADashboard = () => {
         marginTop: TOPBAR_HEIGHT,
         marginLeft: sidebarOpen ? SIDEBAR_WIDTH : 0,
         transition: "margin-left .25s ease",
-        minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
-        overflowY: "auto",
+        height: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
       }}>

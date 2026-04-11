@@ -5,7 +5,7 @@ import SessionExpiredModal from "../components/common/Modal/SessionExpiredModal"
 
 import Landing from "../pages/Landing/Landing";
 import Login from "../pages/Auth/Login";
-import SparkAdminLogin from "../pages/Auth/SparkAdminLogin";
+import SuperAdminLogin from "../pages/Auth/SuperAdminLogin";
 
 import UserDashboard from "../pages/User/Dashboard";
 import UserProfile from "../pages/User/Profile";
@@ -21,6 +21,7 @@ import SADashboard, { DashboardHome, ComingSoon } from "../pages/SuperAdmin/SADa
 import SparkTenants from "../pages/SuperAdmin/Tenants/SparkTenants";
 import SparkApprovals from "../pages/SuperAdmin/Approvals/SparkApprovals";
 import SparkUsers from "../pages/SuperAdmin/Users/SparkUsers";
+import SparkCourses from "../pages/SuperAdmin/Courses/SparkCourses";
 // import AdminDashboard      from "../pages/Admin/Dashboard";
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 
@@ -74,7 +75,7 @@ const AppRoutes = () => {
       <Routes location={location}>
         {/* Public */}
         <Route path="/" element={<Landing />} />
-        <Route path="/admin" element={<SparkAdminLogin />} />
+        <Route path="/admin" element={<SuperAdminLogin />} />
         <Route path="/:company" element={<Login />} />
 
         {/* Super Admin — SADashboard layout with nested routes */}
@@ -91,7 +92,7 @@ const AppRoutes = () => {
           <Route path="tenants" element={<SparkTenants />} />
           <Route path="approvals" element={<SparkApprovals />} />
           <Route path="users" element={<SparkUsers />} />
-          <Route path="courses" element={<ComingSoon label="courses" />} />
+          <Route path="courses" element={<SparkCourses />} />
           <Route path="settings" element={<ComingSoon label="settings" />} />
         </Route>
 

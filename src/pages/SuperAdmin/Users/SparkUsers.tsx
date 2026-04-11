@@ -3,6 +3,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { MOCK_ALL_USERS, COMPANIES_LIST, DEPARTMENTS_LIST } from "../../../data/mockUsers";
+import PageTransition from "../../../components/common/PageTransition/PageTransition";
+import SAStatCard from "../../../components/common/SAStatCard/SAStatCard";
 
 const ITEMS_PER_PAGE = 8;
 
@@ -72,46 +74,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-// ── Stat card ─────────────────────────────────────────────────
-interface StatCardProps {
-  label: string;
-  value: number;
-  accent: string;
-  icon: React.ReactNode;
-  sub?: string;
-  subColor?: string;
-}
 
-const StatCard = ({ label, value, accent, icon, sub, subColor }: StatCardProps) => (
-  <div style={{
-    background: "#fff", borderRadius: 12,
-    borderTop: `3px solid ${accent}`,
-    boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
-    padding: "20px 22px",
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-  }}>
-    <div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#aaa",
-        letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 8 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 32, fontWeight: 900, color: "#222", lineHeight: 1, marginBottom: 6 }}>
-        {value}
-      </div>
-      {sub && (
-        <div style={{ fontSize: 12, color: subColor || "#27ae60", fontWeight: 500 }}>{sub}</div>
-      )}
-    </div>
-    <div style={{
-      width: 52, height: 52, borderRadius: 12,
-      background: "#FFF0E6",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      color: "#FF6B00", flexShrink: 0,
-    }}>
-      {icon}
-    </div>
-  </div>
-);
 
 // ── Dropdown ──────────────────────────────────────────────────
 interface SelectOption { value: string; label: string; }
@@ -127,7 +90,7 @@ const Select = ({ value, onChange, options, placeholder }: {
       border: "1.5px solid #e0e0e0", borderRadius: 8,
       padding: "9px 32px 9px 12px",
       fontSize: 13, color: value ? "#333" : "#aaa",
-      cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+      cursor: "pointer", fontFamily: "'Inter', sans-serif",
       outline: "none", width: "100%", transition: "border-color .2s",
     }}
       onFocus={e => e.target.style.borderColor = "#FF6B00"}
@@ -175,8 +138,8 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
         width: 440, maxWidth: "90vw", padding: 28,
         boxShadow: "0 20px 60px rgba(0,0,0,.25)",
       }}>
-        <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900, fontSize: 20, color: "#222", marginBottom: 6 }}>
+        <div style={{ fontFamily: "'Inter', sans-serif",
+          fontWeight: 800, fontSize: 20, color: "#222", marginBottom: 6 }}>
           {isSuspend ? "Suspend User" : "Ban User"}
         </div>
         <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
@@ -199,7 +162,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
                   border: `1.5px solid ${duration === d ? "#FF6B00" : "#ddd"}`,
                   background: duration === d ? "#FFF0E6" : "#fff",
                   color: duration === d ? "#FF6B00" : "#555",
-                  fontFamily: "'Barlow', sans-serif", transition: "all .15s",
+                  fontFamily: "'Inter', sans-serif", transition: "all .15s",
                 }}>
                   {d}
                 </button>
@@ -218,7 +181,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
             style={{
               width: "100%", height: 88, padding: "10px 14px",
               border: "1.5px solid #e0e0e0", borderRadius: 8,
-              fontSize: 13, fontFamily: "'Barlow', sans-serif",
+              fontSize: 13, fontFamily: "'Inter', sans-serif",
               outline: "none", resize: "none", boxSizing: "border-box", color: "#333",
               transition: "border-color .2s",
             }}
@@ -232,7 +195,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
             flex: 1, padding: "10px 0", background: "#fff", color: "#555",
             border: "1.5px solid #ddd", borderRadius: 8,
             fontWeight: 600, fontSize: 14, cursor: "pointer",
-            fontFamily: "'Barlow', sans-serif",
+            fontFamily: "'Inter', sans-serif",
           }}>
             Cancel
           </button>
@@ -243,7 +206,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
               color: "#fff", border: "none", borderRadius: 8,
               fontWeight: 700, fontSize: 14,
               cursor: reason.trim() ? "pointer" : "not-allowed",
-              fontFamily: "'Barlow', sans-serif", transition: "background .2s",
+              fontFamily: "'Inter', sans-serif", transition: "background .2s",
             }}>
             Confirm {actionLabel}
           </button>
@@ -425,7 +388,7 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
                           <button onClick={handleReactivate} style={{
                             padding: "7px 14px", borderRadius: 8, fontSize: 12,
                             fontWeight: 700, cursor: "pointer",
-                            fontFamily: "'Barlow', sans-serif",
+                            fontFamily: "'Inter', sans-serif",
                             background: "#27ae60", color: "#fff", border: "none",
                             transition: "opacity .15s",
                           }}
@@ -438,7 +401,7 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
                           <button onClick={() => setShowReason("suspend")} style={{
                             padding: "7px 14px", borderRadius: 8, fontSize: 12,
                             fontWeight: 700, cursor: "pointer",
-                            fontFamily: "'Barlow', sans-serif",
+                            fontFamily: "'Inter', sans-serif",
                             background: "#fff", color: "#d4ac0d", border: "1.5px solid #d4ac0d",
                             transition: "background .15s",
                           }}
@@ -451,7 +414,7 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
                           <button onClick={() => setShowReason("ban")} style={{
                             padding: "7px 14px", borderRadius: 8, fontSize: 12,
                             fontWeight: 700, cursor: "pointer",
-                            fontFamily: "'Barlow', sans-serif",
+                            fontFamily: "'Inter', sans-serif",
                             background: "#fff", color: "#922b21", border: "1.5px solid #922b21",
                             transition: "background .15s",
                           }}
@@ -488,7 +451,7 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
                 <button onClick={onClose} style={{
                   padding: "9px 28px", background: "#f5f5f5", color: "#555",
                   border: "none", borderRadius: 6, fontWeight: 600, fontSize: 13,
-                  cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+                  cursor: "pointer", fontFamily: "'Inter', sans-serif",
                 }}>
                   Close
                 </button>
@@ -582,19 +545,20 @@ const SparkUsers = () => {
     fontSize: 12, fontWeight: 500,
     color: disabled ? "#ccc" : "#555",
     opacity: disabled ? 0.5 : 1,
-    fontFamily: "'Barlow', sans-serif",
+    fontFamily: "'Inter', sans-serif",
   });
 
   const hasFilters = companyFilter || deptFilter || statusFilter || dateFilter || search;
 
   return (
+    <PageTransition style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: "100%" }}>
     <div style={{ padding: 24, minHeight: "100%", background: "#f4f4f4",
-      fontFamily: "'Barlow', sans-serif" }}>
+      fontFamily: "'Inter', sans-serif", flex: 1 }}>
 
       {/* Title */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900, fontSize: 26, color: "#222",
+        <div style={{ fontFamily: "'Inter', sans-serif",
+          fontWeight: 700, fontSize: 30, color: "#222",
           textTransform: "uppercase", letterSpacing: ".05em" }}>
           User Management
         </div>
@@ -606,7 +570,7 @@ const SparkUsers = () => {
       {/* Stat cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
         gap: 14, marginBottom: 20 }}>
-        <StatCard label="Total Users" value={total} accent="#FF6B00"
+        <SAStatCard label="Total Users" value={total}
           sub={`↑ ${Math.floor(total * 0.12)} this month`} subColor="#27ae60"
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -617,7 +581,7 @@ const SparkUsers = () => {
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
           } />
-        <StatCard label="Active" value={active} accent="#27ae60"
+        <SAStatCard label="Active" value={active}
           sub={`↑ ${Math.floor(active * 0.15)} this week`} subColor="#27ae60"
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -626,7 +590,7 @@ const SparkUsers = () => {
               <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
           } />
-        <StatCard label="Pending" value={pending} accent="#FF6B00"
+        <SAStatCard label="Pending" value={pending}
           sub={`${pending} awaiting review`} subColor="#FF6B00"
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -635,7 +599,7 @@ const SparkUsers = () => {
               <polyline points="12 6 12 12 16 14"/>
             </svg>
           } />
-        <StatCard label="Suspended" value={suspended} accent="#d4ac0d"
+        <SAStatCard label="Suspended" value={suspended}
           sub={suspended > 0 ? `${suspended} temporarily blocked` : "None suspended"} subColor="#d4ac0d"
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -645,7 +609,7 @@ const SparkUsers = () => {
               <line x1="14" y1="15" x2="14" y2="9"/>
             </svg>
           } />
-        <StatCard label="Banned" value={banned} accent="#922b21"
+        <SAStatCard label="Banned" value={banned}
           sub={banned > 0 ? `${banned} permanently blocked` : "None banned"} subColor="#922b21"
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -679,7 +643,7 @@ const SparkUsers = () => {
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
               style={{ border: "none", outline: "none", flex: 1,
-                fontSize: 13, fontFamily: "'Barlow', sans-serif",
+                fontSize: 13, fontFamily: "'Inter', sans-serif",
                 color: "#333", background: "transparent" }} />
             {search && (
               <button onClick={() => setSearch("")} style={{
@@ -742,7 +706,7 @@ const SparkUsers = () => {
               background: "#fff", color: "#888",
               border: "1.5px solid #ddd", fontSize: 12,
               fontWeight: 600, cursor: "pointer",
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               whiteSpace: "nowrap", transition: "all .15s",
             }}
               onMouseEnter={e => {
@@ -830,7 +794,7 @@ const SparkUsers = () => {
                                : "#FF6B00",
                       color: "#fff", border: "none", borderRadius: 8,
                       padding: "7px 16px", fontWeight: 700, fontSize: 12,
-                      cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+                      cursor: "pointer", fontFamily: "'Inter', sans-serif",
                       display: "flex", alignItems: "center", gap: 5,
                       transition: "opacity .15s",
                     }}
@@ -891,6 +855,7 @@ const SparkUsers = () => {
         />
       )}
     </div>
+    </PageTransition>
   );
 };
 

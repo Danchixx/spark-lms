@@ -100,8 +100,8 @@ const ApprovalCompanies = ({ companies, onSelect }: ApprovalCompaniesProps) => (
     background: "#f4f4f4",
   }}>
     <div style={{
-      fontFamily: "'Barlow Condensed', sans-serif",
-      fontWeight: 900, fontSize: 26,
+      fontFamily: "'Inter', sans-serif",
+      fontWeight: 700, fontSize: 30,
       color: "#222", marginBottom: 24,
       letterSpacing: ".05em", textTransform: "uppercase",
     }}>

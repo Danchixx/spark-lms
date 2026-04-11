@@ -33,8 +33,8 @@ const SubscriptionHistoryModal = ({ tenant, onClose }: { tenant: Tenant; onClose
         <div style={{ display: "flex", justifyContent: "space-between",
           alignItems: "center", marginBottom: 20 }}>
           <div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 900, fontSize: 20, color: "#222" }}>
+            <div style={{ fontFamily: "'Inter', sans-serif",
+              fontWeight: 700, fontSize: 24, color: "#222" }}>
               Subscription History
             </div>
             <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>
@@ -87,7 +87,7 @@ const SubscriptionHistoryModal = ({ tenant, onClose }: { tenant: Tenant; onClose
           <button onClick={onClose} style={{ background: "#FF6B00", color: "#fff",
             border: "none", borderRadius: 8, padding: "8px 20px",
             fontWeight: 700, fontSize: 13, cursor: "pointer",
-            fontFamily: "'Barlow', sans-serif" }}>
+            fontFamily: "'Inter', sans-serif" }}>
             Close
           </button>
         </div>
@@ -111,15 +111,15 @@ const SubscriptionCard = ({ plan, joined, end }: { plan: string; joined: string;
       <div style={{
         background: "#FF6B00", borderRadius: "10px 10px 0 0",
         padding: "7px 22px",
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontWeight: 900, fontSize: 16, color: "#fff",
+        fontFamily: "'Inter', sans-serif",
+        fontWeight: 700, fontSize: 18, color: "#fff",
         letterSpacing: ".12em", textTransform: "uppercase",
         marginRight: 10, position: "relative", zIndex: 2,
       }}>
         {plan.toUpperCase()}
       </div>
-      <span style={{ fontFamily: "'Barlow Condensed', sans-serif",
-        fontWeight: 900, fontSize: 20, color: "#222",
+      <span style={{ fontFamily: "'Inter', sans-serif",
+        fontWeight: 700, fontSize: 24, color: "#222",
         letterSpacing: ".08em", paddingBottom: 6 }}>
         SUBSCRIPTION
       </span>
@@ -199,7 +199,7 @@ const ViewTenant = ({ tenant, onBack }: ViewTenantProps) => {
                   {tenant.abbr.slice(0, 5)}
                 </span>
               </div>
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif",
+              <span style={{ fontFamily: "'Inter', sans-serif",
                 fontWeight: 700, fontSize: 24, color: "#222" }}>
                 {tenant.name}
               </span>
@@ -283,7 +283,7 @@ const s: Record<string, React.CSSProperties> = {
   bcBtn: { display: "flex", alignItems: "center", gap: 6, background: "#FFF0E6",
     border: "1.5px solid #FF6B00", borderRadius: 20, padding: "6px 14px",
     cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#FF6B00",
-    fontFamily: "'Barlow', sans-serif" },
+    fontFamily: "'Inter', sans-serif" },
   card: { background: "#fff", borderRadius: 10, border: "1px solid #eee", overflow: "hidden" },
   cover: { width: "100%", height: 130,
     background: "linear-gradient(135deg, #c8d4e8, #8fa8c8)",

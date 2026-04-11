@@ -80,7 +80,7 @@ const SuperAdminLogin = () => {
       username === SUPERADMIN_CREDENTIALS.username &&
       password === SUPERADMIN_CREDENTIALS.password
     ) {
-      loginMock({ name: "Spark Admin", role: "spark_admin" });
+      loginMock({ name: "Ian Palabrica", role: "spark_admin" });
       navigate("/superadmin/dashboard");
     } else {
       setError("Invalid admin credentials.");

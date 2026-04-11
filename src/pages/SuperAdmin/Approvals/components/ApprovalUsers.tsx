@@ -118,8 +118,8 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
         width: 440, maxWidth: "90vw", padding: 28,
         boxShadow: "0 20px 60px rgba(0,0,0,.25)",
       }}>
-        <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900, fontSize: 20, color: "#222", marginBottom: 6 }}>
+        <div style={{ fontFamily: "'Inter', sans-serif",
+          fontWeight: 800, fontSize: 20, color: "#222", marginBottom: 6 }}>
           {isSuspend ? "Suspend User" : "Ban User"}
         </div>
         <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
@@ -142,7 +142,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
                   border: `1.5px solid ${duration === d ? "#FF6B00" : "#ddd"}`,
                   background: duration === d ? "#FFF0E6" : "#fff",
                   color: duration === d ? "#FF6B00" : "#555",
-                  fontFamily: "'Barlow', sans-serif", transition: "all .15s",
+                  fontFamily: "'Inter', sans-serif", transition: "all .15s",
                 }}>
                   {d}
                 </button>
@@ -163,7 +163,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
             style={{
               width: "100%", height: 90, padding: "10px 14px",
               border: "1.5px solid #e0e0e0", borderRadius: 8,
-              fontSize: 13, fontFamily: "'Barlow', sans-serif",
+              fontSize: 13, fontFamily: "'Inter', sans-serif",
               outline: "none", resize: "none",
               boxSizing: "border-box", color: "#333", transition: "border-color .2s",
             }}
@@ -177,7 +177,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
             flex: 1, padding: "10px 0", background: "#fff", color: "#555",
             border: "1.5px solid #ddd", borderRadius: 8,
             fontWeight: 600, fontSize: 14, cursor: "pointer",
-            fontFamily: "'Barlow', sans-serif",
+            fontFamily: "'Inter', sans-serif",
           }}>
             Cancel
           </button>
@@ -189,7 +189,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
               color: "#fff", border: "none", borderRadius: 8,
               fontWeight: 700, fontSize: 14,
               cursor: reason.trim() ? "pointer" : "not-allowed",
-              fontFamily: "'Barlow', sans-serif", transition: "background .2s",
+              fontFamily: "'Inter', sans-serif", transition: "background .2s",
             }}
           >
             Confirm {actionLabel}
@@ -325,13 +325,13 @@ const ApprovalModal = ({ user, company, onClose, onApprove, onReject }: Approval
               <button onClick={onClose} style={{ padding: "9px 22px", background: "#fff",
                 color: "#888", border: "1px solid #ddd", borderRadius: 6,
                 fontWeight: 600, fontSize: 13, cursor: "pointer",
-                fontFamily: "'Barlow', sans-serif" }}>
+                fontFamily: "'Inter', sans-serif" }}>
                 Cancel
               </button>
               <button onClick={handleReject}
                 style={{ padding: "9px 26px", background: "#333", color: "#fff",
                   border: "none", borderRadius: 6, fontWeight: 700, fontSize: 13,
-                  cursor: "pointer", fontFamily: "'Barlow', sans-serif", transition: "opacity .15s" }}
+                  cursor: "pointer", fontFamily: "'Inter', sans-serif", transition: "opacity .15s" }}
                 onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".8"}
                 onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}>
                 REJECT
@@ -339,7 +339,7 @@ const ApprovalModal = ({ user, company, onClose, onApprove, onReject }: Approval
               <button onClick={handleApprove}
                 style={{ padding: "9px 26px", background: "#FF6B00", color: "#fff",
                   border: "none", borderRadius: 6, fontWeight: 700, fontSize: 13,
-                  cursor: "pointer", fontFamily: "'Barlow', sans-serif", transition: "opacity .15s" }}
+                  cursor: "pointer", fontFamily: "'Inter', sans-serif", transition: "opacity .15s" }}
                 onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".88"}
                 onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}>
                 APPROVE
@@ -393,7 +393,7 @@ const ManageModal = ({ user, company, onClose, onSuspend, onBan, onReactivate }:
   const manageBtn: React.CSSProperties = {
     padding: "8px 16px", borderRadius: 8, fontSize: 13,
     fontWeight: 700, cursor: "pointer",
-    fontFamily: "'Barlow', sans-serif", transition: "all .15s",
+    fontFamily: "'Inter', sans-serif", transition: "all .15s",
   };
 
   return (
@@ -528,7 +528,7 @@ const ManageModal = ({ user, company, onClose, onSuspend, onBan, onReactivate }:
                 <button onClick={onClose} style={{ padding: "9px 28px", background: "#f5f5f5",
                   color: "#555", border: "none", borderRadius: 6,
                   fontWeight: 600, fontSize: 13, cursor: "pointer",
-                  fontFamily: "'Barlow', sans-serif" }}>
+                  fontFamily: "'Inter', sans-serif" }}>
                   Close
                 </button>
               </div>
@@ -557,7 +557,7 @@ const Select = ({ value, onChange, options }: { value: string; onChange: (v: str
       appearance: "none", background: "#fff",
       border: "1.5px solid #e0e0e0", borderRadius: 8,
       padding: "8px 32px 8px 12px", fontSize: 13, color: "#333",
-      cursor: "pointer", fontFamily: "'Barlow', sans-serif", outline: "none",
+      cursor: "pointer", fontFamily: "'Inter', sans-serif", outline: "none",
     }}>
       {options.map(o => (
         <option key={o.value} value={o.value}>{o.label}</option>
@@ -674,7 +674,7 @@ const ApprovalUsers = ({ company, users: initialUsers, onBack }: ApprovalUsersPr
     fontSize: 12, fontWeight: 500,
     color: disabled ? "#ccc" : "#555",
     opacity: disabled ? 0.5 : 1,
-    fontFamily: "'Barlow', sans-serif",
+    fontFamily: "'Inter', sans-serif",
   });
 
   return (
@@ -688,8 +688,8 @@ const ApprovalUsers = ({ company, users: initialUsers, onBack }: ApprovalUsersPr
           ← Back
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
-            fontWeight: 900, fontSize: 24, color: "#222",
+          <div style={{ fontFamily: "'Inter', sans-serif",
+            fontWeight: 700, fontSize: 28, color: "#222",
             textTransform: "uppercase", letterSpacing: ".05em" }}>
             {company.name}
           </div>
@@ -727,7 +727,7 @@ const ApprovalUsers = ({ company, users: initialUsers, onBack }: ApprovalUsersPr
             <input type="text" placeholder="Search users by name or email..."
               value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
               style={{ border: "none", outline: "none", flex: 1,
-                fontSize: 13, fontFamily: "'Barlow', sans-serif",
+                fontSize: 13, fontFamily: "'Inter', sans-serif",
                 color: "#333", background: "transparent" }} />
             {search && (
               <button onClick={() => setSearch("")} style={{
@@ -867,20 +867,20 @@ const st: Record<string, React.CSSProperties> = {
   backBtn: {
     background: "#555", color: "#fff", border: "none",
     borderRadius: 20, padding: "8px 20px", fontWeight: 700,
-    fontSize: 13, cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+    fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
     display: "flex", alignItems: "center", gap: 6,
     transition: "background .15s", whiteSpace: "nowrap",
   },
   viewBtn: {
     background: "#2980b9", color: "#fff", border: "none",
     borderRadius: 8, padding: "7px 16px", fontWeight: 700,
-    fontSize: 12, cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+    fontSize: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif",
     display: "flex", alignItems: "center", gap: 6, transition: "opacity .15s",
   },
   manageActionBtn: {
     color: "#fff", border: "none", borderRadius: 8,
     padding: "7px 16px", fontWeight: 700, fontSize: 12,
-    cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+    cursor: "pointer", fontFamily: "'Inter', sans-serif",
     display: "flex", alignItems: "center", gap: 6, transition: "opacity .15s",
   },
 };

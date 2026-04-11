@@ -1,13 +1,13 @@
 /* ─── SuperAdmin Dashboard Styles ─────────────────────────────────────────── */
 /* Matches the User section's design system using shared CSS variables         */
 
-@import url('https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .sa-root {
   display: flex;
   height: 100vh;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   background: var(--color-bg);
   overflow: hidden;
 }
@@ -39,8 +39,8 @@
 }
 
 .sa-topbar-brand-name {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900;
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
   font-size: 22px;
   color: var(--color-text-header);
   letter-spacing: 3px;
@@ -219,9 +219,9 @@
 }
 
 .sa-page-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900;
-  font-size: 28px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
   color: var(--color-text-header);
   margin: 0;
   letter-spacing: 0.5px;
@@ -415,7 +415,7 @@
   border: 1px solid var(--color-border);
   background: var(--color-bg-muted);
   color: var(--color-text);
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: all 0.15s;
   outline: none;
   white-space: nowrap;
@@ -537,7 +537,7 @@
   box-shadow: 0 24px 60px rgba(0,0,0,0.3);
 }
 
-.sa-modal-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px; color: var(--color-text-header); }
+.sa-modal-title { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 20px; color: var(--color-text-header); }
 .sa-modal-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 
 .sa-modal-label { font-size: 11px; font-weight: 700; color: var(--color-text-muted); margin-bottom: 6px; }
@@ -549,7 +549,7 @@
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
   font-size: 13px;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   outline: none;
   resize: vertical;
   color: var(--color-text);
@@ -568,7 +568,7 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Inter', sans-serif;
   outline: none;
   transition: all 0.15s;
 }
@@ -617,8 +617,8 @@
 }
 
 .sa-welcome-text {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900;
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
   font-size: clamp(36px, 6vw, 52px);
   animation: saSlideUp 0.7s 0.3s cubic-bezier(0.22,1,0.36,1) both;
 }

@@ -148,7 +148,7 @@ const CourseCard = ({ course, onClick }: CourseCardProps) => {
               border: "none", borderRadius: 20,
               padding: "6px 14px", fontSize: 12,
               fontWeight: 700, cursor: "pointer",
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               transition: "opacity .15s",
             }}
             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".85"}

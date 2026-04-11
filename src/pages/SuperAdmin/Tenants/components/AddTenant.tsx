@@ -180,7 +180,7 @@ const s: Record<string, React.CSSProperties> = {
     background: "#FFF0E6", border: "1.5px solid #FF6B00",
     borderRadius: 20, padding: "6px 14px",
     cursor: "pointer", fontSize: 12, fontWeight: 700,
-    color: "#FF6B00", fontFamily: "'Barlow', sans-serif",
+    color: "#FF6B00", fontFamily: "'Inter', sans-serif",
   },
 };
 

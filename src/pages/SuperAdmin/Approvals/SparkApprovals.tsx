@@ -3,6 +3,7 @@ import { useState } from "react";
 import { APPROVAL_COMPANIES, MOCK_PENDING_USERS } from "../../../data/mockApprovals";
 import ApprovalCompanies from "./components/ApprovalCompanies";
 import ApprovalUsers from "./components/ApprovalUsers";
+import PageTransition from "../../../components/common/PageTransition/PageTransition";
 
 export interface ApprovalCompany {
   id: number;
@@ -44,20 +45,22 @@ const SparkApprovals = () => {
   const handleBack = () => setSelectedCompany(null);
 
   return (
-    <div style={{ minHeight: "100%", background: "#f4f4f4", flex: 1 }}>
-      {selectedCompany ? (
-        <ApprovalUsers
-          company={selectedCompany}
-          users={(MOCK_PENDING_USERS as Record<number, ApprovalUser[]>)[selectedCompany.id] || []}
-          onBack={handleBack}
-        />
-      ) : (
-        <ApprovalCompanies
-          companies={APPROVAL_COMPANIES as ApprovalCompany[]}
-          onSelect={handleSelectCompany}
-        />
-      )}
-    </div>
+    <PageTransition style={{ height: "100%", display: "flex", flex: 1 }}>
+      <div style={{ minHeight: "100%", background: "#f4f4f4", flex: 1, display: "flex", flexDirection: "column" }}>
+        {selectedCompany ? (
+          <ApprovalUsers
+            company={selectedCompany}
+            users={(MOCK_PENDING_USERS as Record<number, ApprovalUser[]>)[selectedCompany.id] || []}
+            onBack={handleBack}
+          />
+        ) : (
+          <ApprovalCompanies
+            companies={APPROVAL_COMPANIES as ApprovalCompany[]}
+            onSelect={handleSelectCompany}
+          />
+        )}
+      </div>
+    </PageTransition>
   );
 };
 
