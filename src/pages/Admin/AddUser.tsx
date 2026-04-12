@@ -49,6 +49,7 @@ const AdminAddUser = () => {
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   
   const [currentStep, setCurrentStep] = useState(1);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -487,13 +488,47 @@ const AdminAddUser = () => {
                             
                             <div style={{ display: "flex", justifyContent: "space-between", background: "var(--color-surface)", padding: "16px 24px", borderRadius: 12, border: "1px solid var(--color-border)" }}>
                                 <Button variant="outline" onClick={() => setCurrentStep(2)}>&lt; Back</Button>
-                                <Button onClick={() => navigate(`/${slug}/users`)}>Create User</Button>
+                                <Button onClick={() => setShowSuccessModal(true)}>Create User</Button>
                             </div>
                         </div>
                     )}
 
                 </div>
             </div>
+
+            {/* Success Modal Overlay */}
+            {showSuccessModal && (
+              <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ background: "var(--color-surface)", borderRadius: 12, width: 500, maxWidth: "90%", padding: "32px 0", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: "center" }}>
+                  <button onClick={() => setShowSuccessModal(false)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "var(--color-text-muted)", lineHeight: 1 }}>×</button>
+                  
+                  <h2 style={{ color: "#27ae60", fontSize: 24, margin: "0 32px 20px 32px" }}>User Created Successfully!</h2>
+                  
+                  <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "0 0 24px 0" }} />
+                  
+                  <div style={{ padding: "0 32px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#FF6B00", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>WAITING FOR APPROVAL</div>
+                    <p style={{ color: "var(--color-text)", fontSize: 16, lineHeight: 1.5, margin: "0 auto 32px auto", maxWidth: 400 }}>
+                      User account created, pending for approval. A welcome email will be sent once approved by Spark Admin.
+                    </p>
+                    
+                    <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+                      <Button variant="outline" onClick={() => { 
+                        setShowSuccessModal(false); 
+                        setCurrentStep(1); 
+                        setFormData({
+                          firstName: "", lastName: "", middleName: "", email: "", contact: "", dob: "", gender: "Select",
+                          address: "", employeeId: "", jobTitle: "", department: "Select Department", dateHired: "",
+                          sendEmail: true, selectedCourses: []
+                        });
+                        setAvatarPreview(null);
+                      }}>Add Another</Button>
+                      <Button onClick={() => navigate(`/${slug}/users`)}>Back to Users</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
           </PageTransition>
         </div>

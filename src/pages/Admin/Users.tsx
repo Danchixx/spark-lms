@@ -9,6 +9,7 @@ import DashboardCard from "../../components/ui/DashboardCard/DashboardCard";
 import PageTransition from "../../components/common/PageTransition";
 import Button from "../../components/ui/Button/Button";
 import "../User/Dashboard.css";
+import "./Users.css";
 
 import type { LucideIcon } from "lucide-react";
 
@@ -137,14 +138,14 @@ const AdminUsers = () => {
               {stats.map((s) => <DashboardCard key={s.label} {...s} />)}
             </div>
 
-            <div style={{ paddingBottom: 40 }}>
+            <div className="users-page-container">
 
               {/* Filters */}
-              <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+              <div className="users-filters">
                 <select
                   value={roleFilter}
                   onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-                  style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid var(--color-border)", background: "var(--color-surface)", fontSize: 13, color: "var(--color-text-header)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
+                  className="users-filter-select"
                 >
                   <option>All Roles</option>
                   <option>Admin</option>
@@ -156,7 +157,7 @@ const AdminUsers = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-                  style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid var(--color-border)", background: "var(--color-surface)", fontSize: 13, color: "var(--color-text-header)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
+                  className="users-filter-select"
                 >
                   <option>All Status</option>
                   <option>Active</option>
@@ -167,16 +168,16 @@ const AdminUsers = () => {
                 <select
                   value={deptFilter}
                   onChange={(e) => { setDeptFilter(e.target.value); setCurrentPage(1); }}
-                  style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid var(--color-border)", background: "var(--color-surface)", fontSize: 13, color: "var(--color-text-header)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
+                  className="users-filter-select"
                 >
                   {departments.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
 
               {/* Users Table Box */}
-              <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "0", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)", overflow: "hidden" }}>
+              <div className="users-table-card">
 
-                <div style={{ display: "grid", gridTemplateColumns: "2.5fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr", padding: "16px 24px", borderBottom: "1px solid var(--color-border)", color: "var(--color-text-muted)", fontSize: 12, fontWeight: 800, textTransform: "uppercase", background: "var(--color-bg-subtle)", letterSpacing: "0.05em" }}>
+                <div className="users-table-header">
                   <div>Name</div>
                   <div>Status</div>
                   <div>Department</div>
@@ -187,7 +188,7 @@ const AdminUsers = () => {
 
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {paginatedUsers.map((u, i) => (
-                    <div key={u.id} style={{ display: "grid", gridTemplateColumns: "2.5fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr", alignItems: "center", padding: "16px 24px", borderBottom: i < paginatedUsers.length - 1 ? "1px solid var(--color-border)" : "none", fontSize: 13 }}>
+                    <div key={u.id} className="users-table-row">
 
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--color-bg-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -220,12 +221,12 @@ const AdminUsers = () => {
                     </div>
                   ))}
                   {paginatedUsers.length === 0 && (
-                    <div style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>No users found matching your filters.</div>
+                    <div className="users-empty-state">No users found matching your filters.</div>
                   )}
                 </div>
 
                 {/* Footer (Pagination) */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: "1px solid var(--color-border)", background: "var(--color-bg-subtle)" }}>
+                <div className="users-table-footer">
                   <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
                     Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filteredUsers.length)} of {filteredUsers.length} Users
                   </div>
@@ -236,14 +237,14 @@ const AdminUsers = () => {
                       style={{ padding: "4px 8px", background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 4, cursor: currentPage === 1 ? "default" : "pointer", fontSize: 12, opacity: currentPage === 1 ? 0.5 : 1 }}
                     >&lt;</button>
 
-                    {Array.from({ length: totalPages }).map((_, i) => (
+                        {Array.from({ length: totalPages }).map((_, i) => (
                       <button
                         key={i}
                         onClick={() => setCurrentPage(i + 1)}
                         style={{
                           padding: "4px 10px",
-                          background: currentPage === i + 1 ? PENDING_COLOR : "var(--color-surface)",
-                          border: `1px solid ${currentPage === i + 1 ? PENDING_COLOR : "var(--color-border)"}`,
+                          background: currentPage === i + 1 ? "#FF6B00" : "var(--color-surface)",
+                          border: `1px solid ${currentPage === i + 1 ? "#FF6B00" : "var(--color-border)"}`,
                           borderRadius: 4, cursor: "pointer", fontSize: 12,
                           color: currentPage === i + 1 ? "white" : "var(--color-text)", fontWeight: 700
                         }}
