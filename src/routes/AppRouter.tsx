@@ -24,6 +24,9 @@ import SparkUsers from "../pages/SuperAdmin/Users/SparkUsers";
 import AdminDashboard from "../pages/Admin/Dashboard";
 import AdminProfile from "../pages/Admin/Profile";
 import AdminUsers from "../pages/Admin/Users";
+import AdminAddUser from "../pages/Admin/AddUser";
+import AdminCourses from "../pages/Admin/Courses";
+import AdminCourseDetails from "../pages/Admin/CourseDetails";
 import AdminApprovals from "../pages/Admin/Approvals";
 import AdminReports from "../pages/Admin/Reports";
 import AdminAuditLogs from "../pages/Admin/AuditLogs";
@@ -61,6 +64,24 @@ const UsersRouter = () => {
   if (!user) return <Navigate to="/" replace />;
   switch (user.role) {
     case "admin": return <AdminUsers />;
+    default: return <Navigate to="dashboard" replace />;
+  }
+};
+
+const CoursesRouter = () => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/" replace />;
+  switch (user.role) {
+    case "admin": return <AdminCourses />;
+    default: return <UserCourses />;
+  }
+};
+
+const CourseDetailsRouter = () => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/" replace />;
+  switch (user.role) {
+    case "admin": return <AdminCourseDetails />;
     default: return <Navigate to="dashboard" replace />;
   }
 };
@@ -123,10 +144,12 @@ const AppRoutes = () => {
         <Route path="/:company/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
         <Route path="/:company/profile" element={<ProtectedRoute><ProfileRouter /></ProtectedRoute>} />
         <Route path="/:company/users" element={<ProtectedRoute><UsersRouter /></ProtectedRoute>} />
+        <Route path="/:company/users/add" element={<ProtectedRoute><AdminAddUser /></ProtectedRoute>} />
         <Route path="/:company/approvals" element={<ProtectedRoute><AdminApprovals /></ProtectedRoute>} />
         <Route path="/:company/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
         <Route path="/:company/audit-logs" element={<ProtectedRoute><AdminAuditLogs /></ProtectedRoute>} />
-        <Route path="/:company/courses" element={<ProtectedRoute><UserCourses /></ProtectedRoute>} />
+        <Route path="/:company/courses" element={<ProtectedRoute><CoursesRouter /></ProtectedRoute>} />
+        <Route path="/:company/courses/:id" element={<ProtectedRoute><CourseDetailsRouter /></ProtectedRoute>} />
         <Route path="/:company/courses/modules" element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
         <Route path="/:company/courses/lessons" element={<ProtectedRoute><UserModuleLessons /></ProtectedRoute>} />
         <Route path="/:company/courses/assessment" element={<ProtectedRoute><UserModuleAssessment /></ProtectedRoute>} />
