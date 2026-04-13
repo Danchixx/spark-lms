@@ -10,6 +10,7 @@ import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import { supabase } from "../../lib/supabase";
+import CourseCardSkeleton from "../../components/common/CourseCard/CourseCardSkeleton";
 
 // ─── UTILITY COMPONENTS ──────────────────────────────────────────
 
@@ -284,13 +285,18 @@ const AdminCourses = () => {
             <AdminCourseFilterNav counts={counts} active={activeFilter} onChange={setActiveFilter} />
 
             {loading ? (
-              <div style={{ textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)" }}>
-                 Loading courses...
+              <div className="admin-courses-grid">
+                 {[...Array(6)].map((_, i) => (
+                    <CourseCardSkeleton key={i} />
+                 ))}
               </div>
             ) : (
               <div className="admin-courses-grid">
                 {filteredCourses.map((course) => (
-                  <AdminCourseCard key={course.id} course={course} onViewDetails={(id: string) => navigate(`/${slug}/courses/${id}`)} />
+                  <AdminCourseCard key={course.id} course={course} onViewDetails={(id: string) => {
+                    sessionStorage.setItem("admin_course_id", id);
+                    navigate(`/${slug}/courses/details`, { state: { id } });
+                  }} />
                 ))}
                 {filteredCourses.length === 0 && (
                   <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)", fontSize: 14 }}>
