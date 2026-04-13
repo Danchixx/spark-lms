@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, User, Search, UserPlus, CheckCircle, X, ChevronRight, Briefcase, UserMinus, Flame } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
@@ -10,15 +10,27 @@ import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import { motion, AnimatePresence } from "framer-motion";
+import Skeleton from "../../components/ui/Skeleton/Skeleton";
+import "./CourseDetails.css";
 
 const AdminCourseDetails = () => {
-  const { id } = useParams();
+  const location = useLocation();
+  const stateId = location.state?.id;
+  const idFromStorage = sessionStorage.getItem("admin_course_id");
+  const id = stateId || idFromStorage;
+
+  useEffect(() => {
+    if (stateId) {
+      sessionStorage.setItem("admin_course_id", stateId);
+    }
+  }, [stateId]);
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
   
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
   
   // Assign Modal State
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -38,9 +50,9 @@ const AdminCourseDetails = () => {
     const { data, error } = await supabase
       .from('courses')
       .select(`
-        id, title, description, thumbnail_url, status, created_at,
-        companies ( name ),
-        users!courses_created_by_fkey ( firstname, lastname, roles(name) ),
+        id, title, description, thumbnail_url, status, created_at, icon_emoji,
+        companies ( name, logo_url ),
+        users!courses_created_by_fkey ( firstname, lastname, company_id, roles(name) ),
         course_modules ( id ),
         course_assignments (
           id,
@@ -59,6 +71,8 @@ const AdminCourseDetails = () => {
       console.error("Error fetching course details:", error);
     } else {
       setCourse(data);
+
+
     }
     setLoading(false);
   };
@@ -106,10 +120,28 @@ const AdminCourseDetails = () => {
   };
 
   if (!course && loading) {
-    return <div style={{ display: "flex", height: "100vh" }}>
-      <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
-      <div style={{ flex: 1, padding: 40, textAlign: "center", color: "#666" }}>Loading course data...</div>
-    </div>;
+    return (
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+        <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+          <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search courses, units ..." role="Admin" />
+          <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px", position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
+              <Skeleton width={100} height={32} borderRadius={20} />
+              <Skeleton width={120} height={20} />
+            </div>
+            <Skeleton height={240} borderRadius={16} style={{ marginBottom: 24 }} />
+            <div className="course-grid-container">
+               <Skeleton height={400} borderRadius={16} />
+               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                 <Skeleton height={200} borderRadius={16} />
+                 <Skeleton height={250} borderRadius={16} />
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
   if (!course && !loading) {
      return <div style={{ display: "flex", height: "100vh", padding: 40, textAlign: "center" }}>Course not found.</div>;
@@ -162,6 +194,8 @@ const AdminCourseDetails = () => {
   const companyData = Array.isArray(course.companies) ? course.companies[0] : course.companies;
   const creatorRole = Array.isArray(creator?.roles) ? creator?.roles[0]?.name : creator?.roles?.name;
 
+  const actualLogoUrl = companyData?.logo_url || null;
+
   // Modal Computed State
   const enrolledIds = new Set(assignments.map((a: any) => a.users?.id));
   const filteredCompanyUsers = companyUsers.filter(u => {
@@ -201,26 +235,51 @@ const AdminCourseDetails = () => {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {/* Top Banner */}
-              <div style={{ background: "var(--color-surface)", borderRadius: 16, border: "1px solid var(--color-border)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
-                <div style={{ height: 140, background: "linear-gradient(90deg, #FF9800 0%, #FFB74D 100%)", position: "relative" }}>
-                   {/* Flame watermark removed as per user request */}
-                   <div style={{ position: "absolute", bottom: -24, left: 24, padding: "16px", background: "#000", color: "#fff", borderRadius: 16, zIndex: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
-                     <Briefcase size={36} />
-                   </div>
+              {/* Top Banner — Split Layout */}
+              <div className="course-banner-container">
+                {/* Left: Thumbnail */}
+                <div className="course-banner-image-wrapper">
+                  <div 
+                    className="course-banner-image"
+                    style={{ background: course.thumbnail_url ? `url(${course.thumbnail_url}) center/cover no-repeat` : "linear-gradient(135deg, #FF9800 0%, #FFB74D 100%)" }} 
+                  />
+                  
+                  {/* Logo - Mobile overlapping version */}
+                  <div className="course-banner-logo-mobile" style={{ background: actualLogoUrl ? "#fff" : "#000", border: actualLogoUrl ? "2px solid var(--color-border)" : "none" }}>
+                    {actualLogoUrl ? (
+                      <img src={actualLogoUrl} alt="Company Logo" />
+                    ) : (
+                      <Briefcase size={36} />
+                    )}
+                  </div>
                 </div>
-                <div style={{ padding: "34px 24px 24px 24px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                    <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "var(--color-text-header)" }}>{course.title}</h1>
-                    <div style={{ padding: "4px 12px", background: "#E8F5E9", color: "#2E7D32", fontSize: 11, fontWeight: 700, borderRadius: 20 }}>
-                       Active
+
+                {/* Right: Course Info */}
+                <div className="course-banner-info">
+                  {/* Logo + Badge row */}
+                  <div className="course-banner-header-row">
+                    <div className="course-banner-logo-desktop" style={{ background: actualLogoUrl ? "#fff" : "#000", border: actualLogoUrl ? "2px solid var(--color-border)" : "none" }}>
+                      {actualLogoUrl ? (
+                        <img src={actualLogoUrl} alt="Company Logo" />
+                      ) : (
+                        <Briefcase size={24} />
+                      )}
+                    </div>
+                    <div className="course-badge">
+                      Active
                     </div>
                   </div>
-                  <p style={{ margin: "0 0 20px 0", fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.5, maxWidth: "80%" }}>
-                    {course.description || "No description provided."}
-                  </p>
-                  
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--color-border)", paddingTop: 16 }}>
+
+                  {/* Title + Description */}
+                  <div>
+                    <h1 style={{ margin: "0 0 8px 0", fontSize: 24, fontWeight: 800, color: "var(--color-text-header)" }}>{course.title}</h1>
+                    <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.5 }}>
+                      {course.description || "No description provided."}
+                    </p>
+                  </div>
+
+                  {/* Stats + Creator */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--color-border)", paddingTop: 16, flexWrap: "wrap", gap: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 13, color: "var(--color-text-header)", fontWeight: 700 }}>
                        <span>{enrolledCount} Enrolled</span>
                        <span style={{ color: "var(--color-border)" }}>|</span>
@@ -245,11 +304,11 @@ const AdminCourseDetails = () => {
               </div>
 
               {/* Grid Content */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, alignItems: "start" }}>
+              <div className="course-grid-container">
                 
                 {/* LEFT COL: ENROLLED USERS */}
                 <div style={{ background: "var(--color-surface)", borderRadius: 16, border: "1px solid var(--color-border)", padding: "20px 0", boxShadow: "var(--shadow-sm)" }}>
-                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 24px", marginBottom: 20 }}>
+                   <div className="course-enrolled-header">
                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <User size={20} color="var(--color-text-muted)" />
                         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--color-text-header)" }}>Enrolled Users</h2>
@@ -265,7 +324,8 @@ const AdminCourseDetails = () => {
                      </div>
                    </div>
 
-                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                   <div className="course-table-wrapper">
+                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 600 }}>
                      <thead>
                        <tr style={{ background: "var(--color-bg-subtle)", color: "var(--color-text-header)", borderBottom: "1px solid var(--color-border)", borderTop: "1px solid var(--color-border)", textAlign: "left" }}>
                          <th style={{ padding: "12px 24px", fontWeight: 800 }}>USER</th>
@@ -318,6 +378,7 @@ const AdminCourseDetails = () => {
                        )}
                      </tbody>
                    </table>
+                   </div>
                    
                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px 0 24px" }}>
                      <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Showing {enrolledCount} of {enrolledCount} enrolled</span>
