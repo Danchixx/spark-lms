@@ -9,7 +9,7 @@ import { useTheme } from "../../../context/ThemeContext";
 import type { AppUser } from "../../../types";
 
 // ── Types ─────────────────────────────────────────────────────
-type NavKey = "dashboard" | "tenants" | "approvals" | "users" | "courses" | "settings";
+type NavKey = "dashboard" | "tenants" | "approvals" | "users" | "courses" | "settings" | "register" | "announcement" | "export" | "support" | "logs";
 
 interface NavItem {
   key: NavKey;
@@ -62,8 +62,15 @@ const NAV: NavSection = {
     { key: "users", label: "Users" },
     { key: "courses", label: "Courses" },
   ],
+  actions: [
+    { key: "register" as any, label: "Register Tenant" },
+    { key: "announcement" as any, label: "Announcement" },
+    { key: "export" as any, label: "Data Export" },
+    { key: "support" as any, label: "Support" },
+  ],
   system: [
     { key: "settings", label: "Settings" },
+    { key: "logs", label: "System Logs" },
   ],
 };
 
@@ -112,6 +119,46 @@ const icons: Record<NavKey, React.ReactElement> = {
       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
       <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+    </svg>
+  ),
+  register: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="8.5" cy="7" r="4" />
+      <line x1="20" y1="8" x2="20" y2="14" />
+      <line x1="23" y1="11" x2="17" y2="11" />
+    </svg>
+  ),
+  announcement: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
+  export: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+  support: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
+  logs: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
     </svg>
   ),
 };
