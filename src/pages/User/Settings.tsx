@@ -105,7 +105,7 @@ const CompanyPanel = () => {
               <div className="workspace-url-input">
                 <span className="prefix">spark-ph-lms.com/</span>
                 <input value={company.slug || ""} readOnly />
-                <button 
+                <button
                   className={`copy-url-btn ${copied ? 'copied' : ''}`}
                   onClick={handleCopy}
                   title="Copy full URL"
@@ -189,7 +189,7 @@ const NotificationsPanel = () => {
       <div className="settings-divider" />
 
       <div className="card-inner">
-        <div className="settings-card-header">Email & In-App Notifications</div>
+        <div className="settings-card-header">Email & Notifications</div>
         <div className="settings-card-body">
           {rows.map((r) => (
             <div className="toggle-row" key={r.key}>
@@ -337,7 +337,7 @@ const AppearancePanel = () => {
           ))}
         </div>
       </div>
-      
+
       {theme === 'light' && (
         <div className="card-inner" style={{ marginBottom: 20 }}>
           <div className="settings-card-header">Sidebar Theme</div>

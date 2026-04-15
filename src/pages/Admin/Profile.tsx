@@ -5,22 +5,9 @@ import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import ProfileCard from "../../components/common/ProfileCard/ProfileCard";
-import { Lock, IdCard, ShieldCheck, Check, X, type LucideIcon } from "lucide-react";
-import { useCourseById, useCourses } from "../../hooks/useCourses";
+import { Lock, IdCard, ShieldCheck, Check, type LucideIcon } from "lucide-react";
+import { useCourses } from "../../hooks/useCourses";
 import PageTransition from "../../components/common/PageTransition";
-
-
-/* ── Password strength ── */
-const getStrength = (pw: string) => {
-  const checks = {
-    length: pw.length >= 8, number: /[0-9]/.test(pw),
-    letter: /[a-zA-Z]/.test(pw), uppercase: /[A-Z]/.test(pw),
-    symbol: /[^a-zA-Z0-9]/.test(pw),
-  };
-  const passed = Object.values(checks).filter(Boolean).length;
-  const strength = pw.length === 0 ? null : passed <= 2 ? "weak" : passed <= 4 ? "medium" : "strong";
-  return { checks, strength };
-};
 
 /* ── Small components ── */
 type InputBoxProps = {
@@ -65,17 +52,8 @@ const SuccessModal = ({ message, onClose }: { message: string; onClose: () => vo
   </div>
 );
 
-const ReqRow = ({ met, label }: { met: boolean; label: string }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-    <div style={{ width: 16, height: 16, borderRadius: "50%", background: met ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)", border: `1.5px solid ${met ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      {met ? <Check size={9} color="#22c55e" /> : <X size={9} color="#f87171" />}
-    </div>
-    <span style={{ fontSize: 11, color: met ? "#22c55e" : "var(--color-text-muted)" }}>{label}</span>
-  </div>
-);
-
 /* ── Page ── */
-const Profile = () => {
+const AdminProfile = () => {
   const { user, company, logout, updateProfile, uploadAvatar } = useAuth();
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
@@ -83,12 +61,14 @@ const Profile = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
-  const [newPassword] = useState("");
 
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   const { courses } = useCourses();
+
+
+
   
   const profileData = {
     lastName: user?.lastname || "",
@@ -105,7 +85,7 @@ const Profile = () => {
     dateHired: user?.date_hired || "",
     memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Just recently",
     status: user?.status || "Active",
-    role: user?.role || "User",
+    role: user?.role || "Admin",
     coursesAssigned: courses.length,
     avatarUrl: user?.avatar_url || null,
   };
@@ -114,11 +94,18 @@ const Profile = () => {
     try {
       const updates: Record<string, any> = {};
       
+      if (updated.firstName !== undefined) updates.firstname = updated.firstName;
+      if (updated.middleName !== undefined) updates.middlename = updated.middleName;
+      if (updated.lastName !== undefined) updates.lastname = updated.lastName;
       if (updated.contactNumber !== undefined) updates.contact_no = updated.contactNumber;
       if (updated.address !== undefined) updates.address = updated.address;
+      if (updated.employeeId !== undefined) updates.employee_id = updated.employeeId;
+      if (updated.jobTitle !== undefined) updates.job_title = updated.jobTitle;
+      if (updated.department !== undefined) updates.department = updated.department;
+      if (updated.dateHired !== undefined) updates.date_hired = updated.dateHired;
 
       await updateProfile(updates);
-      setSuccessMessage("Your contact details have been updated successfully.");
+      setSuccessMessage("Your profile have been updated successfully.");
       setShowSuccessModal(true);
     } catch (err) {
       console.error("Failed to update profile:", err);
@@ -154,13 +141,17 @@ const Profile = () => {
       <Sidebar isOpen={sidebarOpen} activePage="Profile" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search ..." role="User" />
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search users, courses, ..." role="Admin" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <PageTransition>
-            <h1 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", margin: "0 0 20px", color: "var(--color-text-header)" }}>Profile</h1>
 
-            {/* ── Profile Card (reusable component) ── */}
+          <PageTransition>
+            <div className="dash-top">
+                <div className="dash-top-greeting"></div>
+                <h1 className="dash-top-title" style={{ color: "var(--color-text-header)" }}>Profile</h1>
+                <div className="dash-top-btn-wrap"></div>
+            </div>
+            
             <div style={{ marginBottom: 16 }}>
               <ProfileCard
                 profileData={profileData}
@@ -202,4 +193,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default AdminProfile;

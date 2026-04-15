@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
+import ProgressBar from "../../components/ui/ProgressBar/ProgressBar";
 import { ArrowLeft, Check, Lock, Play, FileText, PenTool } from "lucide-react";
-import { COURSES } from "../../data/mockCourses";
+import { useCourseById } from "../../hooks/useCourses";
 import CertificateModal from "../../components/ui/CertificateModal/CertificateModal";
 import sparkLogoImg from "../../components/common/SparkLogo/sparklogo.png";
 import "./CourseModules.css";
 import PageTransition from "../../components/common/PageTransition";
+import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
 const CourseModules = () => {
   const { user, company, logout } = useAuth();
@@ -22,20 +24,23 @@ const CourseModules = () => {
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
-  const courseData = COURSES.find(c => c.id === parseInt(courseId));
+  const { course: courseData, loading } = useCourseById(courseId);
   const isCompleted = courseData?.progress === 100;
 
-  const [expandedModule, setExpandedModule] = useState(isCompleted ? null : 2); // default to null if completed
+  const [expandedModule, setExpandedModule] = useState<number | null>(null);
+  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [showCertificate, setShowCertificate] = useState(false);
 
-  if (!courseData) {
-    return (
-      <div style={{ padding: 40, textAlign: "center", fontFamily: "'Barlow', sans-serif" }}>
-        <h2>Course not found</h2>
-        <Button onClick={() => navigate(`/${slug}/courses`)}>Go Back</Button>
-      </div>
-    );
-  }
+  // Auto-expand the first in-progress module once data loads (only once)
+  useEffect(() => {
+    if (courseData && !hasAutoExpanded && !isCompleted) {
+      const firstInProgress = courseData.modules.find(m => m.status === 'in-progress');
+      if (firstInProgress) {
+        setExpandedModule(firstInProgress.id);
+        setHasAutoExpanded(true);
+      }
+    }
+  }, [courseData, hasAutoExpanded, isCompleted]);
 
   const getUnitIcon = (type: string) => {
     switch (type) {
@@ -47,10 +52,14 @@ const CourseModules = () => {
   };
 
   const statusColors = {
-    completed: { bg: "#FF6B00", color: "white", border: "#FF6B00" }, // Orange circle for check
-    "in-progress": { bg: "white", color: "#FF6B00", border: "#FF6B00" }, // Number with orange border
-    locked: { bg: "#f0f0f0", color: "#888", border: "#ddd" }, // Grey locked
+    completed: { bg: "#FF6B00", color: "white", border: "#FF6B00" },
+    "in-progress": { bg: "white", color: "#FF6B00", border: "#FF6B00" },
+    locked: { bg: "#f0f0f0", color: "#888", border: "#ddd" },
   };
+
+
+
+  const isReady = !loading && courseData;
 
   return (
     <>
@@ -69,59 +78,79 @@ const CourseModules = () => {
                   My Courses
                 </Button>
                 <span style={{ color: "var(--color-text-muted)", fontWeight: "600" }}>&gt;</span>
-                <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>{courseData.name}</span>
-              </div>
-
-              {/* Main Hero Banner with Blended Image Layout (Responsive) */}
-              <div className="module-hero-banner">
-                {/* Left Side Image with Blending Effect */}
-                <div className="module-hero-image-container">
-                  <img 
-                    src={courseData.thumbnail} 
-                    alt={courseData.name} 
-                    className="module-hero-image"
-                  />
-                </div>
-
-                <div className="module-hero-content">
-                  <h1 className="module-hero-title">{courseData.name}</h1>
-                  <div className="module-hero-stats">
-                    <div className="module-hero-stat-item">
-                      {courseData.modulesCount} Modules
-                    </div>
-                    <div className="module-hero-stat-item">
-                      <div className="module-hero-dot" />
-                      {courseData.unitsCount} Lessons
-                    </div>
-                    <div className="module-hero-stat-item">
-                      <div className="module-hero-dot" />
-                      {courseData.assessmentsCount} Assessments
-                    </div>
-                  </div>
-                </div>
-
-                {/* Spark Logo Watermark Overlay */}
-                <div style={{ position: "absolute", right: -20, top: "50%", transform: "translateY(-50%)", height: "140%", opacity: 0.2, pointerEvents: "none" }}>
-                  <img src={sparkLogoImg} alt="Spark" style={{ height: "100%", objectFit: "contain" }} />
-                </div>
-              </div>
-
-              {/* Progress Bar Container */}
-              <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "16px 24px", display: "flex", alignItems: "center", gap: 24, marginBottom: 32, boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
-                <span style={{ fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>Your Progress</span>
-                <div style={{ flex: 1, height: 14, background: "var(--color-bg-muted)", borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${courseData.progress}%`, background: "linear-gradient(90deg, #FF6B00, #ff9e40)", borderRadius: 99 }} />
-                </div>
-                <span style={{ fontSize: 13, color: "#FF6B00", fontWeight: 700, whiteSpace: "nowrap" }}>{courseData.progress}% Complete</span>
-                {isCompleted ? (
-                  <Button size="sm" rounded="pill" variant="ghost" onClick={() => setShowCertificate(true)}>View Certificate</Button>
+                {isReady ? (
+                  <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>{courseData.name}</span>
                 ) : (
-                  <Button size="sm" rounded="pill">Continue</Button>
+                  <Skeleton width={150} height={20} />
                 )}
               </div>
 
-              {/* Modules List */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {!isReady ? (
+                // SKELETON LOADING STATE
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <Skeleton height={200} borderRadius={16} />
+                  <Skeleton height={70} borderRadius={12} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <Skeleton height={80} borderRadius={12} />
+                    <Skeleton height={80} borderRadius={12} />
+                    <Skeleton height={80} borderRadius={12} />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Main Hero Banner with Blended Image Layout (Responsive) */}
+                  <div className="module-hero-banner">
+                    {/* Left Side Image with Blending Effect */}
+                    <div className="module-hero-image-container">
+                      {courseData.thumbnail ? (
+                        <img
+                          src={courseData.thumbnail}
+                          alt={courseData.name}
+                          className="module-hero-image"
+                        />
+                      ) : (
+                        <div className="module-hero-image" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52, background: 'linear-gradient(180deg, #ffb152, #FF6B00)' }}>
+                          {courseData.icon}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="module-hero-content">
+                      <h1 className="module-hero-title">{courseData.name}</h1>
+                      <div className="module-hero-stats">
+                        <div className="module-hero-stat-item">
+                          {courseData.modulesCount} Modules
+                        </div>
+                        <div className="module-hero-stat-item">
+                          <div className="module-hero-dot" />
+                          {courseData.unitsCount} Lessons
+                        </div>
+                        <div className="module-hero-stat-item">
+                          <div className="module-hero-dot" />
+                          {courseData.assessmentsCount} Assessments
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Spark Logo Watermark Overlay */}
+                    <div style={{ position: "absolute", right: -20, top: "50%", transform: "translateY(-50%)", height: "140%", opacity: 0.2, pointerEvents: "none" }}>
+                      <img src={sparkLogoImg} alt="Spark" style={{ height: "100%", objectFit: "contain" }} />
+                    </div>
+                  </div>
+
+                  {/* Progress Bar Container */}
+                  <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "16px 24px", display: "flex", alignItems: "center", gap: 24, marginBottom: 32, boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+                    <span style={{ fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>Your Progress</span>
+                    <ProgressBar value={courseData.progress} size="lg" showLabel />
+                    {isCompleted ? (
+                      <Button size="sm" rounded="pill" variant="ghost" onClick={() => setShowCertificate(true)}>View Certificate</Button>
+                    ) : (
+                      <Button size="sm" rounded="pill">Continue</Button>
+                    )}
+                  </div>
+
+                  {/* Modules List */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {courseData.modules.map((module, index) => {
                   const sc = (statusColors as any)[module.status];
                   const isExpanded = expandedModule === module.id;
@@ -133,17 +162,17 @@ const CourseModules = () => {
                       overflow: "hidden",
                       boxShadow: isExpanded ? "0 4px 16px rgba(255, 107, 0, 0.15)" : "var(--shadow)",
                       border: `1px solid ${isExpanded ? "#FF6B00" : "var(--color-border)"}`,
-                      transition: "all 0.3s ease" // Smooth transition for the container
+                      transition: "all 0.3s ease"
                     }}>
                       {/* Module Header */}
                       <div
-                        onClick={() => module.units.length > 0 && setExpandedModule(isExpanded ? null : module.id)}
+                        onClick={() => module.lessons.length > 0 && setExpandedModule(isExpanded ? null : module.id)}
                         style={{
                           padding: "16px 24px",
                           display: "flex",
                           alignItems: "center",
                           gap: 20,
-                          cursor: module.units.length > 0 ? "pointer" : "default"
+                          cursor: module.lessons.length > 0 ? "pointer" : "default"
                         }}
                       >
                         <div style={{
@@ -153,21 +182,31 @@ const CourseModules = () => {
                           fontSize: 20, fontWeight: 800,
                           border: module.status === "completed" ? "none" : `2px solid ${sc.color}`
                         }}>
-                          {module.status === "completed" ? <Check size={24} color="white" strokeWidth={3} /> : module.id}
+                          {module.status === "completed" ? <Check size={24} color="white" strokeWidth={3} /> : index + 1}
                         </div>
 
                         <div style={{ flex: 1 }}>
-                          <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700, color: "var(--color-text-header)" }}>Module {module.id}: {module.name}</h3>
+                          <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700, color: "var(--color-text-header)" }}>Module {index + 1}: {module.title}</h3>
                           <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
-                            {module.unitsCount} Lessons · {module.progressText}
+                            {module.lessonsCount} Lessons · {module.progressText}
                           </div>
                         </div>
 
-                        <div>
+                        <div style={{ minWidth: 100, textAlign: "right" }}>
                           {module.status === "completed" && <span style={{ background: "#e0ffec", color: "#27ae60", padding: "4px 12px", borderRadius: 99, fontSize: 11, fontWeight: 700 }}>Completed</span>}
                           {module.status === "locked" && <span style={{ background: "#f0f0f0", color: "#888", padding: "4px 12px", borderRadius: 99, fontSize: 11, fontWeight: 700 }}>Locked</span>}
                         </div>
                       </div>
+
+                      {/* Progress Bar aligned with title text */}
+                      {(module.status === "completed" || module.status === "in-progress") && (
+                        <div style={{ padding: "0 24px 20px 92px" }}>
+                          <ProgressBar 
+                            value={module.status === "completed" ? 100 : (module.progressPct || 0)} 
+                            size="md" 
+                          />
+                        </div>
+                      )}
 
                       {/* Lessons List (Accordion) */}
                       <div style={{
@@ -178,11 +217,14 @@ const CourseModules = () => {
                         padding: isExpanded ? "0 24px 24px 84px" : "0 24px 0 84px",
                         display: "flex", flexDirection: "column", gap: 12
                       }}>
-                        {module.units.map((unit) => (
+                        {module.lessons.map((unit) => (
                           <div key={unit.id} style={{
                             display: "flex", alignItems: "center", gap: 16,
                             padding: "16px", borderRadius: 8,
-                            border: "1px solid var(--color-border)", background: "var(--color-surface)"
+                            border: "1px solid var(--color-border)", 
+                            background: unit.status === "locked" ? "var(--color-bg-subtle)" : "var(--color-surface)",
+                            opacity: unit.status === "locked" ? 0.75 : 1,
+                            transition: "all 0.2s ease"
                           }}>
                             <div style={{ background: "var(--color-bg-muted)", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-text-muted)" }}>
                               {getUnitIcon(unit.type)}
@@ -208,7 +250,7 @@ const CourseModules = () => {
                                   Open
                                 </Button>
                               )}
-                              {unit.type === "assessment" && (unit.status === "completed" || unit.status === "open") && (
+                              {unit.type === "assessment" && (unit.status === "completed" || unit.status === "open") && (unit.attemptsCount ?? 0) > 0 && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -232,6 +274,8 @@ const CourseModules = () => {
                   );
                 })}
               </div>
+              </>
+              )}
 
             </PageTransition>
           </div>
@@ -242,7 +286,7 @@ const CourseModules = () => {
         isOpen={showCertificate}
         onClose={() => setShowCertificate(false)}
         userName={user?.name || ""}
-        courseName={courseData.name || ""}
+        courseName={courseData?.name || ""}
         date="27th of February, 2026"
         companyLogo={company?.logo_url}
       />

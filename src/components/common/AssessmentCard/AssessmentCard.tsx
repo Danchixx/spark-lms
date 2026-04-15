@@ -1,6 +1,21 @@
 import Button from "../../ui/Button/Button";
 import "./AssessmentCard.css";
 
+interface AssessmentCardProps {
+  moduleName: string;
+  currentQuestion: any;
+  currentIndex: number;
+  totalQuestions: number;
+  selectedAnswer: number | undefined;
+  onSelectAnswer: (idx: number) => void;
+  onBack: () => void;
+  onNext: () => void;
+  onSubmit: () => void;
+  onDotClick: (idx: number) => void;
+  answers: Record<number, number>;
+  isLastQuestion: boolean;
+}
+
 const AssessmentCard = ({
   moduleName,
   currentQuestion,
@@ -14,7 +29,7 @@ const AssessmentCard = ({
   onDotClick,
   answers,
   isLastQuestion
-}) => {
+}: AssessmentCardProps) => {
   if (!currentQuestion) return null;
 
   return (
@@ -33,7 +48,7 @@ const AssessmentCard = ({
       </div>
 
       <div className="assessment-choices">
-        {currentQuestion.choices.map((choice, idx) => (
+        {currentQuestion.choices.map((choice: string, idx: number) => (
           <div
             key={idx}
             className={`assessment-choice ${selectedAnswer === idx ? "assessment-choice--selected" : ""}`}

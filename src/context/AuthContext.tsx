@@ -150,6 +150,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProfile = async (updates: Record<string, unknown>) => {
     if (!user?.id) return;
+    
+    // Handle mock user updates (local only)
+    if (user.id < 0) {
+      const updatedUser = { ...user, ...updates };
+      // Map names if firstname/lastname changed
+      if (updates.firstname || updates.lastname) {
+        updatedUser.name = `${updatedUser.firstname} ${updatedUser.lastname}`;
+      }
+      setUser(updatedUser as AppUser);
+      localStorage.setItem("spark_mock_user", JSON.stringify(updatedUser));
+      console.log("Mock profile updated locally:", updatedUser);
+      return;
+    }
+
     try {
       console.log("Updating profile for user ID:", user.id, "with:", updates);
       const { data, error } = await supabase

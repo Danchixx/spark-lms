@@ -30,7 +30,7 @@ interface ProfileData {
 interface ProfileCardProps {
   profileData: ProfileData;
   editable?: boolean;
-  onSave?: (data: { contactNumber: string; address: string }) => void;
+  onSave?: (data: Partial<ProfileData>) => void;
   onAvatarChange?: (file: File) => void;
   isUploading?: boolean;
 }
@@ -136,21 +136,50 @@ const SideInfoRow = ({ label, value }: { label: string; value: string }) => (
 /* ── ProfileCard ── */
 const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isUploading = false }: ProfileCardProps) => {
   const [editing, setEditing] = useState(false);
+  const isStaff = profileData.role?.toLowerCase() !== "user";
+
+  // State for editable fields
+  const [firstName, setFirstName] = useState(profileData.firstName);
+  const [middleName, setMiddleName] = useState(profileData.middleName || "");
+  const [lastName, setLastName] = useState(profileData.lastName);
   const [contact, setContact] = useState(profileData.contactNumber);
   const [address, setAddress] = useState(profileData.address);
+  
+  const [employeeId, setEmployeeId] = useState(profileData.employeeId);
+  const [department, setDepartment] = useState(profileData.department);
+  const [jobTitle, setJobTitle] = useState(profileData.jobTitle);
+  const [dateHired, setDateHired] = useState(profileData.dateHired);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fullName = `${profileData.firstName} ${profileData.middleName} ${profileData.lastName}`;
 
   const handleSave = () => {
     setEditing(false);
-    onSave?.({ contactNumber: contact, address });
+    onSave?.({
+      firstName,
+      middleName,
+      lastName,
+      contactNumber: contact,
+      address,
+      employeeId,
+      department,
+      jobTitle,
+      dateHired
+    });
   };
 
   const handleCancel = () => {
     setEditing(false);
+    setFirstName(profileData.firstName);
+    setMiddleName(profileData.middleName || "");
+    setLastName(profileData.lastName);
     setContact(profileData.contactNumber);
     setAddress(profileData.address);
+    setEmployeeId(profileData.employeeId);
+    setDepartment(profileData.department);
+    setJobTitle(profileData.jobTitle);
+    setDateHired(profileData.dateHired);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,7 +230,7 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
       `}</style>
 
       <div style={{ background: "var(--color-surface)", borderRadius: 14, overflow: "hidden", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
-        <div style={{ height: 8, background: "#FF6B00" }} />
+
 
         <div className="profile-card-inner">
 
@@ -247,7 +276,10 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
             <div style={{ width: "100%", paddingTop: 8 }}>
               <SideInfoRow label="Department" value={profileData.department} />
               <SideInfoRow label="Job Title" value={profileData.jobTitle} />
-              <SideInfoRow label="Courses" value={`${profileData.coursesAssigned ?? 0} assigned`} />
+              <SideInfoRow 
+                label={profileData.role?.toLowerCase() === "user" ? "Courses" : "Employee ID"} 
+                value={profileData.role?.toLowerCase() === "user" ? `${profileData.coursesAssigned ?? 0} assigned` : profileData.employeeId} 
+              />
             </div>
 
             {editable && (
@@ -270,7 +302,11 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
             <div style={{ border: "1px solid var(--color-border)", margin: "16px", borderRadius: 10, overflow: "hidden" }}>
               {editing ? (
                 <>
-                  <EditableFieldRow label="Full Name" value={fullName} locked />
+                  <EditableFieldRow label="First Name" value={firstName} locked={!isStaff} onChange={setFirstName} />
+                  <EditableFieldPair
+                    left={{ label: "Middle Name", value: middleName, locked: !isStaff, onChange: setMiddleName }}
+                    right={{ label: "Last Name", value: lastName, locked: !isStaff, onChange: setLastName }}
+                  />
                   <EditableFieldPair
                     left={{ label: "Date of Birth", value: profileData.dateOfBirth, locked: true }}
                     right={{ label: "Gender", value: profileData.gender, locked: true }}
@@ -293,9 +329,25 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
 
             <SectionTitle icon={Briefcase} title="Employment Details" />
             <div style={{ border: "1px solid var(--color-border)", margin: "16px", borderRadius: 10, overflow: "hidden" }}>
-              <FieldPair left={{ label: "Employee ID", value: profileData.employeeId }} right={{ label: "Job Title", value: profileData.jobTitle }} />
-              <FieldPair left={{ label: "Department", value: profileData.department }} right={{ label: "Date Hired", value: profileData.dateHired }} />
-              <FieldRow label="Member Since" value={profileData.memberSince} />
+              {editing ? (
+                <>
+                  <EditableFieldPair
+                    left={{ label: "Employee ID", value: employeeId, locked: !isStaff, onChange: setEmployeeId }}
+                    right={{ label: "Job Title", value: jobTitle, locked: !isStaff, onChange: setJobTitle }}
+                  />
+                  <EditableFieldPair
+                    left={{ label: "Department", value: department, locked: !isStaff, onChange: setDepartment }}
+                    right={{ label: "Date Hired", value: dateHired, locked: !isStaff, onChange: setDateHired }}
+                  />
+                  <EditableFieldRow label="Member Since" value={profileData.memberSince} locked={true} />
+                </>
+              ) : (
+                <>
+                  <FieldPair left={{ label: "Employee ID", value: profileData.employeeId }} right={{ label: "Job Title", value: profileData.jobTitle }} />
+                  <FieldPair left={{ label: "Department", value: profileData.department }} right={{ label: "Date Hired", value: profileData.dateHired }} />
+                  <FieldRow label="Member Since" value={profileData.memberSince} />
+                </>
+              )}
             </div>
           </div>
         </div>

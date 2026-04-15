@@ -10,22 +10,38 @@ import {
   BookOpen,
   Award,
   Settings as SettingsIcon,
-  Mail
+  Mail,
+  Users,
+  CheckSquare,
+  BarChart3,
+  History
 } from "lucide-react";
 
 const ICON_MAP: Record<string, any> = {
   Dashboard: LayoutDashboard,
   Profile: UserCircle,
+  Users: Users,
   Courses: BookOpen,
+  Approvals: CheckSquare,
+  Reports: BarChart3,
   Certificates: Award,
   Settings: SettingsIcon,
   Contact: Mail,
+  "Audit Logs": History,
 };
 
-const NAV_ITEMS = [
+const USER_NAV = [
   { section: "MAIN", items: ["Dashboard", "Profile", "Courses", "Certificates"] },
   { section: "SYSTEM", items: ["Settings", "Contact"] },
 ];
+
+const ADMIN_NAV = [
+  { section: "MAIN", items: ["Dashboard", "Profile", "Users", "Courses"] },
+  { section: "MANAGEMENT", items: ["Approvals", "Reports"] },
+  { section: "SYSTEM", items: ["Settings", "Audit Logs"] },
+];
+
+import type { RoleName } from "../../../types";
 
 const BREAKPOINT = 1024;
 
@@ -33,7 +49,7 @@ type SidebarProps = {
   isOpen: boolean;
   activePage: string;
   onNavigate: (page: string) => void;
-  user: { name?: string; avatar_url?: string | null } | null;
+  user: { name?: string; avatar_url?: string | null; role?: RoleName } | null;
   onLogout: () => void;
   onClose?: () => void;
 };
@@ -81,18 +97,21 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
   };
 
   const handleNavigate = (item: string) => {
-    onNavigate(item);
+    const slugified = item.toLowerCase().replace(/\s+/g, "-");
+    onNavigate(slugified);
     if (window.innerWidth <= BREAKPOINT) onClose?.();
   };
 
+  const roleNav = user?.role === "admin" ? ADMIN_NAV : USER_NAV;
+
   const filteredNav = search.trim()
-    ? NAV_ITEMS.map(group => ({
-      ...group,
-      items: group.items.filter(item =>
-        item.toLowerCase().includes(search.toLowerCase())
-      ),
-    })).filter(group => group.items.length > 0)
-    : NAV_ITEMS;
+    ? roleNav.map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          item.toLowerCase().includes(search.toLowerCase())
+        ),
+      })).filter((group) => group.items.length > 0)
+    : roleNav;
 
   const navContent = (isMobileMode = false) => (
     <>
@@ -159,13 +178,19 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
           transform: translateY(0);
           box-shadow: none;
         }
-        .company-avatar {
-          transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-          cursor: pointer;
-        }
         .company-avatar:hover {
           transform: scale(1.08);
           opacity: 0.85;
+        }
+        .sidebar-footer-wrap {
+          margin: 16px;
+          padding: 12px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
         }
         .search-input-wrap {
           display: flex;
@@ -276,18 +301,18 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
         </div>
       )}
       {!isMobileMode && (
-        <div style={{ padding: "16px 20px", borderTop: "1px solid var(--sidebar-border)", display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="sidebar-footer-wrap">
           {/* Company avatar — clicks to Settings */}
           <div
             className="company-avatar"
             onClick={() => navigate(`/${slug}/settings`)}
             title="View Company Profile"
             style={{
-              width: 36, height: 36, borderRadius: "50%",
+              width: 42, height: 42, borderRadius: "50%",
               background: "#ffffff",
               border: "1.5px solid #e2e8f0",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 10, fontWeight: 900, color: company?.color || "#FF6B00",
+              fontSize: 11, fontWeight: 900, color: company?.color || "#FF6B00",
               flexShrink: 0, overflow: "hidden",
             }}
           >
@@ -299,7 +324,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
           <button
             className="logout-btn"
             onClick={() => setShowLogoutModal(true)}
-            style={{ background: "#e74c3c", color: "white", padding: "6px 14px", fontSize: 12 }}
+            style={{ background: "#ff0000", color: "white", padding: "8px 16px", fontSize: 11, borderRadius: 20, flex: 1 }}
           >
             LOGOUT
           </button>

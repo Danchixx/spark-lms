@@ -6,24 +6,13 @@ import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import CourseCard, { CourseFilterNav } from "../../components/common/CourseCard/CourseCard";
-import { COURSES } from "../../data/mockCourses";
+import CourseCardSkeleton from "../../components/common/CourseCard/CourseCardSkeleton";
+import { useCourses } from "../../hooks/useCourses";
 import PageTransition from "../../components/common/PageTransition";
-
-interface MockCourse {
-  id: number;
-  name: string;
-  modulesCount: number;
-  unitsCount: number;
-  status: string;
-  progress: number;
-  assignedBy: string;
-  icon: string;
-  thumbnail?: string;
-  lastModule: string | null;
-}
+import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
 const Courses = () => {
-  const allCourses = COURSES as MockCourse[];
+  const { courses: allCourses, loading } = useCourses();
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
@@ -60,12 +49,20 @@ const Courses = () => {
 
             <CourseFilterNav counts={counts} active={activeFilter} onChange={setActiveFilter} />
 
-            <div className="courses-grid">
-              {filtered.map((course) => <CourseCard key={course.id} course={course} />)}
-              {filtered.length === 0 && (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)", fontSize: 14 }}>No courses found.</div>
-              )}
-            </div>
+            {loading ? (
+              <div className="courses-grid">
+                <CourseCardSkeleton />
+                <CourseCardSkeleton />
+                <CourseCardSkeleton />
+              </div>
+            ) : (
+              <div className="courses-grid">
+                {filtered.map((course) => <CourseCard key={course.id} course={course} />)}
+                {filtered.length === 0 && (
+                  <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)", fontSize: 14 }}>No courses found.</div>
+                )}
+              </div>
+            )}
 
             {/* Continue Banner */}
             {lastOngoing && (

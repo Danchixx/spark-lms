@@ -1,4 +1,5 @@
 import { AuthProvider } from "./context/AuthContext";
+import { CourseProvider } from "./context/CourseContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import AppRouter from "./routes/AppRouter";
 import "./styles/globals.css";
@@ -17,7 +18,9 @@ const App = () => {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <AppRouter />
+        <CourseProvider>
+          <AppRouter />
+        </CourseProvider>
       </ThemeProvider>
     </AuthProvider>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-export const SESSION_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
+export const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 const ACTIVITY_EVENTS: string[] = ["mousemove", "keydown", "click", "scroll", "touchstart"];
 

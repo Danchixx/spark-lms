@@ -1,0 +1,33 @@
+.skeleton {
+  background: #ebebeb;
+  background: linear-gradient(
+    90deg,
+    #ebebeb 25%,
+    #f8f8f8 50%,
+    #ebebeb 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite linear;
+  border: 1px solid #d6d6d6;
+  border-radius: inherit;
+}
+
+[data-theme="dark"] .skeleton {
+  background: var(--color-bg-muted);
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-muted) 25%,
+    var(--color-surface) 50%,
+    var(--color-bg-muted) 75%
+  );
+  border: 1px solid var(--color-border);
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
