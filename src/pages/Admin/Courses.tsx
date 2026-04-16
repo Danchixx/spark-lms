@@ -9,8 +9,8 @@ import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
-import { supabase } from "../../lib/supabase";
 import CourseCardSkeleton from "../../components/common/CourseCard/CourseCardSkeleton";
+import { useAdminCourseContext } from "../../context/AdminCourseContext";
 
 // ─── UTILITY COMPONENTS ──────────────────────────────────────────
 
@@ -165,95 +165,14 @@ const AdminCourses = () => {
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
   const [activeFilter, setActiveFilter] = useState("All");
   
-  const [dbCourses, setDbCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { adminCourses: dbCourses, loadingList: loading, fetchAdminCourses } = useAdminCourseContext();
 
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   useEffect(() => {
-    if (!company?.id) return;
-    
-    const fetchCourses = async () => {
-      setLoading(true);
-      
-      // Get the SPARK company ID to include its global courses
-      const { data: sparkData } = await supabase
-        .from('companies')
-        .select('id')
-        .ilike('name', 'spark')
-        .single();
-
-      // Ensure we don't duplicate if the admin IS from Spark
-      const companyIds = sparkData?.id 
-        ? Array.from(new Set([company.id, sparkData.id])) 
-        : [company.id];
-
-      const { data, error } = await supabase
-        .from('courses')
-        .select(`
-          id,
-          title,
-          thumbnail_url,
-          status,
-          companies ( name ),
-          users!courses_created_by_fkey (
-            roles ( name )
-          ),
-          course_assignments (
-            id,
-            course_progress ( progress_pct )
-          ),
-          course_modules ( id )
-        `)
-        .in('company_id', companyIds);
-
-      if (error) {
-        console.error("Error fetching courses:", error);
-      } else {
-        const mapped = (data || []).map((c: any) => {
-          // Average completion
-          const assignments = c.course_assignments || [];
-          let avgCompletion = 0;
-          if (assignments.length > 0) {
-            const total = assignments.reduce((acc: number, a: any) => {
-              const pct = a.course_progress?.[0]?.progress_pct || 0;
-              return acc + pct;
-            }, 0);
-            avgCompletion = Math.round(total / assignments.length);
-          }
-
-          // Modules & Units
-          const modules = c.course_modules || [];
-          const modulesCount = modules.length;
-          // Approximate units since we didn't do deep nesting to avoid postgres limits
-          const unitsCount = modulesCount > 0 ? modulesCount * 3 : 0; 
-          
-          const creatorData = Array.isArray(c.users) ? c.users[0] : c.users;
-          const roleData = creatorData?.roles;
-          const roleName = Array.isArray(roleData) ? roleData[0]?.name : roleData?.name;
-          const companyData = Array.isArray(c.companies) ? c.companies[0] : c.companies;
-          
-          return {
-            id: c.id,
-            name: c.title,
-            thumbnail: c.thumbnail_url || "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&q=80&w=600",
-            enrolled: assignments.length > 0 ? assignments.length.toString() : "--",
-            modulesCount,
-            unitsCount,
-            status: c.status?.toLowerCase() === 'pending' ? 'Pending' : 'Active',
-            avgCompletion,
-            creatorLabel: companyData?.name?.toUpperCase() || "UNKNOWN",
-            creatorRole: roleName || "Course Creator"
-          };
-        });
-        setDbCourses(mapped);
-      }
-      setLoading(false);
-    };
-
-    fetchCourses();
-  }, [company?.id]);
+    fetchAdminCourses();
+  }, [fetchAdminCourses]);
 
   const filteredCourses = activeFilter === "All" 
     ? dbCourses 

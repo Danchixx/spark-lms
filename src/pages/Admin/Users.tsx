@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye } from "lucide-react";
+import { Users, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -26,9 +27,9 @@ const ActionButton = ({ icon: Icon, onClick, variant = "default", disabled = fal
   const [isHovered, setIsHovered] = useState(false);
 
   const colors = {
-    bg: (isHovered && !disabled) ? (variant === "danger" ? "#e74c3c" : "#888") : "var(--color-surface)",
-    border: (isHovered && !disabled) ? (variant === "danger" ? "#e74c3c" : "#888") : "#ccc",
-    icon: (isHovered && !disabled) ? "#fff" : "var(--color-text-header)"
+    bg: (isHovered && !disabled) ? (variant === "danger" ? "#e74c3c" : "var(--color-bg-muted)") : "var(--color-surface)",
+    border: (isHovered && !disabled) ? (variant === "danger" ? "#e74c3c" : "var(--color-border)") : "var(--color-border)",
+    icon: (isHovered && !disabled) ? (variant === "danger" ? "#fff" : "var(--color-text-header)") : "var(--color-text-header)"
   };
 
   return (
@@ -74,36 +75,73 @@ const AdminUsers = () => {
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
-  const mockUsers = useMemo(() => [
-    { id: 1, name: "Obungus", status: "Active", dept: "IT Dept.", joined: "Jan 02 2026", role: "APPROVER", roleColor: "#e81e63" },
-    { id: 2, name: "Ian Emmanuel Palabrica", status: "Active", dept: "IT Dept.", joined: "Jan 02 2026", role: "ADMIN", roleColor: "#673ab7" },
-    { id: 3, name: "Maverick Andres", status: "Active", dept: "HR Dept.", joined: "Jan 02 2026", role: "COURSE CREATOR", roleColor: "#27ae60" },
-    { id: 4, name: "John Smith", status: "Active", dept: "Sales", joined: "Feb 12 2026", role: "USER", roleColor: "#FF6B00" },
-    { id: 5, name: "Maria Garcia", status: "Pending", dept: "Marketing", joined: "Mar 05 2026", role: "USER", roleColor: "#FF6B00" },
-    { id: 6, name: "Sarah Wilson", status: "Inactive", dept: "Operations", joined: "Dec 15 2025", role: "USER", roleColor: "#FF6B00" },
-    { id: 7, name: "David Johnson", status: "Active", dept: "Finance", joined: "Jan 20 2026", role: "USER", roleColor: "#FF6B00" },
-    { id: 8, name: "Emma Brown", status: "Active", dept: "IT Dept.", joined: "Feb 01 2026", role: "USER", roleColor: "#FF6B00" },
-    { id: 9, name: "Liu Wei", status: "Pending", dept: "HR Dept.", joined: "Mar 10 2026", role: "USER", roleColor: "#FF6B00" },
-    { id: 10, name: "James Miller", status: "Active", dept: "Sales", joined: "Feb 22 2026", role: "USER", roleColor: "#FF6B00" },
-    { id: 11, name: "Elena Popova", status: "Active", dept: "Marketing", joined: "Jan 30 2026", role: "USER", roleColor: "#FF6B00" },
-    { id: 12, name: "Jane Foster", status: "Active", dept: "Operation", joined: "Jan 30 2026", role: "USER", roleColor: "#FF6B00" },
-  ], []);
+  const [dbUsers, setDbUsers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!company?.id) return;
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select(`
+            *,
+            roles(name)
+          `)
+          .eq("company_id", company.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        const mappedUsers = data.map(u => {
+          const roleName = Array.isArray(u.roles) ? u.roles[0]?.name : (u.roles?.name || 'user');
+          let roleColor = "#FF6B00";
+          if (roleName === "admin") roleColor = "#673ab7";
+          if (roleName === "approver") roleColor = "#e81e63";
+          if (roleName === "creator" || roleName === "course creator") roleColor = "#27ae60";
+          if (roleName === "spark_admin") roleColor = "#000000";
+
+          const joinedDateExp = u.created_at ? new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : "Unknown";
+          const capStatus = u.status ? u.status.charAt(0).toUpperCase() + u.status.slice(1) : "Pending";
+
+          return {
+            id: u.id,
+            name: `${u.firstname || ''} ${u.lastname || ''}`.trim() || 'Unknown User',
+            status: capStatus,
+            dept: u.department || "N/A",
+            joined: joinedDateExp,
+            role: roleName.replace('_', ' ').toUpperCase(),
+            roleColor: roleColor,
+            originalRole: roleName
+          };
+        });
+
+        setDbUsers(mappedUsers);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUsers();
+  }, [company?.id]);
 
   const stats = useMemo(() => [
-    { label: "Total Users", value: mockUsers.length, icon: Users, sub: "All registered", subColor: "#888" },
-    { label: "Active", value: mockUsers.filter(u => u.status === "Active").length, icon: UserCheck, sub: "Currently active", subColor: "#27ae60" },
-    { label: "Inactive", value: mockUsers.filter(u => u.status === "Inactive").length, icon: UserMinus, sub: "Requires attention", subColor: "#c0392b" },
-    { label: "Pending", value: mockUsers.filter(u => u.status === "Pending").length, icon: Clock, sub: "Awaiting approval", subColor: PENDING_COLOR },
-  ], [mockUsers]);
+    { label: "Total Users", value: dbUsers.length, icon: Users, sub: "All registered", subColor: "#888" },
+    { label: "Active", value: dbUsers.filter(u => u.status === "Active" || u.status === "active").length, icon: UserCheck, sub: "Currently active", subColor: "#27ae60" },
+    { label: "Inactive", value: dbUsers.filter(u => u.status === "Inactive" || u.status === "inactive" || u.status === "archived").length, icon: UserMinus, sub: "Requires attention", subColor: "#c0392b" },
+    { label: "Pending", value: dbUsers.filter(u => u.status === "Pending" || u.status === "pending").length, icon: Clock, sub: "Awaiting approval", subColor: PENDING_COLOR },
+  ], [dbUsers]);
 
   const filteredUsers = useMemo(() => {
-    return mockUsers.filter(u => {
+    return dbUsers.filter(u => {
       const matchRole = roleFilter === "All Roles" || u.role.toLowerCase() === roleFilter.toLowerCase();
       const matchStatus = statusFilter === "All Status" || u.status.toLowerCase() === statusFilter.toLowerCase();
       const matchDept = deptFilter === "All Departments" || u.dept.toLowerCase().includes(deptFilter.toLowerCase());
       return matchRole && matchStatus && matchDept;
     });
-  }, [mockUsers, roleFilter, statusFilter, deptFilter]);
+  }, [dbUsers, roleFilter, statusFilter, deptFilter]);
 
   const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE) || 1;
   const paginatedUsers = useMemo(() => {
@@ -112,9 +150,9 @@ const AdminUsers = () => {
   }, [filteredUsers, currentPage]);
 
   const departments = useMemo(() => {
-    const sets = new Set(mockUsers.map(u => u.dept));
+    const sets = new Set(dbUsers.map(u => u.dept).filter(Boolean));
     return ["All Departments", ...Array.from(sets)];
-  }, [mockUsers]);
+  }, [dbUsers]);
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
@@ -187,7 +225,11 @@ const AdminUsers = () => {
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  {paginatedUsers.map((u, i) => (
+                  {isLoading ? (
+                    <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+                      <Loader2 size={24} className="spin" color="var(--color-text-muted)" />
+                    </div>
+                  ) : paginatedUsers.map((u, i) => (
                     <div key={u.id} className="users-table-row">
 
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -220,7 +262,7 @@ const AdminUsers = () => {
 
                     </div>
                   ))}
-                  {paginatedUsers.length === 0 && (
+                  {!isLoading && paginatedUsers.length === 0 && (
                     <div className="users-empty-state">No users found matching your filters.</div>
                   )}
                 </div>

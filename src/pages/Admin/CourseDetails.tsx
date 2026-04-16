@@ -11,6 +11,7 @@ import PageTransition from "../../components/common/PageTransition";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
+import { useAdminCourseContext } from "../../context/AdminCourseContext";
 import "./CourseDetails.css";
 
 const AdminCourseDetails = () => {
@@ -28,10 +29,9 @@ const AdminCourseDetails = () => {
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
   
+  const { fetchCourseDetails, loadingDetails: loading, assignUsersToCourse } = useAdminCourseContext();
   const [course, setCourse] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
-  
   // Assign Modal State
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [companyUsers, setCompanyUsers] = useState<any[]>([]);
@@ -45,41 +45,14 @@ const AdminCourseDetails = () => {
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
-  const fetchCourseDetails = async () => {
-    if (!company?.id || !id) return;
-    const { data, error } = await supabase
-      .from('courses')
-      .select(`
-        id, title, description, thumbnail_url, status, created_at, icon_emoji,
-        companies ( name, logo_url ),
-        users!courses_created_by_fkey ( firstname, lastname, company_id, roles(name) ),
-        course_modules ( id ),
-        course_assignments (
-          id,
-          status,
-          assigned_at,
-          course_progress ( progress_pct ),
-          users!course_assignments_user_id_fkey (
-            id, firstname, lastname, email, avatar_url, department
-          )
-        )
-      `)
-      .eq('id', id)
-      .single();
-      
-    if (error) {
-      console.error("Error fetching course details:", error);
-    } else {
-      setCourse(data);
-
-
-    }
-    setLoading(false);
-  };
-
   useEffect(() => {
-    fetchCourseDetails();
-  }, [id, company?.id]);
+    if (!id) return;
+    const loadData = async () => {
+      const data = await fetchCourseDetails(id as string);
+      if (data) setCourse(data);
+    };
+    loadData();
+  }, [id, fetchCourseDetails]);
 
   // Fetch all users for assigning when modal opens
   useEffect(() => {
@@ -96,19 +69,17 @@ const AdminCourseDetails = () => {
   }, [isAssignModalOpen, company?.id]);
 
   const handleAssignSelected = async () => {
-    if (selectedUserIds.length === 0) return;
+    if (selectedUserIds.length === 0 || !id) return;
     setIsAssigning(true);
     
-    const inserts = selectedUserIds.map(uid => ({
-      course_id: id,
-      user_id: uid,
-      status: 'not_started'
-    }));
-    
-    const { error } = await supabase.from('course_assignments').insert(inserts);
-    if (!error) {
-      await fetchCourseDetails();
-      setToastMessage(`${selectedUserIds.length} User(s) successfully assigned to "${course.title}"`);
+    const { success, error } = await assignUsersToCourse(id as string, selectedUserIds);
+
+    if (success) {
+      // Refresh local view data from context
+      const updatedData = await fetchCourseDetails(id as string);
+      if (updatedData) setCourse(updatedData);
+
+      setToastMessage(`${selectedUserIds.length} User(s) successfully assigned to "${course?.title || 'course'}"`);
       setTimeout(() => setToastMessage(null), 3000);
       setIsAssignModalOpen(false);
       setSelectedUserIds([]);

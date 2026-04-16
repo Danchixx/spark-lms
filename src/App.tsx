@@ -1,5 +1,6 @@
 import { AuthProvider } from "./context/AuthContext";
 import { CourseProvider } from "./context/CourseContext";
+import { AdminCourseProvider } from "./context/AdminCourseContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import AppRouter from "./routes/AppRouter";
 import "./styles/globals.css";
@@ -19,7 +20,9 @@ const App = () => {
     <AuthProvider>
       <ThemeProvider>
         <CourseProvider>
-          <AppRouter />
+          <AdminCourseProvider>
+            <AppRouter />
+          </AdminCourseProvider>
         </CourseProvider>
       </ThemeProvider>
     </AuthProvider>

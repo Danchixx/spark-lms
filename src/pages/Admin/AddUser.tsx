@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Briefcase, Mail, CheckCircle2, ChevronRight, Check } from "lucide-react";
+import { ArrowLeft, User, Briefcase, Mail, CheckCircle2, ChevronRight, Check, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -50,6 +51,8 @@ const AdminAddUser = () => {
   
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,6 +97,61 @@ const AdminAddUser = () => {
 
   const currentFullName = `${formData.firstName} ${formData.lastName}`.trim() || "Full Name";
   const currentEmail = formData.email || "email@company.com";
+  
+  const handleCreateUser = async () => {
+    if (!company?.id) {
+      setErrorMsg("No company context found.");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      // 1. Get role ID for 'user'
+      const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('name', 'user')
+        .single();
+        
+      if (roleError) throw new Error("Could not find role for user");
+      
+      const roleId = roleData.id;
+
+      // 2. Insert into users table
+      const payload = {
+        company_id: company.id,
+        role_id: roleId,
+        firstname: formData.firstName,
+        lastname: formData.lastName,
+        middlename: formData.middleName || null,
+        email: formData.email,
+        password: "Auto-generated",
+        gender: formData.gender !== "Select" ? formData.gender : null,
+        contact_no: formData.contact || null,
+        address: formData.address || null,
+        employee_id: formData.employeeId || null,
+        department: formData.department !== "Select Department" ? formData.department : null,
+        job_title: formData.jobTitle || null,
+        date_hired: formData.dateHired || null,
+        // status is implicitly missing so it defaults to "pending" per schema constraints
+      };
+
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert(payload);
+
+      if (insertError) throw insertError;
+
+      setShowSuccessModal(true);
+    } catch (err: any) {
+      console.error("Error creating user:", err);
+      setErrorMsg(err.message || "Failed to create user.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
@@ -478,6 +536,11 @@ const AdminAddUser = () => {
                                     </div>
 
                                     {/* Alert */}
+                                    {errorMsg && (
+                                        <div style={{ border: "1px solid #e74c3c", background: "#fdf0ed", padding: "12px 16px", borderRadius: 8, color: "#e74c3c", fontSize: 13, marginBottom: 16, fontWeight: 600 }}>
+                                            {errorMsg}
+                                        </div>
+                                    )}
                                     <div style={{ border: "1px solid #FFCC80", background: "#FFF3E0", padding: "12px 16px", borderRadius: 8, color: "#E65100", fontSize: 13, display: "flex", alignItems: "center", gap: 10, fontWeight: 600 }}>
                                         <span style={{ border: "1.5px solid #E65100", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>!</span>
                                         Please review all details carefully. Once created, user will be sent for approval.
@@ -487,8 +550,8 @@ const AdminAddUser = () => {
                             </div>
                             
                             <div style={{ display: "flex", justifyContent: "space-between", background: "var(--color-surface)", padding: "16px 24px", borderRadius: 12, border: "1px solid var(--color-border)" }}>
-                                <Button variant="outline" onClick={() => setCurrentStep(2)}>&lt; Back</Button>
-                                <Button onClick={() => setShowSuccessModal(true)}>Create User</Button>
+                                <Button variant="outline" disabled={isSubmitting} onClick={() => setCurrentStep(2)}>&lt; Back</Button>
+                                <Button disabled={isSubmitting} onClick={handleCreateUser}>{isSubmitting ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Loader2 size={16} className="spin" /> Creating...</span> : "Create User"}</Button>
                             </div>
                         </div>
                     )}
