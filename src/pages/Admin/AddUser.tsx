@@ -54,6 +54,7 @@ const AdminAddUser = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
@@ -81,6 +82,7 @@ const AdminAddUser = () => {
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setAvatarFile(file);
       const url = URL.createObjectURL(file);
       setAvatarPreview(url);
     }
@@ -99,16 +101,60 @@ const AdminAddUser = () => {
   const currentEmail = formData.email || "email@company.com";
   
   const handleCreateUser = async () => {
-    if (!company?.id) {
+    if (!company?.id || !company?.name) {
       setErrorMsg("No company context found.");
       return;
     }
+    
+    // 1. Validations
+    const textRegex = /^[A-Za-z\s]+$/;
+    if (!formData.firstName || !textRegex.test(formData.firstName)) return setErrorMsg("First name is required and must only contain letters.");
+    if (!formData.lastName || !textRegex.test(formData.lastName)) return setErrorMsg("Last name is required and must only contain letters.");
+    if (formData.middleName && !textRegex.test(formData.middleName)) return setErrorMsg("Middle name must only contain letters.");
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email || !emailRegex.test(formData.email)) return setErrorMsg("Please enter a valid email address.");
+    if (formData.contact && !/^[0-9]{11}$/.test(formData.contact)) return setErrorMsg("Contact number must be exactly 11 digits.");
+    
+    if (!formData.address) return setErrorMsg("Address is required.");
+    if (!formData.employeeId) return setErrorMsg("Employee ID is required.");
+    if (!formData.jobTitle) return setErrorMsg("Job Title is required.");
+    if (formData.department === "Select Department") return setErrorMsg("Please select a department.");
     
     setIsSubmitting(true);
     setErrorMsg("");
 
     try {
-      // 1. Get role ID for 'user'
+      // 2. Avatar Upload
+      let avatarUrl = null;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${company.id}/avatars/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, avatarFile);
+        if (uploadError) throw new Error(`Avatar upload failed: ${uploadError.message}`);
+        
+        const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        avatarUrl = publicUrlData.publicUrl;
+      }
+
+      // 3. Auto-Generate Password
+      const sanitizedCompany = company.name.replace(/\s+/g, '');
+      const random4 = Math.floor(1000 + Math.random() * 9000);
+      const generatedPassword = `Spark-${sanitizedCompany}-${random4}`;
+
+      // 4. Create Auth User via Edge Function
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-admin-user', {
+        body: { email: formData.email, password: generatedPassword }
+      });
+      
+      if (fnError) throw new Error(`Failed to create Auth User: ${fnError.message}`);
+      if (fnData?.error) throw new Error(`Auth Error: ${fnData.error}`);
+      
+      const newAuthUser = fnData.user;
+
+      // 5. Get role ID for 'user'
       const { data: roleData, error: roleError } = await supabase
         .from('roles')
         .select('id')
@@ -116,18 +162,18 @@ const AdminAddUser = () => {
         .single();
         
       if (roleError) throw new Error("Could not find role for user");
-      
       const roleId = roleData.id;
 
-      // 2. Insert into users table
+      // 6. Insert into public.users
       const payload = {
+        id: newAuthUser.id,
         company_id: company.id,
         role_id: roleId,
         firstname: formData.firstName,
         lastname: formData.lastName,
         middlename: formData.middleName || null,
         email: formData.email,
-        password: "Auto-generated",
+        password: generatedPassword, 
         gender: formData.gender !== "Select" ? formData.gender : null,
         contact_no: formData.contact || null,
         address: formData.address || null,
@@ -135,14 +181,14 @@ const AdminAddUser = () => {
         department: formData.department !== "Select Department" ? formData.department : null,
         job_title: formData.jobTitle || null,
         date_hired: formData.dateHired || null,
-        // status is implicitly missing so it defaults to "pending" per schema constraints
+        avatar_url: avatarUrl
       };
 
       const { error: insertError } = await supabase
         .from('users')
         .insert(payload);
 
-      if (insertError) throw insertError;
+      if (insertError) throw new Error(`Database insert failed: ${insertError.message}`);
 
       setShowSuccessModal(true);
     } catch (err: any) {
