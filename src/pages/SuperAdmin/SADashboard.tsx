@@ -5,7 +5,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { MOCK_TENANTS } from "../../data/mockTenants";
 import PageTransition from "../../components/common/PageTransition/PageTransition";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
 import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
@@ -16,22 +15,34 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   BarChart, Bar,
 } from "recharts";
+import {
+  fetchKPIStats,
+  fetchTenantHealthData,
+  fetchCourseStatusBreakdown,
+  fetchGlobalActivityTrend,
+  fetchTenantLeaderboard,
+  fetchRecentSubscriptions,
+  type KPIStats,
+  type TenantHealthRow,
+  type CourseStatusCount,
+  type ActivityTrendPoint,
+  type TenantLeaderboardRow,
+  type RecentSubscription,
+} from "../../services/dashboardService";
 
-// ── Types ─────────────────────────────────────────────────────
-interface CourseActivity {
-  name: string;
-  progress: number;
-  totalUsers: number;
+// ── Types ──────────────────────────────────────────────────────
+
+interface TenantHealthTenant extends TenantHealthRow {
+  score: number;
+  tier: "HEALTHY" | "AT RISK" | "CHURNING";
+  daysSinceLogin: number;
+  completionPct: number;
 }
 
-interface MockTenant {
-  id: number;
+interface NotifyTarget {
   name: string;
-  abbr: string;
-  color: string;
   email: string;
-  lastActive?: string;
-  courseActivity?: CourseActivity[];
+  daysSinceLogin: number;
 }
 
 interface StatItem {
@@ -40,20 +51,6 @@ interface StatItem {
   count: number;
   sub: string;
   iconKey: keyof typeof StatIcons;
-}
-
-interface RecentSub {
-  name: string;
-  since: string;
-  type: string;
-  bg: string;
-  abbr: string;
-}
-
-interface SystemUpdate {
-  text: string;
-  time: string;
-  category: string;
 }
 
 interface TopBarProps {
@@ -69,22 +66,37 @@ interface WelcomeScreenProps {
 }
 
 interface NotifyModalProps {
-  tenant: MockTenant;
+  target: NotifyTarget;
   onClose: () => void;
 }
 
-interface TenantActivityRowProps {
-  tenant: MockTenant;
-  onNotify: (tenant: MockTenant) => void;
-}
-
-// ── Helpers ───────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────
 const daysSince = (isoDate: string): number =>
   Math.floor((Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24));
 
-const avgProgress = (courseActivity?: CourseActivity[]): number => {
-  if (!courseActivity?.length) return 0;
-  return Math.round(courseActivity.reduce((s, c) => s + c.progress, 0) / courseActivity.length);
+const computeHealthScore = (t: TenantHealthRow): number => {
+  // Signal 1: Last login (40 pts)
+  let loginScore = 0;
+  if (t.last_login_at) {
+    const d = daysSince(t.last_login_at);
+    if (d <= 1) loginScore = 40;
+    else if (d <= 3) loginScore = 35;
+    else if (d <= 7) loginScore = 25;
+    else if (d <= 14) loginScore = 15;
+    else loginScore = 0;
+  }
+  // Signal 2: Lesson completion rate (35 pts)
+  const completionRate = t.total_lessons > 0 ? t.completed_lessons / t.total_lessons : 0;
+  const completionScore = Math.round(completionRate * 35);
+  // Signal 3: Assignment activity (25 pts)
+  const assignmentScore = Math.min(25, t.assignment_count * 8);
+  return Math.min(100, loginScore + completionScore + assignmentScore);
+};
+
+const getHealthTier = (score: number): "HEALTHY" | "AT RISK" | "CHURNING" => {
+  if (score >= 70) return "HEALTHY";
+  if (score >= 40) return "AT RISK";
+  return "CHURNING";
 };
 
 const PAGE_LABELS: Record<string, string> = {
@@ -114,7 +126,7 @@ const t = {
 };
 
 // ── System Updates data (used in bell dropdown) ───────────────
-const SYSTEM_UPDATES: SystemUpdate[] = [
+const SYSTEM_UPDATES = [
   { text: "New tenant registered: Build Hub PH", time: "2h ago", category: "Tenant" },
   { text: "Course approved: Sales Fundamentals", time: "5h ago", category: "Course" },
   { text: "Eleksis inactive for 10 days", time: "1d ago", category: "Alert" },
@@ -129,7 +141,6 @@ const TopBar = ({ onBurger, sidebarOpen, user, activePage }: TopBarProps) => {
   const [notifSeen, setNotifSeen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
@@ -248,7 +259,6 @@ const TopBar = ({ onBurger, sidebarOpen, user, activePage }: TopBarProps) => {
             }}>
               <style>{`@keyframes notifSlide { from { opacity:0; transform:translateY(-8px) } to { opacity:1; transform:translateY(0) } }`}</style>
 
-              {/* Dropdown header */}
               <div style={{
                 padding: "16px 18px 12px",
                 borderBottom: "1px solid #f5f5f5",
@@ -270,7 +280,6 @@ const TopBar = ({ onBurger, sidebarOpen, user, activePage }: TopBarProps) => {
                 </div>
               </div>
 
-              {/* Update items */}
               <div style={{ maxHeight: 300, overflowY: "auto" }}>
                 {SYSTEM_UPDATES.map((u, i) => (
                   <div key={i} style={{
@@ -291,9 +300,7 @@ const TopBar = ({ onBurger, sidebarOpen, user, activePage }: TopBarProps) => {
                       }}>
                         {u.text}
                       </div>
-                      <div style={{
-                        display: "flex", alignItems: "center", gap: 6, marginTop: 3,
-                      }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                         <span style={{
                           fontSize: 10, color: "#FF6B00", fontWeight: 600,
                           background: "#FFF3E8", padding: "1px 6px", borderRadius: 99,
@@ -310,11 +317,7 @@ const TopBar = ({ onBurger, sidebarOpen, user, activePage }: TopBarProps) => {
                 ))}
               </div>
 
-              {/* Footer */}
-              <div style={{
-                padding: "12px 18px", borderTop: "1px solid #f5f5f5",
-                textAlign: "center",
-              }}>
+              <div style={{ padding: "12px 18px", borderTop: "1px solid #f5f5f5", textAlign: "center" }}>
                 <span style={{
                   fontSize: 12, fontWeight: 700, color: "#FF6B00",
                   cursor: "pointer", fontFamily: "'Inter', sans-serif",
@@ -410,9 +413,9 @@ const WelcomeScreen = ({ name, onDone }: WelcomeScreenProps) => {
 };
 
 // ── Notify Modal ──────────────────────────────────────────────
-const NotifyModal = ({ tenant, onClose }: NotifyModalProps) => {
+const NotifyModal = ({ target, onClose }: NotifyModalProps) => {
   const [msg, setMsg] = useState(
-    `Hi ${tenant.name} team,\n\nWe noticed your team hasn't been active on the SPARK LMS platform for over a week. We'd love to check in and see how we can help support your learning journey.\n\nPlease feel free to reach out or log in to continue your courses.\n\nBest regards,\nSPARK Admin Team`
+    `Hi ${target.name} team,\n\nWe noticed your team hasn't been active on the SPARK LMS platform for over ${target.daysSinceLogin} day${target.daysSinceLogin !== 1 ? "s" : ""}. We'd love to check in and see how we can help support your learning journey.\n\nPlease feel free to reach out or log in to continue your courses.\n\nBest regards,\nSPARK Admin Team`
   );
   const [sent, setSent] = useState(false);
   const send = () => { setSent(true); setTimeout(onClose, 1800); };
@@ -448,7 +451,7 @@ const NotifyModal = ({ tenant, onClose }: NotifyModalProps) => {
                   Notify Tenant Admin
                 </div>
                 <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>
-                  {tenant.name} — inactive for {daysSince(tenant.lastActive ?? new Date().toISOString())} days
+                  {target.name} — {target.daysSinceLogin === 0 ? "last active today" : `inactive for ${target.daysSinceLogin} day${target.daysSinceLogin !== 1 ? "s" : ""}`}
                 </div>
               </div>
               <button onClick={onClose} style={{
@@ -457,7 +460,7 @@ const NotifyModal = ({ tenant, onClose }: NotifyModalProps) => {
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>×</button>
             </div>
-            <div style={{ fontSize: 12, color: "#888", marginBottom: 6, fontWeight: 600 }}>To: {tenant.email}</div>
+            <div style={{ fontSize: 12, color: "#888", marginBottom: 6, fontWeight: 600 }}>To: {target.email || "—"}</div>
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
@@ -487,73 +490,115 @@ const NotifyModal = ({ tenant, onClose }: NotifyModalProps) => {
   );
 };
 
-// ── Tenant Activity Row ───────────────────────────────────────
-const TenantActivityRow = ({ tenant, onNotify }: TenantActivityRowProps) => {
-  const days = daysSince(tenant.lastActive ?? new Date().toISOString());
-  const inactive = days >= 7;
-  const avg = avgProgress(tenant.courseActivity);
+// ── Tenant Health Monitor ──────────────────────────────────────
+
+const TIER_CONFIG = {
+  "HEALTHY": { bg: "#f0fdf4", border: "#86efac", text: "#15803d", dot: "#22c55e", label: "HEALTHY" },
+  "AT RISK": { bg: "#FFF3E8", border: "#fed7aa", text: "#c2410c", dot: "#FF6B00", label: "AT RISK" },
+  "CHURNING": { bg: "#fef2f2", border: "#fecaca", text: "#b91c1c", dot: "#ef4444", label: "CHURNING" },
+};
+
+const COMPANY_PALETTE = ["#FF6B00", "#2563eb", "#7c3aed", "#0891b2"];
+
+const TenantHealthRow = ({
+  tenant, index, onNotify,
+}: { tenant: TenantHealthTenant; index: number; onNotify: (t: TenantHealthTenant) => void }) => {
   const [expanded, setExpanded] = useState(false);
+  const cfg = TIER_CONFIG[tenant.tier];
+  const companyColor = COMPANY_PALETTE[index % COMPANY_PALETTE.length];
+  const loginLabel =
+    tenant.daysSinceLogin === 0 ? "Today"
+      : tenant.daysSinceLogin === 1 ? "Yesterday"
+        : tenant.last_login_at ? `${tenant.daysSinceLogin}d ago`
+          : "Never";
 
   return (
-    <div style={{
-      borderRadius: 12,
-      border: "1px solid #f0f0f0",
-      padding: "14px 16px",
-      marginBottom: 10,
-      background: "#fff",
-      boxShadow: "0 2px 8px rgba(0,0,0,.04)",
-      transition: "box-shadow .2s",
-    }}>
+    <div
+      style={{
+        borderRadius: 12,
+        border: `1px solid ${tenant.tier === "CHURNING" ? "#fecaca" : "#f0f0f0"}`,
+        padding: "14px 16px",
+        marginBottom: 10,
+        background: "#fff",
+        boxShadow: tenant.tier === "CHURNING"
+          ? "0 2px 12px rgba(239,68,68,.08)"
+          : "0 2px 8px rgba(0,0,0,.04)",
+        transition: "box-shadow .2s",
+      }}
+    >
+      {/* Row */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        {/* Avatar */}
+
+        {/* Company chip */}
         <div style={{
-          width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-          background: tenant.color + "18",
-          border: `1.5px solid ${tenant.color}33`,
+          width: 42, height: 42, borderRadius: 10, flexShrink: 0,
+          background: companyColor + "18",
+          border: `1.5px solid ${companyColor}33`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 9, fontWeight: 900, color: tenant.color,
-          letterSpacing: ".04em",
+          fontSize: 8, fontWeight: 900, color: companyColor,
+          letterSpacing: ".04em", fontFamily: "'Inter', sans-serif",
         }}>
           {tenant.abbr.slice(0, 5)}
         </div>
 
-        {/* Info */}
+        {/* Name + login */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 13, color: "#1a1a1a", marginBottom: 2 }}>
             {tenant.name}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: inactive ? "#c0392b" : "#27ae60", flexShrink: 0,
+              width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+              background: cfg.dot,
+              ...(tenant.tier === "CHURNING" ? { animation: "pulse 1.8s infinite" } : {}),
             }} />
-            <span style={{ fontSize: 11, color: inactive ? "#c0392b" : "#27ae60", fontWeight: 600 }}>
-              {inactive ? `Inactive · ${days}d ago` : `Active · ${days === 0 ? "today" : `${days}d ago`}`}
+            <span style={{ fontSize: 11, color: "#888" }}>
+              Last login: <span style={{ fontWeight: 600, color: "#555" }}>{loginLabel}</span>
+            </span>
+            <span style={{ fontSize: 10, color: "#ccc" }}>·</span>
+            <span style={{ fontSize: 11, color: "#888" }}>
+              {tenant.user_count} user{tenant.user_count !== 1 ? "s" : ""}
             </span>
           </div>
         </div>
 
-        {/* Progress pill */}
+        {/* Health tier badge */}
         <div style={{
-          fontSize: 12, fontWeight: 700,
-          color: avg >= 60 ? "#27ae60" : avg >= 30 ? "#FF6B00" : "#c0392b",
-          background: avg >= 60 ? "#f0fdf4" : avg >= 30 ? "#FFF3E8" : "#fff5f5",
+          fontSize: 10, fontWeight: 800,
+          color: cfg.text,
+          background: cfg.bg,
+          border: `1px solid ${cfg.border}`,
           padding: "3px 10px", borderRadius: 99, flexShrink: 0,
+          letterSpacing: ".06em", fontFamily: "'Inter', sans-serif",
         }}>
-          {avg}%
+          {cfg.label}
+        </div>
+
+        {/* Score */}
+        <div style={{
+          fontSize: 13, fontWeight: 800, color: "#1a1a1a",
+          flexShrink: 0, minWidth: 36, textAlign: "right",
+        }}>
+          {tenant.score}
+          <span style={{ fontSize: 9, fontWeight: 500, color: "#bbb" }}>/100</span>
         </div>
 
         {/* Actions */}
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {inactive && (
+          {tenant.tier !== "HEALTHY" && (
             <button
               onClick={() => onNotify(tenant)}
               style={{
-                background: "linear-gradient(135deg, #c0392b, #e74c3c)",
+                background: tenant.tier === "CHURNING"
+                  ? "linear-gradient(135deg, #b91c1c, #ef4444)"
+                  : "linear-gradient(135deg, #c2410c, #FF6B00)",
                 color: "#fff", border: "none", borderRadius: 8,
-                padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer",
-              }}>
-              Notify
+                padding: "5px 12px", fontSize: 10, fontWeight: 700,
+                cursor: "pointer", letterSpacing: ".04em",
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              NOTIFY
             </button>
           )}
           <button
@@ -561,68 +606,149 @@ const TenantActivityRow = ({ tenant, onNotify }: TenantActivityRowProps) => {
             style={{
               background: "#f8f8f8", border: "1px solid #eee", borderRadius: 8,
               padding: "5px 10px", fontSize: 11, cursor: "pointer", color: "#888",
-            }}>
+              fontFamily: "'Inter', sans-serif",
+            }}
+          >
             {expanded ? "▲" : "▼"}
           </button>
         </div>
       </div>
 
-      {/* Progress bar */}
+      {/* Score bar */}
       <div style={{ marginTop: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#bbb", marginBottom: 4 }}>
-          <span>Course Activity</span>
+          <span>Health Score</span>
+          <span style={{ color: cfg.text }}>{tenant.completionPct}% lesson completion</span>
         </div>
-        <div style={{ height: 6, background: "#f0f0f0", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ height: 5, background: "#f0f0f0", borderRadius: 3, overflow: "hidden" }}>
           <div style={{
-            height: "100%", borderRadius: 3, width: `${avg}%`,
-            background: avg >= 60
-              ? "linear-gradient(90deg,#27ae60,#2ecc71)"
-              : avg >= 30
+            height: "100%", borderRadius: 3, width: `${tenant.score}%`,
+            background: tenant.tier === "HEALTHY"
+              ? "linear-gradient(90deg,#22c55e,#86efac)"
+              : tenant.tier === "AT RISK"
                 ? "linear-gradient(90deg,#FF6B00,#FFCF96)"
-                : "linear-gradient(90deg,#c0392b,#e74c3c)",
+                : "linear-gradient(90deg,#b91c1c,#ef4444)",
             transition: "width .6s ease",
           }} />
         </div>
       </div>
 
-      {/* Expanded courses */}
+      {/* Expanded detail */}
       {expanded && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f5f5f5" }}>
-          {!tenant.courseActivity?.length ? (
-            <div style={{ fontSize: 12, color: "#bbb", textAlign: "center", padding: "8px 0" }}>
-              No course activity yet
-            </div>
-          ) : (
-            tenant.courseActivity.map((c) => (
-              <div key={c.name} style={{ marginBottom: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#666", marginBottom: 3 }}>
-                  <span>{c.name}</span>
-                  <span style={{ color: "#aaa" }}>{c.progress}% · {c.totalUsers} users</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            {[
+              {
+                label: "Last Login",
+                value: loginLabel,
+                color: tenant.daysSinceLogin > 7 ? "#b91c1c" : "#22c55e",
+              },
+              {
+                label: "Lessons Completed",
+                value: `${tenant.completed_lessons} / ${tenant.total_lessons}`,
+                color: "#1a1a1a",
+              },
+              {
+                label: "Assignments",
+                value: String(tenant.assignment_count),
+                color: tenant.assignment_count === 0 ? "#b91c1c" : "#1a1a1a",
+              },
+            ].map((item) => (
+              <div key={item.label} style={{
+                background: "#fafafa", borderRadius: 8, padding: "10px 12px",
+                border: "1px solid #f0f0f0",
+              }}>
+                <div style={{ fontSize: 10, color: "#aaa", marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>
+                  {item.label}
                 </div>
-                <div style={{ height: 5, background: "#f0f0f0", borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{
-                    height: "100%", borderRadius: 3, width: `${c.progress}%`,
-                    background: c.progress >= 70 ? "#27ae60" : c.progress >= 40 ? "#FF6B00" : "#c0392b",
-                    transition: "width .5s ease",
-                  }} />
+                <div style={{
+                  fontSize: 14, fontWeight: 700, color: item.color,
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  {item.value}
                 </div>
               </div>
-            ))
-          )}
+            ))}
+          </div>
+          <div style={{ marginTop: 10, padding: "8px 12px", background: "#fafafa", borderRadius: 8, border: "1px solid #f0f0f0" }}>
+            <div style={{ fontSize: 10, color: "#aaa", marginBottom: 4 }}>Subscription Plan</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#FF6B00", textTransform: "uppercase", letterSpacing: ".06em" }}>
+              {tenant.subscription_plan}
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-// ── Static data ───────────────────────────────────────────────
-const RECENT_SUBS: RecentSub[] = [
-  { name: "Department of Education", since: "Feb. 25 2026", type: "Institute", bg: "#2980b9", abbr: "DepEd" },
-  { name: "Eleksis Marketing Corp", since: "Jan. 10 2026", type: "Enterprise", bg: "#c0392b", abbr: "ELEKSIS" },
-  { name: "De La Salle University", since: "Jan. 01 2026", type: "Institute", bg: "#27ae60", abbr: "DLSU" },
-  { name: "Zoup Sales & Marketing", since: "Feb. 01 2026", type: "Personal", bg: "#8e44ad", abbr: "ZOUP" },
-];
+const TenantHealthMonitor = ({
+  tenants, loading, onNotify,
+}: {
+  tenants: TenantHealthTenant[];
+  loading: boolean;
+  onNotify: (t: TenantHealthTenant) => void;
+}) => {
+  const healthyCnt = tenants.filter((t) => t.tier === "HEALTHY").length;
+  const atRiskCnt = tenants.filter((t) => t.tier === "AT RISK").length;
+  const churningCnt = tenants.filter((t) => t.tier === "CHURNING").length;
 
+  return (
+    <>
+      {/* Summary strip */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
+        padding: "10px 14px", background: "#fafafa",
+        borderRadius: 10, border: "1px solid #f0f0f0",
+      }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a", fontFamily: "'Inter', sans-serif" }}>
+          {tenants.length} Tenants
+        </span>
+        <span style={{ color: "#e0e0e0" }}>·</span>
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: "#15803d",
+          background: "#f0fdf4", padding: "2px 8px", borderRadius: 99,
+          border: "1px solid #86efac",
+        }}>
+          {healthyCnt} Healthy
+        </span>
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: "#c2410c",
+          background: "#FFF3E8", padding: "2px 8px", borderRadius: 99,
+          border: "1px solid #fed7aa",
+        }}>
+          {atRiskCnt} At Risk
+        </span>
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: "#b91c1c",
+          background: "#fef2f2", padding: "2px 8px", borderRadius: 99,
+          border: "1px solid #fecaca",
+        }}>
+          {churningCnt} Churning
+        </span>
+      </div>
+
+      {/* Tenant rows */}
+      <div className="sa-thin-scroll" style={{ maxHeight: 400, overflowY: "auto", paddingRight: 4 }}>
+        {loading ? (
+          <div style={{ padding: "28px 0", textAlign: "center", color: "#bbb", fontSize: 13 }}>
+            Loading tenant data...
+          </div>
+        ) : tenants.length === 0 ? (
+          <div style={{ padding: "28px 0", textAlign: "center", color: "#bbb", fontSize: 13 }}>
+            No tenant data available
+          </div>
+        ) : (
+          tenants.map((ten, i) => (
+            <TenantHealthRow key={ten.id} tenant={ten} index={i} onNotify={onNotify} />
+          ))
+        )}
+      </div>
+    </>
+  );
+};
+
+// ── Static chart data helpers ─────────────────────────────────
 const StatIcons = {
   tenants: (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
@@ -653,38 +779,6 @@ const StatIcons = {
     </svg>
   ),
 };
-
-// ── Chart Data ────────────────────────────────────────────────
-const TENANT_STATUS_PIE = [
-  { name: "Active", value: 18 },
-  { name: "Inactive", value: 4 },
-  { name: "Archived", value: 2 },
-];
-
-const COURSE_STATUS_PIE = [
-  { name: "Approved / Live", value: 61 },
-  { name: "Pending Review", value: 12 },
-  { name: "Rejected", value: 5 },
-];
-
-const GLOBAL_LOGINS_LINE = [
-  { day: "Mon", logins: 142 },
-  { day: "Tue", logins: 198 },
-  { day: "Wed", logins: 174 },
-  { day: "Thu", logins: 221 },
-  { day: "Fri", logins: 189 },
-  { day: "Sat", logins: 87 },
-  { day: "Sun", logins: 64 },
-];
-
-const TENANT_ENGAGEMENT_BAR = [
-  { name: "DepEd", completion: 82, users: 340 },
-  { name: "DLSU", completion: 74, users: 215 },
-  { name: "Eleksis", completion: 45, users: 88 },
-  { name: "Zoup", completion: 61, users: 52 },
-  { name: "Build Hub", completion: 38, users: 29 },
-  { name: "ADB PH", completion: 91, users: 185 },
-];
 
 // ── Brand palette ─────────────────────────────────────────────
 const OG_COLORS = ["#FF6B00", "#FF8C3A", "#FFB680"];
@@ -730,7 +824,7 @@ const Card = ({
   </div>
 );
 
-// ── Section Header ────────────────────────────────────────────
+// ── Section Header ─────────────────────────────────────────────
 const SectionHeader = ({ label, accent }: { label: string; accent?: string }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
     <div style={{
@@ -754,9 +848,9 @@ const SectionHeader = ({ label, accent }: { label: string; accent?: string }) =>
   </div>
 );
 
-// ── Custom Tooltips ───────────────────────────────────────────
+// ── Custom Tooltips ────────────────────────────────────────────
 const PieTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number }> }) => {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length || !payload[0]) return null;
   return (
     <div style={{
       background: "#1a1a1a", borderRadius: 8, padding: "8px 14px",
@@ -769,7 +863,7 @@ const PieTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ n
 };
 
 const LineTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length || !payload[0]) return null;
   return (
     <div style={{
       background: "#1a1a1a", borderRadius: 8, padding: "8px 14px",
@@ -782,7 +876,7 @@ const LineTooltip = ({ active, payload, label }: { active?: boolean; payload?: A
 };
 
 const BarTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length || !payload[0]) return null;
   return (
     <div style={{
       background: "#1a1a1a", borderRadius: 8, padding: "8px 14px",
@@ -797,16 +891,97 @@ const BarTooltip = ({ active, payload, label }: { active?: boolean; payload?: Ar
 // ── Dashboard Home ────────────────────────────────────────────
 export const DashboardHome = () => {
   const navigate = useNavigate();
-  const [notifyTenant, setNotifyTenant] = useState<MockTenant | null>(null);
-  const inactiveCount = (MOCK_TENANTS as MockTenant[]).filter(
-    (ten) => daysSince(ten.lastActive ?? new Date().toISOString()) >= 7
-  ).length;
+
+  // ── State ────────────────────────────────────────────────────
+  const [kpiStats, setKpiStats] = useState<KPIStats>({
+    total_tenants: 0, pending_approvals: 0, live_courses: 0, total_subscriptions: 0,
+  });
+  const [tenantHealth, setTenantHealth] = useState<TenantHealthTenant[]>([]);
+  const [courseStatus, setCourseStatus] = useState<CourseStatusCount[]>([]);
+  const [activityTrend, setActivityTrend] = useState<ActivityTrendPoint[]>([]);
+  const [leaderboard, setLeaderboard] = useState<TenantLeaderboardRow[]>([]);
+  const [recentSubs, setRecentSubs] = useState<RecentSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notifyTarget, setNotifyTarget] = useState<NotifyTarget | null>(null);
+
+  // ── Fetch all dashboard data on mount ────────────────────────
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [kpi, health, courseStatusData, trend, lboard, subs] = await Promise.all([
+          fetchKPIStats(),
+          fetchTenantHealthData(),
+          fetchCourseStatusBreakdown(),
+          fetchGlobalActivityTrend(),
+          fetchTenantLeaderboard(),
+          fetchRecentSubscriptions(),
+        ]);
+
+        setKpiStats(kpi);
+
+        // Compute health score + tier per tenant, sort worst first
+        const scored: TenantHealthTenant[] = health.map((t) => {
+          const days = t.last_login_at ? daysSince(t.last_login_at) : 999;
+          const completionPct = t.total_lessons > 0
+            ? Math.round((t.completed_lessons / t.total_lessons) * 100)
+            : 0;
+          const score = computeHealthScore(t);
+          return { ...t, score, tier: getHealthTier(score), daysSinceLogin: days, completionPct };
+        }).sort((a, b) => a.score - b.score);
+
+        setTenantHealth(scored);
+        setCourseStatus(courseStatusData);
+        setActivityTrend(trend);
+        setLeaderboard(lboard);
+        setRecentSubs(subs);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // ── Derived values ───────────────────────────────────────────
+  const churningCount = tenantHealth.filter((t) => t.tier === "CHURNING").length;
+  const atRiskCount = tenantHealth.filter((t) => t.tier === "AT RISK").length;
+  const urgentCount = churningCount + atRiskCount;
+
+  // Tenant status pie: derived from health scores
+  const tenantStatusPie = [
+    { name: "Healthy", value: tenantHealth.filter((t) => t.daysSinceLogin <= 7).length },
+    { name: "Inactive", value: tenantHealth.filter((t) => t.daysSinceLogin > 7 && t.daysSinceLogin <= 30).length },
+    { name: "Churning", value: tenantHealth.filter((t) => t.daysSinceLogin > 30 || (!t.last_login_at)).length },
+  ];
 
   const STATS: StatItem[] = [
-    { key: "tenants", label: "Tenants", count: 24, sub: "+5 this week", iconKey: "tenants" },
-    { key: "approvals", label: "Approvals", count: 8, sub: "+3 pending", iconKey: "approvals" },
-    { key: "courses", label: "Live Courses", count: 61, sub: "4 new", iconKey: "courses" },
-    { key: "tenants", label: "Subscriptions", count: 18, sub: "+3 this quarter", iconKey: "subscriptions" },
+    {
+      key: "tenants", label: "Tenants",
+      count: loading ? 0 : kpiStats.total_tenants,
+      sub: loading ? "Loading..." : `${urgentCount} need attention`,
+      iconKey: "tenants",
+    },
+    {
+      key: "approvals", label: "Approvals",
+      count: loading ? 0 : kpiStats.pending_approvals,
+      sub: loading ? "Loading..." : "pending",
+      iconKey: "approvals",
+    },
+    {
+      key: "courses", label: "Live Courses",
+      count: loading ? 0 : kpiStats.live_courses,
+      sub: loading ? "Loading..." : "active on platform",
+      iconKey: "courses",
+    },
+    {
+      key: "tenants", label: "Subscriptions",
+      count: loading ? 0 : kpiStats.total_subscriptions,
+      sub: loading ? "Loading..." : "active tenants",
+      iconKey: "subscriptions",
+    },
   ];
 
   return (
@@ -822,8 +997,9 @@ export const DashboardHome = () => {
         .sa-thin-scroll::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 99px; }
         .sa-thin-scroll::-webkit-scrollbar-thumb:hover { background: #ccc; }
 
-        .sa-tenant-row:hover { box-shadow: 0 4px 16px rgba(0,0,0,.09) !important; }
         .sa-sub-row:hover { background: #fffaf6 !important; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
       `}</style>
 
       <div
@@ -847,28 +1023,28 @@ export const DashboardHome = () => {
           </div>
         </div>
 
-        {/* ── Inactive Alert ── */}
-        {inactiveCount > 0 && (
+        {/* ── Churn Alert Banner ── */}
+        {!loading && urgentCount > 0 && (
           <div style={{
             background: "linear-gradient(135deg, #fff5f5 0%, #fff 100%)",
             border: "1px solid #f5c6c6",
-            borderLeft: "4px solid #c0392b",
+            borderLeft: "4px solid #b91c1c",
             borderRadius: 12, padding: "14px 20px", marginBottom: 24,
             display: "flex", alignItems: "center", gap: 14,
           }}>
             <div style={{
               width: 10, height: 10, borderRadius: "50%",
-              background: "#c0392b", flexShrink: 0, animation: "pulse 1.8s infinite",
+              background: "#b91c1c", flexShrink: 0, animation: "pulse 1.8s infinite",
             }} />
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#c0392b" }}>
-                {inactiveCount} tenant{inactiveCount > 1 ? "s" : ""} inactive for 7+ days
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#b91c1c" }}>
+                {urgentCount} tenant{urgentCount > 1 ? "s" : ""} require{urgentCount === 1 ? "s" : ""} attention
+                {churningCount > 0 && ` — ${churningCount} churning`}
               </div>
               <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
-                Check the Tenant Activity panel below and send a re-engagement notification.
+                Check the Tenant Health Monitor below and send a re-engagement notification.
               </div>
             </div>
-            <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
           </div>
         )}
 
@@ -891,18 +1067,18 @@ export const DashboardHome = () => {
           ))}
         </div>
 
-        {/* ── Analytics: 3 Charts equal height ── */}
+        {/* ── Analytics: 3 Charts ── */}
         <SectionHeader label="Analytics Overview" accent="Live Data" />
         <div className="sa-charts-3col" style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: 20,
           marginBottom: 32,
-          alignItems: "stretch",   /* ← all three cards stretch to same height */
+          alignItems: "stretch",
         }}>
 
           {/* Pie 1 — Tenant Health */}
-          <Card title="Tenant Health" subtitle="Active vs. Inactive vs. Archived">
+          <Card title="Tenant Health" subtitle="Healthy vs. Inactive vs. Churning">
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <defs>
@@ -916,29 +1092,31 @@ export const DashboardHome = () => {
                     <stop offset="0%" stopColor="#FFB680" /><stop offset="100%" stopColor="#FFCF96" />
                   </linearGradient>
                 </defs>
-                <Pie data={TENANT_STATUS_PIE} cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={3} dataKey="value">
-                  {TENANT_STATUS_PIE.map((_, idx) => <Cell key={idx} fill={`url(#ogPie${idx})`} stroke="none" />)}
+                <Pie data={tenantStatusPie} cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={3} dataKey="value">
+                  {tenantStatusPie.map((_, idx) => <Cell key={idx} fill={`url(#ogPie${idx})`} stroke="none" />)}
                 </Pie>
                 <Tooltip content={<PieTooltip />} />
               </PieChart>
             </ResponsiveContainer>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-              {TENANT_STATUS_PIE.map((item, i) => (
+              {tenantStatusPie.map((item, i) => (
                 <div key={item.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ width: 10, height: 10, borderRadius: 2, background: OG_COLORS[i] }} />
                     <span style={{ fontSize: 12, color: "#555" }}>{item.name}</span>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{item.value}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>
+                    {loading ? "—" : item.value}
+                  </span>
                 </div>
               ))}
             </div>
           </Card>
 
-          {/* Line — Global Activity Trend (same height as pie cards) */}
+          {/* Line — Global Activity Trend */}
           <Card title="Global Activity Trend" subtitle="Daily logins across all tenants (this week)">
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={GLOBAL_LOGINS_LINE} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
+              <LineChart data={activityTrend} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="ogLine" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor={OG_GRAD_START} />
@@ -957,26 +1135,43 @@ export const DashboardHome = () => {
                 />
               </LineChart>
             </ResponsiveContainer>
-            {/* Spacer row to match legends in pie cards */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-              {[
-                { label: "Peak: Thursday", value: "221" },
-                { label: "Avg. daily logins", value: "153" },
-                { label: "Weekend drop", value: "−63%" },
-              ].map((stat) => (
-                <div key={stat.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 2, background: "#FF6B00" }} />
-                    <span style={{ fontSize: 12, color: "#555" }}>{stat.label}</span>
+              {loading
+                ? [{ label: "Peak day", value: "—" }, { label: "Avg. daily", value: "—" }, { label: "Total this week", value: "—" }].map((s) => (
+                  <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: 2, background: "#FF6B00" }} />
+                      <span style={{ fontSize: 12, color: "#555" }}>{s.label}</span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{s.value}</span>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{stat.value}</span>
-                </div>
-              ))}
+                ))
+                : (() => {
+                  const peak = activityTrend.reduce((m, d) => d.logins > m.logins ? d : m, { day: "—", logins: 0 });
+                  const avg = activityTrend.length > 0
+                    ? Math.round(activityTrend.reduce((s, d) => s + d.logins, 0) / activityTrend.length)
+                    : 0;
+                  const total = activityTrend.reduce((s, d) => s + d.logins, 0);
+                  return [
+                    { label: `Peak: ${peak.day}`, value: String(peak.logins) },
+                    { label: "Avg. daily logins", value: String(avg) },
+                    { label: "Total this week", value: String(total) },
+                  ];
+                })().map((stat) => (
+                  <div key={stat.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: 2, background: "#FF6B00" }} />
+                      <span style={{ fontSize: 12, color: "#555" }}>{stat.label}</span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{stat.value}</span>
+                  </div>
+                ))
+              }
             </div>
           </Card>
 
           {/* Pie 2 — Course Status */}
-          <Card title="Course Status" subtitle="Live, Pending Review, and Rejected">
+          <Card title="Course Status" subtitle="Active, Pending Review, and Draft">
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <defs>
@@ -990,20 +1185,26 @@ export const DashboardHome = () => {
                     <stop offset="0%" stopColor="#FFB680" /><stop offset="100%" stopColor="#FFCF96" />
                   </linearGradient>
                 </defs>
-                <Pie data={COURSE_STATUS_PIE} cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={3} dataKey="value">
-                  {COURSE_STATUS_PIE.map((_, idx) => <Cell key={idx} fill={`url(#ogCourse${idx})`} stroke="none" />)}
+                <Pie data={courseStatus} cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={3} dataKey="value">
+                  {courseStatus.map((_, idx) => <Cell key={idx} fill={`url(#ogCourse${idx})`} stroke="none" />)}
                 </Pie>
                 <Tooltip content={<PieTooltip />} />
               </PieChart>
             </ResponsiveContainer>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-              {COURSE_STATUS_PIE.map((item, i) => (
+              {(courseStatus.length > 0 ? courseStatus : [
+                { name: "Active / Live", value: 0 },
+                { name: "Pending Review", value: 0 },
+                { name: "Draft", value: 0 },
+              ]).map((item, i) => (
                 <div key={item.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ width: 10, height: 10, borderRadius: 2, background: OG_COLORS[i] }} />
                     <span style={{ fontSize: 12, color: "#555" }}>{item.name}</span>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{item.value}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>
+                    {loading ? "—" : item.value}
+                  </span>
                 </div>
               ))}
             </div>
@@ -1014,11 +1215,11 @@ export const DashboardHome = () => {
         <SectionHeader label="Tenant Leaderboard" accent="Completion Rate" />
         <Card
           title="Tenant Course Completion Rate"
-          subtitle="Ranked by % of users who completed at least one course"
+          subtitle="Ranked by % of lessons completed across all assigned courses"
           style={{ marginBottom: 32 }}
         >
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={TENANT_ENGAGEMENT_BAR} margin={{ top: 8, right: 16, left: -20, bottom: 0 }}>
+            <BarChart data={leaderboard} margin={{ top: 8, right: 16, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="ogBar" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={OG_GRAD_START} />
@@ -1044,16 +1245,20 @@ export const DashboardHome = () => {
           marginBottom: 32,
         }}>
 
-          {/* LEFT — Tenant Activity */}
-          <Card title="Tenant Activity" subtitle="Monitoring engagement and churn prevention">
-            <div className="sa-thin-scroll" style={{ maxHeight: 480, overflowY: "auto", paddingRight: 4 }}>
-              {(MOCK_TENANTS as MockTenant[]).map((ten) => (
-                <TenantActivityRow key={ten.id} tenant={ten} onNotify={setNotifyTenant} />
-              ))}
-            </div>
+          {/* LEFT — Tenant Health Monitor */}
+          <Card title="Tenant Health Monitor" subtitle="Churn risk analysis — sorted by urgency">
+            <TenantHealthMonitor
+              tenants={tenantHealth}
+              loading={loading}
+              onNotify={(ten) => setNotifyTarget({
+                name: ten.name,
+                email: ten.contact_email ?? "",
+                daysSinceLogin: ten.daysSinceLogin,
+              })}
+            />
           </Card>
 
-          {/* RIGHT — Recent Subscriptions (only, System Updates moved to bell) */}
+          {/* RIGHT — Recent Subscriptions */}
           <Card
             title="Recent Subscriptions"
             subtitle="Newest tenant enrollments"
@@ -1067,14 +1272,14 @@ export const DashboardHome = () => {
             }
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              {RECENT_SUBS.map((sub, i) => (
+              {(recentSubs.length > 0 ? recentSubs : Array(4).fill(null)).map((sub, i) => (
                 <div
-                  key={sub.name}
+                  key={sub ? sub.id : i}
                   className="sa-sub-row"
                   style={{
                     display: "flex", alignItems: "center", gap: 14,
                     padding: "12px 0",
-                    borderBottom: i < RECENT_SUBS.length - 1 ? "1px solid #f5f5f5" : "none",
+                    borderBottom: i < 3 ? "1px solid #f5f5f5" : "none",
                     borderRadius: 10,
                     transition: "background .15s",
                   }}
@@ -1082,37 +1287,43 @@ export const DashboardHome = () => {
                   {/* Logo chip */}
                   <div style={{
                     width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                    background: sub.bg,
+                    background: sub
+                      ? COMPANY_PALETTE[i % COMPANY_PALETTE.length]
+                      : "#f0f0f0",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: `0 4px 12px ${sub.bg}44`,
+                    boxShadow: sub ? `0 4px 12px ${COMPANY_PALETTE[i % COMPANY_PALETTE.length]}44` : "none",
                   }}>
                     <span style={{
                       color: "#fff", fontSize: 8, fontWeight: 900,
                       textAlign: "center", lineHeight: 1.2, letterSpacing: ".04em",
                     }}>
-                      {sub.abbr.slice(0, 6)}
+                      {sub ? sub.abbr.slice(0, 6) : "—"}
                     </span>
                   </div>
 
                   {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: 13, fontWeight: 700, color: "#1a1a1a",
+                      fontSize: 13, fontWeight: 700, color: sub ? "#1a1a1a" : "#ccc",
                       marginBottom: 1, whiteSpace: "nowrap",
                       overflow: "hidden", textOverflow: "ellipsis",
                     }}>
-                      {sub.name}
+                      {sub ? sub.name : "Loading..."}
                     </div>
-                    <div style={{ fontSize: 11, color: "#aaa" }}>Since {sub.since}</div>
+                    <div style={{ fontSize: 11, color: "#aaa" }}>
+                      {sub && sub.subscribed_at
+                        ? `Since ${new Date(sub.subscribed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                        : "—"}
+                    </div>
                   </div>
 
-                  {/* Type badge */}
+                  {/* Plan badge */}
                   <div style={{
                     fontSize: 10, fontWeight: 700, color: "#FF6B00",
                     background: "#FFF3E8", padding: "4px 10px",
                     borderRadius: 99, flexShrink: 0, letterSpacing: ".04em",
                   }}>
-                    {sub.type.toUpperCase()}
+                    {sub ? sub.subscription_plan.toUpperCase() : "—"}
                   </div>
                 </div>
               ))}
@@ -1122,8 +1333,9 @@ export const DashboardHome = () => {
         </div>
       </div>
 
-      {notifyTenant && (
-        <NotifyModal tenant={notifyTenant} onClose={() => setNotifyTenant(null)} />
+      {/* Notify Modal */}
+      {notifyTarget && (
+        <NotifyModal target={notifyTarget} onClose={() => setNotifyTarget(null)} />
       )}
     </PageTransition>
   );
@@ -1140,8 +1352,9 @@ const d: Record<string, React.CSSProperties> = {
   subItem: { display: "flex", alignItems: "flex-start", gap: 12, paddingTop: 10, paddingBottom: 10 },
   subLogo: { width: 38, height: 38, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" },
 };
+void d; // suppress unused warning
 
-// ── Coming Soon placeholder ───────────────────────────────────
+// ── Coming Soon placeholder ────────────────────────────────────
 export const ComingSoon = ({ label }: { label: string }) => (
   <div style={{
     flex: 1, display: "flex", flexDirection: "column",
@@ -1157,7 +1370,7 @@ export const ComingSoon = ({ label }: { label: string }) => (
 
 // ── Main SADashboard ──────────────────────────────────────────
 const SADashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const [showWelcome, setShowWelcome] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -1190,7 +1403,7 @@ const SADashboard = () => {
         activePage={activePage}
       />
 
-      <SASidebar open={sidebarOpen} activePage={activePage} user={user} />
+      <SASidebar open={sidebarOpen} activePage={activePage} user={user} onLogout={logout} />
 
       <div className="sa-content-area" style={{
         marginTop: TOPBAR_HEIGHT,

@@ -69,7 +69,7 @@ export type Course = {
   thumbnail_url: string | null;
   icon_emoji: string | null;
   created_by: number | null;
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'active' | 'pending' | 'archived';
   created_at: string;
   is_archived: boolean;
   archived_at: string | null;

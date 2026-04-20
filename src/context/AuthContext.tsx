@@ -104,6 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     
+    // Track last login timestamp for tenant health monitoring (silent — non-blocking)
+    supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('email', email).then(() => {});
+
     // Explicitly block and fetch the user profile here before returning control to the caller
     // to ensure the AuthContext user object is populated before the router evaluates protected routes.
     await fetchUserProfile(data.user.email!);

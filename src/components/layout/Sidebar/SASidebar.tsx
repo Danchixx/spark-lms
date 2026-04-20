@@ -7,6 +7,7 @@ import type React from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../../context/ThemeContext";
 import type { AppUser } from "../../../types";
+import LogoutModal from "../../common/Modal/LogoutModal";
 
 // ── Types ─────────────────────────────────────────────────────
 type NavKey = "dashboard" | "tenants" | "approvals" | "users" | "courses" | "settings" | "register" | "announcement" | "export" | "support" | "logs";
@@ -25,6 +26,7 @@ interface SASidebarProps {
   activePage: string;
   onNavigate?: (key: string) => void;
   user?: AppUser | null;
+  onLogout: () => void;
 }
 
 interface NavItemProps {
@@ -39,6 +41,7 @@ interface MobileDropdownProps {
   activePage: string;
   onClose: () => void;
   user?: AppUser | null;
+  onLogout: () => void;
 }
 
 interface NavContentProps {
@@ -232,39 +235,52 @@ const SectionLabel = ({ label }: { label: string }) => (
   </div>
 );
 
-// ── User chip ─────────────────────────────────────────────────
-const UserChip = ({ user }: UserChipProps) => (
+// ── Logout Footer ─────────────────────────────────────────────
+const LogoutFooter = ({ onLogoutClick }: { onLogoutClick: () => void }) => (
   <div style={{
     display: "flex",
-    justifyContent: "center",
-    padding: "12px 16px",
-    margin: 0,
+    alignItems: "center",
+    gap: 12,
+    padding: "16px 20px",
+    background: "#fff",
   }}>
     <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      padding: "5px 16px 5px 5px",
-      background: "#ffe5d9c7",
-      borderRadius: 10,
+      width: 40, height: 40, borderRadius: 12,
+      background: "#FFF0E6",
+      display: "flex", alignItems: "center",
+      justifyContent: "center", flexShrink: 0,
+      border: "1.5px solid #FFE0CC",
     }}>
-      <div style={{
-        width: 32, height: 32, borderRadius: "50%",
-        background: "#fff",
-        display: "flex", alignItems: "center",
-        justifyContent: "center", flexShrink: 0,
-      }}>
-        <img src={SparkLogo} alt="Spark" style={{ width: 18, height: "auto" }} />
-      </div>
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: "#111", letterSpacing: "-0.01em", lineHeight: 1.1, fontFamily: "'Inter', sans-serif" }}>
-          {user?.name || "Ian Palabrica"}
-        </div>
-        <div style={{ fontSize: 9, color: "#FF6B00", fontWeight: 800, textTransform: "uppercase", marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
-          {user?.role === 'spark_admin' ? 'SUPER ADMIN' : (user?.role || 'SUPER ADMIN')}
-        </div>
-      </div>
+      <img src={SparkLogo} alt="Spark" style={{ width: 22, height: "auto" }} />
     </div>
+    <button
+      onClick={onLogoutClick}
+      style={{
+        flex: 1,
+        background: "linear-gradient(135deg, #FF3D00, #FF6B00)",
+        color: "#fff",
+        border: "none",
+        borderRadius: 10,
+        padding: "10px 0",
+        fontSize: 12,
+        fontWeight: 800,
+        cursor: "pointer",
+        letterSpacing: ".08em",
+        fontFamily: "'Inter', sans-serif",
+        boxShadow: "0 4px 12px rgba(255,61,0,0.2)",
+        transition: "transform 0.2s, box-shadow 0.2s",
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 16px rgba(255,61,0,0.3)";
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLButtonElement).style.transform = "none";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 12px rgba(255,61,0,0.2)";
+      }}
+    >
+      LOGOUT
+    </button>
   </div>
 );
 
@@ -289,7 +305,7 @@ const NavContent = ({ activePage, showSidebarIcons, onItemClick }: NavContentPro
 );
 
 // ── Animated mobile dropdown ──────────────────────────────────
-const MobileDropdown = ({ open, activePage, onClose, user }: MobileDropdownProps) => {
+const MobileDropdown = ({ open, activePage, onClose, user, onLogout }: MobileDropdownProps) => {
   const { showSidebarIcons } = useTheme();
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
@@ -389,7 +405,7 @@ const MobileDropdown = ({ open, activePage, onClose, user }: MobileDropdownProps
         />
 
         <div style={{ borderTop: "1px solid #eee" }}>
-          <UserChip user={user} />
+          <LogoutFooter onLogoutClick={() => window.dispatchEvent(new CustomEvent("sa-logout-open"))} />
         </div>
       </div>
     </>
@@ -397,8 +413,15 @@ const MobileDropdown = ({ open, activePage, onClose, user }: MobileDropdownProps
 };
 
 // ── Main SASidebar ────────────────────────────────────────────
-const SASidebar = ({ open, activePage, onNavigate, user }: SASidebarProps) => {
+const SASidebar = ({ open, activePage, onNavigate, user, onLogout }: SASidebarProps) => {
   const { showSidebarIcons } = useTheme();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setShowLogoutModal(true);
+    window.addEventListener("sa-logout-open", handler);
+    return () => window.removeEventListener("sa-logout-open", handler);
+  }, []);
   return (
     <>
       <style>{`
@@ -467,9 +490,18 @@ const SASidebar = ({ open, activePage, onNavigate, user }: SASidebarProps) => {
           opacity: open ? 1 : 0,
           transition: "opacity 0.2s ease",
         }}>
-          <UserChip user={user} />
+          <LogoutFooter onLogoutClick={() => setShowLogoutModal(true)} />
         </div>
       </aside>
+
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          onLogout();
+        }}
+      />
 
       {/* Spacer */}
       <div
@@ -488,6 +520,7 @@ const SASidebar = ({ open, activePage, onNavigate, user }: SASidebarProps) => {
           activePage={activePage}
           onClose={() => window.dispatchEvent(new CustomEvent("sa-mobile-nav-close"))}
           user={user}
+          onLogout={onLogout}
         />
       </div>
     </>
