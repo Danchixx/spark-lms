@@ -261,13 +261,15 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
                 style={{ display: "none" }}
               />
 
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                style={{ position: "absolute", bottom: 4, right: 4, width: 30, height: 30, borderRadius: "50%", background: isUploading ? "#ccc" : "#FF6B00", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isUploading ? "not-allowed" : "pointer", zIndex: 5, boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }}
-              >
-                <Pencil size={14} color="white" />
-              </button>
+              {editable && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  style={{ position: "absolute", bottom: 4, right: 4, width: 30, height: 30, borderRadius: "50%", background: isUploading ? "#ccc" : "#FF6B00", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isUploading ? "not-allowed" : "pointer", zIndex: 5, boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }}
+                >
+                  <Pencil size={14} color="white" />
+                </button>
+              )}
             </div>
 
             <p style={{ fontWeight: 800, fontSize: 14, textAlign: "center", lineHeight: 1.4, color: "var(--color-text-header)", marginBottom: 2 }}>{fullName}</p>

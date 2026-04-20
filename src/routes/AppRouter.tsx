@@ -25,6 +25,7 @@ import AdminDashboard from "../pages/Admin/Dashboard";
 import AdminProfile from "../pages/Admin/Profile";
 import AdminUsers from "../pages/Admin/Users";
 import AdminAddUser from "../pages/Admin/AddUser";
+import AdminUserProfile from "../pages/Admin/UserProfile";
 import AdminCourses from "../pages/Admin/Courses";
 import AdminCourseDetails from "../pages/Admin/CourseDetails";
 import AdminApprovals from "../pages/Admin/Approvals";
@@ -145,6 +146,7 @@ const AppRoutes = () => {
         <Route path="/:company/profile" element={<ProtectedRoute><ProfileRouter /></ProtectedRoute>} />
         <Route path="/:company/users" element={<ProtectedRoute><UsersRouter /></ProtectedRoute>} />
         <Route path="/:company/users/add" element={<ProtectedRoute><AdminAddUser /></ProtectedRoute>} />
+        <Route path="/:company/users/:userId" element={<ProtectedRoute><AdminUserProfile /></ProtectedRoute>} />
         <Route path="/:company/approvals" element={<ProtectedRoute><AdminApprovals /></ProtectedRoute>} />
         <Route path="/:company/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
         <Route path="/:company/audit-logs" element={<ProtectedRoute><AdminAuditLogs /></ProtectedRoute>} />

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2 } from "lucide-react";
+import { Users, User, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
@@ -113,7 +113,8 @@ const AdminUsers = () => {
             joined: joinedDateExp,
             role: roleName.replace('_', ' ').toUpperCase(),
             roleColor: roleColor,
-            originalRole: roleName
+            originalRole: roleName,
+            avatar: u.avatar_url
           };
         });
 
@@ -233,8 +234,12 @@ const AdminUsers = () => {
                     <div key={u.id} className="users-table-row">
 
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--color-bg-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <Users size={16} color="var(--color-text-muted)" />
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--color-bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid var(--color-border)" }}>
+                          {u.avatar ? (
+                            <img src={u.avatar} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <User size={16} color="var(--color-text-muted)" />
+                          )}
                         </div>
                         <div style={{ fontWeight: 700, color: "var(--color-text-header)", fontSize: 14 }}>{u.name}</div>
                       </div>
@@ -255,7 +260,7 @@ const AdminUsers = () => {
 
 
                       <div style={{ display: "flex", justifyContent: "flex-start", gap: 8 }}>
-                        <ActionButton icon={Eye} />
+                        <ActionButton icon={Eye} onClick={() => navigate(`/${slug}/users/${u.id}`)} />
                         <ActionButton icon={Edit2} disabled={u.role.toLowerCase() !== "user"} />
                         <ActionButton icon={Trash2} variant="danger" disabled={u.role.toLowerCase() !== "user"} />
                       </div>

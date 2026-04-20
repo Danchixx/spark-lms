@@ -56,7 +56,7 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
           title,
           thumbnail_url,
           status,
-          companies ( name ),
+          companies ( name, logo_url ),
           users!courses_created_by_fkey (
             roles ( name )
           ),
@@ -80,7 +80,7 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
 
         const modules = c.course_modules || [];
         const modulesCount = modules.length;
-        const unitsCount = modulesCount > 0 ? modulesCount * 3 : 0; 
+        const lessonsCount = modulesCount > 0 ? modulesCount * 3 : 0; 
         
         const creatorData = Array.isArray(c.users) ? c.users[0] : c.users;
         const roleData = creatorData?.roles;
@@ -93,11 +93,12 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
           thumbnail: c.thumbnail_url || "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&q=80&w=600",
           enrolled: assignments.length > 0 ? assignments.length.toString() : "--",
           modulesCount,
-          unitsCount,
+          lessonsCount,
           status: c.status?.toLowerCase() === 'pending' ? 'Pending' : 'Active',
           avgCompletion,
           creatorLabel: companyData?.name?.toUpperCase() || "UNKNOWN",
-          creatorRole: roleName || "Course Creator"
+          creatorRole: roleName || "Course Creator",
+          creatorLogo: companyData?.logo_url || null
         };
       });
 
