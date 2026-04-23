@@ -180,7 +180,8 @@ const AdminAddUser = () => {
         department: formData.department !== "Select Department" ? formData.department : null,
         job_title: formData.jobTitle || null,
         date_hired: formData.dateHired || null,
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        created_by: user.id
       };
 
       const { error: insertError } = await supabase
