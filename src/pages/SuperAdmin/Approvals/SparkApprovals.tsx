@@ -1,6 +1,6 @@
 // src/pages/SuperAdmin/Approvals/SparkApprovals.tsx
-import { useState } from "react";
-import { APPROVAL_COMPANIES, MOCK_PENDING_USERS } from "../../../data/mockApprovals";
+import { useState, useEffect } from "react";
+import { supabase } from "../../../lib/supabase";
 import ApprovalCompanies from "./components/ApprovalCompanies";
 import ApprovalUsers from "./components/ApprovalUsers";
 import PageTransition from "../../../components/common/PageTransition/PageTransition";
@@ -12,10 +12,11 @@ export interface ApprovalCompany {
   color: string;
   totalUsers: number;
   pendingCount: number;
+  logo_url?: string;
 }
 
 export interface ApprovalUser {
-  id: number;
+  id: string;
   name: string;
   email?: string;
   username?: string;
@@ -33,16 +34,52 @@ export interface ApprovalUser {
   department?: string;
   phone?: string;
   assignedCourses?: string[];
-  suspendReason?: string | null;
-  banReason?: string | null;
-  suspendDuration?: string;
+  deactivationReason?: string | null;
 }
 
+const COLORS = ["#FF6B00", "#e74c3c", "#8e44ad", "#2980b9", "#27ae60", "#f39c12", "#d35400"];
+
+const getAbbr = (name: string) => name.substring(0, 2).toUpperCase();
+const getColor = (id: number) => COLORS[id % COLORS.length];
+
 const SparkApprovals = () => {
+  const [companies, setCompanies] = useState<ApprovalCompany[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<ApprovalCompany | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  const fetchCompanies = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("company_approval_stats")
+      .select("*")
+      .order("name");
+
+    if (error) {
+      console.error("Error fetching companies:", error);
+    } else if (data) {
+      const formattedCompanies: ApprovalCompany[] = data.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        logo_url: c.logo_url,
+        abbr: getAbbr(c.name),
+        color: getColor(c.id),
+        totalUsers: Number(c.total_users),
+        pendingCount: Number(c.pending_count),
+      }));
+      setCompanies(formattedCompanies);
+    }
+    setLoading(false);
+  };
 
   const handleSelectCompany = (company: ApprovalCompany) => setSelectedCompany(company);
-  const handleBack = () => setSelectedCompany(null);
+  const handleBack = () => {
+    setSelectedCompany(null);
+    fetchCompanies(); // Refresh counts on back
+  };
 
   return (
     <PageTransition style={{ height: "100%", display: "flex", flex: 1 }}>
@@ -50,12 +87,15 @@ const SparkApprovals = () => {
         {selectedCompany ? (
           <ApprovalUsers
             company={selectedCompany}
-            users={(MOCK_PENDING_USERS as Record<number, ApprovalUser[]>)[selectedCompany.id] || []}
             onBack={handleBack}
           />
+        ) : loading ? (
+          <div style={{ padding: 24, textAlign: "center", color: "#888", marginTop: 40 }}>
+            Loading companies...
+          </div>
         ) : (
           <ApprovalCompanies
-            companies={APPROVAL_COMPANIES as ApprovalCompany[]}
+            companies={companies}
             onSelect={handleSelectCompany}
           />
         )}

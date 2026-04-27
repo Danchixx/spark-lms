@@ -119,3 +119,30 @@
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
 }
+
+/* ── Rich Subtext Helpers ───────────────────────────────────── */
+.stat-active-count {
+  color: #27ae60;
+  transition: color 0.3s ease;
+}
+.stat-inactive-count {
+  color: #FF6B00;
+  transition: color 0.3s ease;
+}
+.stat-sep {
+  color: #ccc;
+  margin: 0 6px;
+  transition: color 0.3s ease;
+}
+.stat-suffix {
+  color: #888;
+  margin-left: 4px;
+  transition: color 0.3s ease;
+}
+
+.sa-stat-card:hover .stat-active-count,
+.sa-stat-card:hover .stat-inactive-count,
+.sa-stat-card:hover .stat-sep,
+.sa-stat-card:hover .stat-suffix {
+  color: inherit; /* will be white/light-white from .sa-stat-card__sub */
+}

@@ -2,7 +2,7 @@
 // All users across all tenants — search, filter, suspend, ban, reactivate
 
 import { useState, useMemo, useEffect } from "react";
-import { MOCK_ALL_USERS, COMPANIES_LIST, DEPARTMENTS_LIST } from "../../../data/mockUsers";
+import { supabase } from "../../../lib/supabase";
 import PageTransition from "../../../components/common/PageTransition/PageTransition";
 import SAStatCard from "../../../components/common/SAStatCard/SAStatCard";
 
@@ -10,16 +10,16 @@ const ITEMS_PER_PAGE = 8;
 
 // ── Types ─────────────────────────────────────────────────────
 interface SparkUser {
-  id: number;
+  id: string;
   name: string;
   email: string;
   username: string;
   password?: string;
-  status: string;
+  status: "Active" | "Pending" | "Deactivated";
   companyId: number;
   company: string;
-  companyColor: string;
-  companyAbbr: string;
+  companyLogo?: string;
+  profileUrl?: string;
   department?: string;
   approvedOn?: string;
   firstName?: string;
@@ -30,24 +30,33 @@ interface SparkUser {
   jobTitle?: string;
   gender?: string;
   phone?: string;
-  suspendReason?: string | null;
+  deactivationReason?: string | null;
   banReason?: string | null;
   suspendDuration?: string;
+  createdAt?: string;
 }
 
-type ActionType = "suspended" | "banned" | "reactivated";
-type ModalType  = "suspend" | "ban";
+type ActionType = "deactivated" | "activated";
+type ModalType  = "deactivate";
 
 // ── Avatar ────────────────────────────────────────────────────
-const Avatar = ({ size = 40, color = "#ccc", abbr = "?" }: { size?: number; color?: string; abbr?: string }) => (
-  <div style={{
-    width: size, height: size, borderRadius: "50%",
-    background: color + "22", border: `2px solid ${color}55`,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: size * 0.3, fontWeight: 800, color, flexShrink: 0,
-  }}>
-    {abbr.slice(0, 2).toUpperCase()}
-  </div>
+const Avatar = ({ size = 40, logoUrl, name = "?" }: { size?: number; logoUrl?: string; name?: string }) => (
+  logoUrl ? (
+    <img src={logoUrl} alt={name} style={{
+      width: size, height: size, borderRadius: "50%",
+      objectFit: "cover", flexShrink: 0,
+      border: "1px solid #eee", background: "#fff"
+    }} />
+  ) : (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: "#f0f0f0", border: `1px solid #ddd`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.3, fontWeight: 800, color: "#888", flexShrink: 0,
+    }}>
+      {name.slice(0, 2).toUpperCase()}
+    </div>
+  )
 );
 
 // ── Status badge ──────────────────────────────────────────────
@@ -55,10 +64,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   const map: Record<string, { bg: string; color: string }> = {
     Active:      { bg: "#d5f5e0", color: "#1e8449" },
     Pending:     { bg: "#FFF0E6", color: "#FF6B00" },
-    Suspended:   { bg: "#fef9e7", color: "#d4ac0d" },
-    Banned:      { bg: "#fde8e8", color: "#922b21" },
-    Rejected:    { bg: "#f0f0f0", color: "#888"    },
-    Reactivated: { bg: "#d5f5e0", color: "#1e8449" },
+    Deactivated: { bg: "#f0f0f0", color: "#888"    },
   };
   const DEFAULT_BADGE = { bg: "#FFF0E6", color: "#FF6B00" };
   const resolved = map[status] ?? DEFAULT_BADGE;
@@ -113,14 +119,12 @@ const Select = ({ value, onChange, options, placeholder }: {
 interface ReasonModalProps {
   actionLabel: string;
   actionColor: string;
-  onConfirm: (payload: { reason: string; duration: string }) => void;
+  onConfirm: (payload: { reason: string }) => void;
   onCancel: () => void;
 }
 
 const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonModalProps) => {
-  const [reason, setReason]     = useState("");
-  const [duration, setDuration] = useState("1 week");
-  const isSuspend = actionLabel === "Suspend";
+  const [reason, setReason] = useState("");
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -140,36 +144,11 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
       }}>
         <div style={{ fontFamily: "'Inter', sans-serif",
           fontWeight: 800, fontSize: 20, color: "#222", marginBottom: 6 }}>
-          {isSuspend ? "Suspend User" : "Ban User"}
+          {actionLabel} User
         </div>
         <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
-          {isSuspend
-            ? "The user will temporarily lose access. You can reactivate them later."
-            : "The user will be permanently blocked from the system."}
+          The user will lose access to the system. You can activate them later.
         </div>
-
-        {isSuspend && (
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#555",
-              marginBottom: 6, textTransform: "uppercase", letterSpacing: ".08em" }}>
-              Duration
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {["1 week", "2 weeks", "1 month", "3 months"].map(d => (
-                <button key={d} onClick={() => setDuration(d)} style={{
-                  padding: "5px 12px", borderRadius: 20, fontSize: 12,
-                  fontWeight: 600, cursor: "pointer",
-                  border: `1.5px solid ${duration === d ? "#FF6B00" : "#ddd"}`,
-                  background: duration === d ? "#FFF0E6" : "#fff",
-                  color: duration === d ? "#FF6B00" : "#555",
-                  fontFamily: "'Inter', sans-serif", transition: "all .15s",
-                }}>
-                  {d}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#555",
@@ -177,7 +156,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
             Reason <span style={{ color: "#e74c3c" }}>*</span>
           </div>
           <textarea value={reason} onChange={e => setReason(e.target.value)}
-            placeholder={`Why is this user being ${isSuspend ? "suspended" : "banned"}?`}
+            placeholder="Why is this user being deactivated?"
             style={{
               width: "100%", height: 88, padding: "10px 14px",
               border: "1.5px solid #e0e0e0", borderRadius: 8,
@@ -199,7 +178,7 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
           }}>
             Cancel
           </button>
-          <button onClick={() => reason.trim() && onConfirm({ reason, duration })}
+          <button onClick={() => reason.trim() && onConfirm({ reason })}
             style={{
               flex: 1, padding: "10px 0",
               background: reason.trim() ? actionColor : "#ccc",
@@ -219,9 +198,8 @@ const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }: ReasonMo
 // ── Result Screen ─────────────────────────────────────────────
 const ResultScreen = ({ action }: { action: ActionType }) => {
   const map: Record<ActionType, { bg: string; label: string }> = {
-    suspended:   { bg: "#d4ac0d", label: "User suspended."  },
-    banned:      { bg: "#922b21", label: "User banned."      },
-    reactivated: { bg: "#27ae60", label: "User reactivated!" },
+    deactivated: { bg: "#000", label: "User deactivated."  },
+    activated:   { bg: "#FF6B00", label: "User activated!" },
   };
   const { bg, label } = map[action];
   return (
@@ -231,9 +209,7 @@ const ResultScreen = ({ action }: { action: ActionType }) => {
         display: "flex", alignItems: "center", justifyContent: "center" }}>
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
           stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          {action === "banned"
-            ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-            : action === "suspended"
+          {action === "deactivated"
             ? <><line x1="12" y1="5" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="#fff"/></>
             : <polyline points="20 6 9 17 4 12"/>
           }
@@ -248,12 +224,11 @@ const ResultScreen = ({ action }: { action: ActionType }) => {
 interface UserManageModalProps {
   user: SparkUser;
   onClose: () => void;
-  onSuspend: (user: SparkUser, reason: string, duration: string) => void;
-  onBan: (user: SparkUser, reason: string) => void;
-  onReactivate: (user: SparkUser) => void;
+  onDeactivate: (user: SparkUser, reason: string) => void;
+  onActivate: (user: SparkUser) => void;
 }
 
-const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: UserManageModalProps) => {
+const UserManageModal = ({ user, onClose, onDeactivate, onActivate }: UserManageModalProps) => {
   const [action, setAction]         = useState<ActionType | null>(null);
   const [showReason, setShowReason] = useState<ModalType | null>(null);
 
@@ -262,21 +237,15 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  const canSuspend    = ["Active", "Reactivated"].includes(user.status);
-  const canBan        = user.status !== "Banned";
-  const canReactivate = user.status === "Suspended";
+  const isDeactivated = user.status === "Deactivated";
 
-  const handleSuspend = ({ reason, duration }: { reason: string; duration: string }) => {
-    setShowReason(null); setAction("suspended");
-    setTimeout(() => { onSuspend(user, reason, duration); onClose(); }, 1200);
+  const handleDeactivate = ({ reason }: { reason: string }) => {
+    setShowReason(null); setAction("deactivated");
+    setTimeout(() => { onDeactivate(user, reason); onClose(); }, 1200);
   };
-  const handleBan = ({ reason }: { reason: string; duration: string }) => {
-    setShowReason(null); setAction("banned");
-    setTimeout(() => { onBan(user, reason); onClose(); }, 1200);
-  };
-  const handleReactivate = () => {
-    setAction("reactivated");
-    setTimeout(() => { onReactivate(user); onClose(); }, 1200);
+  const handleActivate = () => {
+    setAction("activated");
+    setTimeout(() => { onActivate(user); onClose(); }, 1200);
   };
 
   const Field = ({ label, value }: { label: string; value?: string | null }) => (
@@ -325,11 +294,15 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
                   <div style={{ width: 150, height: 150, borderRadius: "50%",
                     background: "rgba(0,0,0,.15)", overflow: "hidden", flexShrink: 0,
                     border: "4px solid #fff", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
-                    <svg viewBox="0 0 150 150" width="150" height="150">
-                      <rect width="150" height="150" fill="rgba(0,0,0,0.15)"/>
-                      <circle cx="75" cy="55" r="28" fill="rgba(255,255,255,0.35)"/>
-                      <ellipse cx="75" cy="135" rx="48" ry="32" fill="rgba(255,255,255,0.35)"/>
-                    </svg>
+                    {user.profileUrl ? (
+                      <img src={user.profileUrl} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <svg viewBox="0 0 150 150" width="150" height="150">
+                        <rect width="150" height="150" fill="rgba(0,0,0,0.15)"/>
+                        <circle cx="75" cy="55" r="28" fill="rgba(255,255,255,0.35)"/>
+                        <ellipse cx="75" cy="135" rx="48" ry="32" fill="rgba(255,255,255,0.35)"/>
+                      </svg>
+                    )}
                   </div>
                   <div style={{ width: "100%" }}>
                     <div style={{ fontSize: 11, color: "rgba(255,255,255,.8)", marginBottom: 4 }}>username</div>
@@ -384,61 +357,49 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
                         Access Control
                       </div>
                       <div style={{ display: "flex", gap: 8 }}>
-                        {canReactivate && (
-                          <button onClick={handleReactivate} style={{
+                        <button 
+                          onClick={() => !isDeactivated && setShowReason("deactivate")}
+                          disabled={isDeactivated}
+                          style={{
                             padding: "7px 14px", borderRadius: 8, fontSize: 12,
-                            fontWeight: 700, cursor: "pointer",
-                            fontFamily: "'Inter', sans-serif",
-                            background: "#27ae60", color: "#fff", border: "none",
+                            fontWeight: 700, fontFamily: "'Inter', sans-serif",
+                            background: isDeactivated ? "#ccc" : "#000",
+                            color: "#fff", border: "none",
+                            cursor: isDeactivated ? "not-allowed" : "pointer",
                             transition: "opacity .15s",
                           }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".85"}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}>
-                            ✓ Reactivate
-                          </button>
-                        )}
-                        {canSuspend && (
-                          <button onClick={() => setShowReason("suspend")} style={{
+                        >
+                          ⏸ Deactivate
+                        </button>
+                        <button 
+                          onClick={handleActivate} 
+                          disabled={!isDeactivated}
+                          style={{
                             padding: "7px 14px", borderRadius: 8, fontSize: 12,
-                            fontWeight: 700, cursor: "pointer",
+                            fontWeight: 700, cursor: !isDeactivated ? "not-allowed" : "pointer",
                             fontFamily: "'Inter', sans-serif",
-                            background: "#fff", color: "#d4ac0d", border: "1.5px solid #d4ac0d",
-                            transition: "background .15s",
+                            background: isDeactivated ? "#FF6B00" : "#fff", 
+                            color: isDeactivated ? "#fff" : "#FF6B00", 
+                            border: "1.5px solid #FF6B00",
+                            transition: "opacity .15s",
                           }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#fef9e7"}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#fff"}>
-                            ⏸ Suspend
-                          </button>
-                        )}
-                        {canBan && (
-                          <button onClick={() => setShowReason("ban")} style={{
-                            padding: "7px 14px", borderRadius: 8, fontSize: 12,
-                            fontWeight: 700, cursor: "pointer",
-                            fontFamily: "'Inter', sans-serif",
-                            background: "#fff", color: "#922b21", border: "1.5px solid #922b21",
-                            transition: "background .15s",
-                          }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#fde8e8"}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#fff"}>
-                            🚫 Ban
-                          </button>
-                        )}
+                        >
+                          ✓ Activate
+                        </button>
                       </div>
                     </div>
 
                     <div style={{ fontSize: 11, color: "#aaa", lineHeight: 1.6 }}>
-                      {canSuspend && "Suspend temporarily removes access. Ban permanently blocks the user."}
-                      {canReactivate && "Reactivating will restore this user's access to the system."}
-                      {user.status === "Banned" && "This user has been permanently banned from the system."}
+                      Deactivating will remove this user's access to the system. Activating will restore it.
                     </div>
 
-                    {(user.suspendReason || user.banReason) && (
+                    {(user.deactivationReason || user.banReason) && (
                       <div style={{ marginTop: 10, padding: "8px 12px", background: "#fff",
                         borderRadius: 6, border: "1px solid #e8e8e8", fontSize: 12, color: "#555" }}>
                         <span style={{ color: "#aaa", marginRight: 6 }}>
-                          {user.suspendReason ? "Suspend reason:" : "Ban reason:"}
+                          Reason:
                         </span>
-                        {user.suspendReason || user.banReason}
+                        {user.deactivationReason || user.banReason}
                       </div>
                     )}
                   </div>
@@ -461,13 +422,9 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
         </div>
       </div>
 
-      {showReason === "suspend" && (
-        <ReasonModal actionLabel="Suspend" actionColor="#d4ac0d"
-          onConfirm={handleSuspend} onCancel={() => setShowReason(null)} />
-      )}
-      {showReason === "ban" && (
-        <ReasonModal actionLabel="Ban" actionColor="#922b21"
-          onConfirm={handleBan} onCancel={() => setShowReason(null)} />
+      {showReason === "deactivate" && (
+        <ReasonModal actionLabel="Deactivate" actionColor="#000"
+          onConfirm={handleDeactivate} onCancel={() => setShowReason(null)} />
       )}
     </>
   );
@@ -475,15 +432,79 @@ const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }: User
 
 // ── Main SparkUsers ───────────────────────────────────────────
 const SparkUsers = () => {
-  const [users, setUsers]         = useState<SparkUser[]>(MOCK_ALL_USERS as SparkUser[]);
+  const [users, setUsers]         = useState<SparkUser[]>([]);
   const [manageUser, setManageUser] = useState<SparkUser | null>(null);
   const [page, setPage]           = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [companiesList, setCompaniesList] = useState<{ id: number; name: string }[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<string[]>([]);
 
   const [search, setSearch]           = useState("");
   const [companyFilter, setCompany]   = useState("");
   const [deptFilter, setDept]         = useState("");
   const [statusFilter, setStatus]     = useState("");
   const [dateFilter, setDate]         = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [{ data: cData }, { data: uData }] = await Promise.all([
+          supabase.from("companies").select("*").eq("is_archived", false),
+          supabase.from("users").select("*").eq("is_archived", false)
+        ]);
+
+        const comps = cData || [];
+        const rawUsers = uData || [];
+
+        const mappedUsers: SparkUser[] = rawUsers.map((u: any) => {
+          const comp = comps.find((c: any) => c.id === u.company_id);
+          const mappedStatus = 
+            (u.status?.toLowerCase() === "active") ? "Active" :
+            (u.status?.toLowerCase() === "pending") ? "Pending" :
+            (u.status?.toLowerCase() === "deactivated") ? "Deactivated" : "Pending";
+            
+          return {
+            id: u.id,
+            name: `${u.firstname || ''} ${u.lastname || ''}`.trim() || u.email?.split('@')[0] || "Unknown",
+            email: u.email || "",
+            username: u.email?.split('@')[0] || "",
+            password: "••••••••",
+            status: mappedStatus as "Active" | "Pending" | "Deactivated",
+            companyId: u.company_id,
+            company: comp?.name || "Unknown Company",
+            companyLogo: comp?.logo_url,
+            profileUrl: u.profile_url || u.avatar_url,
+            department: u.department,
+            approvedOn: u.created_at ? new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : undefined,
+            firstName: u.firstname,
+            lastName: u.lastname,
+            middleName: u.middlename,
+            employeeId: u.employee_id,
+            dateOfBirth: u.date_of_birth,
+            jobTitle: u.job_title,
+            gender: u.gender,
+            phone: u.contact_no,
+            deactivationReason: u.deactivation_reason,
+            createdAt: u.created_at,
+          };
+        });
+
+        setUsers(mappedUsers);
+        setCompaniesList(comps.map((c: any) => ({ id: c.id, name: c.name })));
+        
+        const depts = new Set<string>();
+        mappedUsers.forEach(u => { if (u.department) depts.add(u.department); });
+        setDepartmentsList(Array.from(depts));
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const filtered = useMemo(() => {
     let r: SparkUser[] = users;
@@ -516,20 +537,55 @@ const SparkUsers = () => {
   const paged      = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
 
   const total     = users.length;
-  const active    = users.filter(u => u.status === "Active" || u.status === "Reactivated").length;
+  const active    = users.filter(u => u.status === "Active").length;
   const pending   = users.filter(u => u.status === "Pending").length;
-  const suspended = users.filter(u => u.status === "Suspended").length;
-  const banned    = users.filter(u => u.status === "Banned").length;
+  const deactivated = users.filter(u => u.status === "Deactivated").length;
 
-  const updateUser = (id: number, patch: Partial<SparkUser>) =>
+  // Live stats calculations
+  const now = new Date();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const monthMs = 30 * 24 * 60 * 60 * 1000;
+
+  const joinedLast30 = users.filter(u => {
+    if (!u.createdAt) return false;
+    return (now.getTime() - new Date(u.createdAt).getTime()) <= monthMs;
+  }).length;
+
+  const usersThisWeek = users.filter(u => {
+    if (!u.createdAt) return false;
+    return (now.getTime() - new Date(u.createdAt).getTime()) <= weekMs;
+  });
+
+  const activeThisWeek = usersThisWeek.filter(u => u.status === "Active").length;
+  const inactiveThisWeek = usersThisWeek.filter(u => u.status !== "Active").length;
+
+  const updateUser = (id: string, patch: Partial<SparkUser>) =>
     setUsers(prev => prev.map(u => u.id === id ? { ...u, ...patch } : u));
 
-  const handleSuspend    = (u: SparkUser, reason: string, duration: string) =>
-    updateUser(u.id, { status: "Suspended", suspendReason: reason, suspendDuration: duration });
-  const handleBan        = (u: SparkUser, reason: string) =>
-    updateUser(u.id, { status: "Banned", banReason: reason });
-  const handleReactivate = (u: SparkUser) =>
-    updateUser(u.id, { status: "Reactivated", suspendReason: null });
+  const handleDeactivate = async (u: SparkUser, reason: string) => {
+    // Update local state
+    updateUser(u.id, { status: "Deactivated", deactivationReason: reason });
+    
+    // Store in the database
+    // Note: Assuming u.id maps to the user's UUID in the real implementation. 
+    // Since this component currently uses mock numeric IDs, this will fail if executed on mock users,
+    // but the logic is here for when the component is wired up to the real backend.
+    await supabase.from("users").update({
+      status: "deactivated",
+      deactivation_reason: reason
+    }).eq("id", u.id);
+  };
+
+  const handleActivate = async (u: SparkUser) => {
+    // Update local state
+    updateUser(u.id, { status: "Active", deactivationReason: undefined, banReason: undefined });
+
+    // Store in the database
+    await supabase.from("users").update({
+      status: "active",
+      deactivation_reason: null
+    }).eq("id", u.id);
+  };
 
   const getPages = (): (number | string)[] => {
     if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -571,7 +627,7 @@ const SparkUsers = () => {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
         gap: 14, marginBottom: 20 }}>
         <SAStatCard label="Total Users" value={total}
-          sub={`↑ ${Math.floor(total * 0.12)} this month`} subColor="#27ae60"
+          sub={`↑ ${joinedLast30} this month`} subColor="#27ae60"
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -582,7 +638,14 @@ const SparkUsers = () => {
             </svg>
           } />
         <SAStatCard label="Active" value={active}
-          sub={`↑ ${Math.floor(active * 0.15)} this week`} subColor="#27ae60"
+          sub={
+            <span style={{ whiteSpace: "nowrap" }}>
+              <span className="stat-active-count">↑ {activeThisWeek} active</span>
+              <span className="stat-sep">|</span>
+              <span className="stat-inactive-count">{inactiveThisWeek} inactive</span>
+              <span className="stat-suffix">this week</span>
+            </span>
+          }
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -599,18 +662,8 @@ const SparkUsers = () => {
               <polyline points="12 6 12 12 16 14"/>
             </svg>
           } />
-        <SAStatCard label="Suspended" value={suspended}
-          sub={suspended > 0 ? `${suspended} temporarily blocked` : "None suspended"} subColor="#d4ac0d"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="10" y1="15" x2="10" y2="9"/>
-              <line x1="14" y1="15" x2="14" y2="9"/>
-            </svg>
-          } />
-        <SAStatCard label="Banned" value={banned}
-          sub={banned > 0 ? `${banned} permanently blocked` : "None banned"} subColor="#922b21"
+        <SAStatCard label="Deactivated" value={deactivated}
+          sub={deactivated > 0 ? `${deactivated} removed from system` : "None deactivated"} subColor="#888"
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -662,14 +715,14 @@ const SparkUsers = () => {
               letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6 }}>Company</div>
             <Select value={companyFilter} onChange={v => { setCompany(v); setPage(1); }}
               placeholder="All Companies"
-              options={(COMPANIES_LIST as Array<{ id: number; name: string }>).map(c => ({ value: String(c.id), label: c.name }))} />
+              options={companiesList.map(c => ({ value: String(c.id), label: c.name }))} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#888",
               letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6 }}>Department / Faculty</div>
             <Select value={deptFilter} onChange={v => { setDept(v); setPage(1); }}
               placeholder="All Departments"
-              options={(DEPARTMENTS_LIST as string[]).map(d => ({ value: d, label: d }))} />
+              options={departmentsList.map(d => ({ value: d, label: d }))} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#888",
@@ -691,10 +744,7 @@ const SparkUsers = () => {
               options={[
                 { value: "Active",      label: "Active"      },
                 { value: "Pending",     label: "Pending"     },
-                { value: "Suspended",   label: "Suspended"   },
-                { value: "Banned",      label: "Banned"      },
-                { value: "Rejected",    label: "Rejected"    },
-                { value: "Reactivated", label: "Reactivated" },
+                { value: "Deactivated", label: "Deactivated" },
               ]} />
           </div>
           {hasFilters && (
@@ -761,7 +811,7 @@ const SparkUsers = () => {
                 onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = "transparent"}>
                 <td style={{ padding: "13px 18px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <Avatar size={38} color={user.companyColor} abbr={user.companyAbbr} />
+                    <Avatar size={38} logoUrl={user.profileUrl} name={user.name} />
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14, color: "#222" }}>{user.name}</div>
                       <div style={{ fontSize: 12, color: "#aaa", marginTop: 1 }}>{user.email}</div>
@@ -770,8 +820,11 @@ const SparkUsers = () => {
                 </td>
                 <td style={{ padding: "13px 18px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%",
-                      background: user.companyColor, flexShrink: 0 }} />
+                    {user.companyLogo ? (
+                      <img src={user.companyLogo} alt={user.company} style={{ width: 14, height: 14, borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ccc", flexShrink: 0 }} />
+                    )}
                     <span style={{ fontSize: 13, color: "#555", fontWeight: 500 }}>
                       {user.company}
                     </span>
@@ -787,25 +840,22 @@ const SparkUsers = () => {
                   {user.approvedOn || <span style={{ color: "#ccc" }}>—</span>}
                 </td>
                 <td style={{ padding: "13px 18px" }}>
-                  {["Active", "Suspended", "Reactivated", "Banned"].includes(user.status) ? (
+                  {["Active", "Deactivated", "Pending"].includes(user.status) ? (
                     <button onClick={() => setManageUser(user)} style={{
-                      background: user.status === "Suspended" ? "#d4ac0d"
-                               : user.status === "Banned"    ? "#922b21"
-                               : "#FF6B00",
+                      background: "#FF6B00",
                       color: "#fff", border: "none", borderRadius: 8,
-                      padding: "7px 16px", fontWeight: 700, fontSize: 12,
+                      padding: "8px", fontWeight: 700, fontSize: 12,
                       cursor: "pointer", fontFamily: "'Inter', sans-serif",
-                      display: "flex", alignItems: "center", gap: 5,
+                      display: "flex", alignItems: "center", justifyContent: "center",
                       transition: "opacity .15s",
                     }}
                       onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".85"}
                       onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
                         <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
                       </svg>
-                      MANAGE
                     </button>
                   ) : (
                     <span style={{ fontSize: 12, color: "#ccc", fontStyle: "italic" }}>
@@ -849,9 +899,8 @@ const SparkUsers = () => {
         <UserManageModal
           user={manageUser}
           onClose={() => setManageUser(null)}
-          onSuspend={handleSuspend}
-          onBan={handleBan}
-          onReactivate={handleReactivate}
+          onDeactivate={handleDeactivate}
+          onActivate={handleActivate}
         />
       )}
     </div>

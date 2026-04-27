@@ -12,7 +12,7 @@ export interface SAStatCardProps {
   /** Icon node rendered in the icon bubble */
   icon: React.ReactNode;
   /** Small subtitle below the value */
-  sub?: string;
+  sub?: React.ReactNode;
   /** Override subtitle color in resting state (default #FF6B00) */
   subColor?: string;
   /** Optional click handler */
