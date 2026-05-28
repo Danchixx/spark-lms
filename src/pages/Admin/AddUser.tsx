@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Briefcase, Mail, CheckCircle2, ChevronRight, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, User, Briefcase, Mail, CheckCircle2, ChevronRight, Check, Loader2, Search, BookOpen } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useAdminCourseContext } from "../../context/AdminCourseContext";
 import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
@@ -35,19 +36,17 @@ const InputBox = ({ label, value, onChange, type = "text", readOnly, required }:
   </div>
 );
 
-const MOCK_COURSES = [
-  { id: 1, title: "Sales Fundamentals", stats: "5 Modules • 18 Units", icon: Briefcase },
-  { id: 2, title: "Customer Service Pro", stats: "5 Modules • 18 Units", icon: User },
-  { id: 3, title: "Digital Marketing", stats: "5 Modules • 18 Units", icon: Mail },
-  { id: 4, title: "Technical Onboard", stats: "5 Modules • 18 Units", icon: CheckCircle2 },
-  { id: 5, title: "Data Privacy and Security", stats: "5 Modules • 18 Units", icon: Briefcase },
-];
-
 const AdminAddUser = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  
+  const { adminCourses, fetchAdminCourses } = useAdminCourseContext();
+  
+  useEffect(() => {
+    fetchAdminCourses();
+  }, [fetchAdminCourses]);
   
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -181,7 +180,8 @@ const AdminAddUser = () => {
         department: formData.department !== "Select Department" ? formData.department : null,
         job_title: formData.jobTitle || null,
         date_hired: formData.dateHired || null,
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        created_by: user.id
       };
 
       const { error: insertError } = await supabase
@@ -308,17 +308,17 @@ const AdminAddUser = () => {
 
                         <div style={{ display: "flex", gap: 12 }}>
                             <div style={{ width: 20, flexShrink: 0, display: "flex", justifyContent: "center", marginTop: 2 }}>
-                                <Briefcase size={14} color="var(--color-text-muted)" />
+                                <BookOpen size={14} color="var(--color-text-muted)" />
                             </div>
                             <div>
                                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Courses</div>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", marginTop: 2, display: "flex", flexDirection: "column", gap: 6 }}>
                                     {formData.selectedCourses.length === 0 ? "None assigned" : (
                                         formData.selectedCourses.map(id => {
-                                            const course = MOCK_COURSES.find(c => c.id === id);
+                                            const course = adminCourses.find(c => c.id === id);
                                             return course ? (
                                                 <div key={id} style={{ background: "#FFE1CC", color: "#B34A00", padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700, display: "inline-block" }}>
-                                                    {course.title}
+                                                    {course.name}
                                                 </div>
                                             ) : null;
                                         })
@@ -447,18 +447,19 @@ const AdminAddUser = () => {
                         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                             <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden" }}>
                                 <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: 12 }}>
-                                    <Briefcase size={18} color="var(--color-text-header)" />
+                                    <BookOpen size={18} color="var(--color-text-header)" />
                                     <h2 style={{ fontSize: 15, margin: 0, color: "var(--color-text-header)", fontWeight: 700 }}>Assign Courses</h2>
                                 </div>
                                 <div style={{ padding: 24 }}>
                                     
                                     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", border: "1px solid var(--color-border)", borderRadius: 8, marginBottom: 24 }}>
-                                        <span style={{ color: "var(--color-text-muted)" }}>🔍</span>
+                                        <Search size={16} color="var(--color-text-muted)" />
                                         <input type="text" placeholder="Search available courses..." style={{ border: "none", outline: "none", background: "transparent", color: "var(--color-text)", flex: 1, fontSize: 13 }} />
                                     </div>
 
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                                        {MOCK_COURSES.map(course => {
+                                    <div style={{ maxHeight: 420, overflowY: "auto", paddingRight: 4, margin: "0 -4px", padding: "4px" }}>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                                        {adminCourses.map(course => {
                                             const isSelected = formData.selectedCourses.includes(course.id);
                                             return (
                                                 <div 
@@ -473,11 +474,19 @@ const AdminAddUser = () => {
                                                     }}
                                                 >
                                                     <div>
-                                                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 4 }}>{course.title}</div>
-                                                        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{course.stats}</div>
+                                                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 4 }}>{course.name}</div>
+                                                        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{course.modulesCount} Modules • {course.lessonsCount} Lessons</div>
                                                     </div>
                                                     <div style={{ position: "relative" }}>
-                                                        <course.icon size={32} color={isSelected ? "#FF6B00" : "var(--color-text-header)"} />
+                                                        {course.creatorLogo ? (
+                                                            <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", border: `2px solid ${isSelected ? "#FF6B00" : "var(--color-border)"}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 6 }}>
+                                                                <img src={course.creatorLogo} alt={course.creatorLabel} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--color-bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${isSelected ? "#FF6B00" : "var(--color-border)"}` }}>
+                                                                <BookOpen size={22} color="var(--color-text-muted)" />
+                                                            </div>
+                                                        )}
                                                         {isSelected && (
                                                             <div style={{ position: "absolute", top: -8, right: -8, background: "#FF6B00", borderRadius: "50%", padding: 2 }}>
                                                                 <Check size={12} color="#fff" strokeWidth={3} />
@@ -487,6 +496,7 @@ const AdminAddUser = () => {
                                                 </div>
                                             );
                                         })}
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -497,7 +507,7 @@ const AdminAddUser = () => {
                                             <div style={{ fontSize: 13, color: "var(--color-text-muted)", fontStyle: "italic", display: "flex", alignItems: "center" }}>No courses selected.</div>
                                         ) : (
                                             formData.selectedCourses.map(id => {
-                                                const title = MOCK_COURSES.find(c => c.id === id)?.title;
+                                                const title = adminCourses.find(c => c.id === id)?.name;
                                                 return (
                                                     <div key={id} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 16, padding: "6px 12px", fontSize: 13, fontWeight: 600 }}>
                                                         {title}
@@ -569,7 +579,7 @@ const AdminAddUser = () => {
                                         <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
                                             {formData.selectedCourses.length === 0 ? <div style={{ fontSize: 13, color: "var(--color-text-muted)", fontStyle: "italic" }}>No courses assigned.</div> : (
                                                 formData.selectedCourses.map(id => {
-                                                    const title = MOCK_COURSES.find(c => c.id === id)?.title;
+                                                    const title = adminCourses.find(c => c.id === id)?.name;
                                                     return (
                                                         <div key={id} style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--color-border)", borderRadius: 16, padding: "6px 12px", fontSize: 13, fontWeight: 600 }}>
                                                             <div style={{ width: 8, height: 8, background: "#FF6B00", borderRadius: "50%" }} />
