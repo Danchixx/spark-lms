@@ -1,5 +1,6 @@
 import { Play, ArrowRight } from "lucide-react";
 import Button from "../../ui/Button/Button";
+import "../../ui/RichTextEditor/RichTextEditor.css";
 import "./LessonCard.css";
 
 interface LessonCardProps {
@@ -38,23 +39,12 @@ const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProc
         </>
       )}
 
-      <div className="lesson-content-body">
-        <h3>What is AIDA Model?</h3>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-          tempor incididunt ut labore et dolore magna aliqua.
-        </p>
-        
-        <h3>Lorem Ipsum</h3>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-          tempor incididunt ut labore et dolore magna aliqua.
-        </p>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-          tempor incididunt ut labore et dolore magna aliqua.
-        </p>
-      </div>
+      {lesson.type === "reading" && (
+        <div 
+          className="lesson-content-body tiptap-content" 
+          dangerouslySetInnerHTML={{ __html: lesson.content || "<p>No content provided for this lesson.</p>" }}
+        />
+      )}
 
       {lesson.type === "assessment" && (
         <div style={{

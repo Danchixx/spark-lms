@@ -1,5 +1,5 @@
 // ─── Roles ───────────────────────────────────────────────────
-export type RoleName = 'user' | 'admin' | 'approver' | 'creator' | 'spark_admin';
+export type RoleName = 'user' | 'admin' | 'approver' | 'creator' | 'course creator' | 'spark_admin';
 
 export type Role = {
   id: number;

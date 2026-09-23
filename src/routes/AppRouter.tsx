@@ -27,10 +27,16 @@ import AdminUsers from "../pages/Admin/Users";
 import AdminAddUser from "../pages/Admin/AddUser";
 import AdminUserProfile from "../pages/Admin/UserProfile";
 import AdminCourses from "../pages/Admin/Courses";
+import CreatorCourses from "../pages/Creator/CreatorCourses";
 import AdminCourseDetails from "../pages/Admin/CourseDetails";
+import CreatorCreateCourse from "../pages/Creator/CreateCourse";
+import CreatorCourseBuilder from "../pages/Creator/CourseBuilder";
+import CreatorLessonEditor from "../pages/Creator/LessonEditor";
 import AdminApprovals from "../pages/Admin/Approvals";
 import AdminReports from "../pages/Admin/Reports";
 import AdminAuditLogs from "../pages/Admin/AuditLogs";
+
+import CreatorDashboard from "../pages/Creator/CreatorDashboard";
 
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 
@@ -45,7 +51,7 @@ const DashboardRouter = () => {
   switch (user.role) {
     case "admin": return <AdminDashboard />;
     case "approver": return <div>Approver Dashboard — coming soon</div>;
-    case "creator": return <div>Creator Dashboard — coming soon</div>;
+    case "course creator": return <CreatorDashboard />;
     case "spark_admin": return <Navigate to="/superadmin/dashboard" replace />;
     default: return <UserDashboard />;
   }
@@ -74,6 +80,7 @@ const CoursesRouter = () => {
   if (!user) return <Navigate to="/" replace />;
   switch (user.role) {
     case "admin": return <AdminCourses />;
+    case "course creator": return <CreatorCourses />;
     default: return <UserCourses />;
   }
 };
@@ -152,6 +159,9 @@ const AppRoutes = () => {
         <Route path="/:company/audit-logs" element={<ProtectedRoute><AdminAuditLogs /></ProtectedRoute>} />
         <Route path="/:company/courses" element={<ProtectedRoute><CoursesRouter /></ProtectedRoute>} />
         <Route path="/:company/courses/details" element={<ProtectedRoute><CourseDetailsRouter /></ProtectedRoute>} />
+        <Route path="/:company/courses/create" element={<ProtectedRoute role="course creator"><CreatorCreateCourse /></ProtectedRoute>} />
+        <Route path="/:company/courses/builder" element={<ProtectedRoute role="course creator"><CreatorCourseBuilder /></ProtectedRoute>} />
+        <Route path="/:company/courses/lesson-editor" element={<ProtectedRoute role="course creator"><CreatorLessonEditor /></ProtectedRoute>} />
         <Route path="/:company/courses/modules" element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
         <Route path="/:company/courses/lessons" element={<ProtectedRoute><UserModuleLessons /></ProtectedRoute>} />
         <Route path="/:company/courses/assessment" element={<ProtectedRoute><UserModuleAssessment /></ProtectedRoute>} />

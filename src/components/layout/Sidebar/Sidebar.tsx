@@ -41,6 +41,11 @@ const ADMIN_NAV = [
   { section: "SYSTEM", items: ["Settings", "Audit Logs"] },
 ];
 
+const CREATOR_NAV = [
+  { section: "MAIN", items: ["Dashboard", "Profile", "Courses"] },
+  { section: "SYSTEM", items: ["Settings", "Contact"] },
+];
+
 import type { RoleName } from "../../../types";
 
 const BREAKPOINT = 1024;
@@ -102,7 +107,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
     if (window.innerWidth <= BREAKPOINT) onClose?.();
   };
 
-  const roleNav = user?.role === "admin" ? ADMIN_NAV : USER_NAV;
+  const roleNav = user?.role === "admin" ? ADMIN_NAV : user?.role === "course creator" ? CREATOR_NAV : USER_NAV;
 
   const filteredNav = search.trim()
     ? roleNav.map((group) => ({

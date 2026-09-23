@@ -1,0 +1,572 @@
+/* ─── Lesson Editor Page ──────────────────────────────────── */
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ─── Main Editor Card ────────────────────────────────────── */
+
+.editor-main-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.editor-main-header {
+  padding: 24px 28px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editor-title-input {
+  font-size: 20px;
+  font-weight: 800;
+  font-family: inherit;
+  color: var(--color-text-header);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  width: 100%;
+}
+
+.editor-title-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.editor-title-input:focus {
+  background: var(--color-bg-subtle);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin: -6px -12px;
+}
+
+/* ─── Type Tabs ───────────────────────────────────────────── */
+
+.editor-type-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1.5px solid var(--color-border);
+}
+
+.editor-type-tab {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+
+.editor-type-tab:hover {
+  color: var(--color-text-header);
+}
+
+.editor-type-tab.active {
+  color: #FF6B00;
+}
+
+.editor-type-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1.5px;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: #FF6B00;
+  border-radius: 2px 2px 0 0;
+}
+
+/* ─── Editor Body ─────────────────────────────────────────── */
+
+.editor-body {
+  padding: 24px 28px;
+}
+
+/* ─── Video Editor ────────────────────────────────────────── */
+
+.editor-video-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editor-video-input-row {
+  display: flex;
+  gap: 12px;
+}
+
+.editor-video-input {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.editor-video-input:focus {
+  border-color: #FF6B00;
+}
+
+.editor-video-preview {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-video-preview iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.editor-video-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  height: 100%;
+  min-height: 300px;
+}
+
+/* ─── Reading Editor ──────────────────────────────────────── */
+
+.editor-reading-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--color-border);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: var(--color-bg-subtle);
+}
+
+.editor-toolbar-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.editor-toolbar-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-header);
+}
+
+.editor-toolbar-btn.active {
+  background: rgba(255, 107, 0, 0.1);
+  color: #FF6B00;
+}
+
+.editor-toolbar-separator {
+  width: 1px;
+  background: var(--color-border);
+  margin: 4px 6px;
+}
+
+.editor-reading-textarea {
+  width: 100%;
+  min-height: 400px;
+  padding: 16px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.7;
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  border: 1.5px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.editor-reading-textarea:focus {
+  border-color: #FF6B00;
+}
+
+/* ─── Assessment Builder ──────────────────────────────────── */
+
+.editor-assessment-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.editor-assessment-config {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.editor-assessment-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editor-assessment-config-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.editor-assessment-config-input {
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  outline: none;
+}
+
+.editor-assessment-config-input:focus {
+  border-color: #FF6B00;
+}
+
+/* ─── Question Card ───────────────────────────────────────── */
+
+.editor-question-card {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  background: var(--color-bg-subtle);
+  transition: border-color 0.2s;
+}
+
+.editor-question-card:hover {
+  border-color: var(--color-text-muted);
+}
+
+.editor-question-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.editor-question-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FF6B00;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.editor-question-input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  outline: none;
+}
+
+.editor-question-input:focus {
+  border-color: #FF6B00;
+}
+
+.editor-question-delete {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.editor-question-delete:hover {
+  background: #FFF0F0;
+  color: #d32f2f;
+  border-color: #ffcdd2;
+}
+
+/* ─── Choice Row ──────────────────────────────────────────── */
+
+.editor-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 40px;
+}
+
+.editor-choice-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editor-choice-correct-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.editor-choice-correct-btn.correct {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: #fff;
+}
+
+.editor-choice-input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  outline: none;
+}
+
+.editor-choice-input:focus {
+  border-color: #FF6B00;
+}
+
+.editor-choice-delete {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.editor-choice-delete:hover {
+  color: #d32f2f;
+}
+
+.editor-add-choice-btn {
+  margin-left: 40px;
+  margin-top: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.editor-add-choice-btn:hover {
+  border-color: #FF6B00;
+  color: #FF6B00;
+}
+
+.editor-add-question-btn {
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 2px dashed var(--color-border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.editor-add-question-btn:hover {
+  border-color: #FF6B00;
+  color: #FF6B00;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────── */
+
+.editor-sidebar-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.editor-sidebar-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.editor-sidebar-lesson-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.editor-sidebar-lesson-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.editor-sidebar-lesson-item.active {
+  background: var(--sidebar-active-bg);
+}
+
+.editor-sidebar-lesson-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.editor-sidebar-lesson-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.editor-sidebar-lesson-name.active {
+  font-weight: 700;
+  color: #FF6B00;
+}
+
+/* ─── Info Rows ───────────────────────────────────────────── */
+
+.editor-info-rows {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+.editor-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.editor-info-row:last-child {
+  border-bottom: none;
+}
+
+.editor-info-label {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.editor-info-value {
+  color: var(--color-text-header);
+  font-weight: 500;
+}
+
+/* ─── Responsive ──────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .editor-main-header {
+    padding: 20px;
+  }
+
+  .editor-body {
+    padding: 20px;
+  }
+
+  .editor-video-input-row {
+    flex-direction: column;
+  }
+
+  .editor-assessment-config {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-choices {
+    margin-left: 0;
+  }
+
+  .editor-add-choice-btn {
+    margin-left: 0;
+  }
+}
