@@ -624,9 +624,9 @@ const LessonEditor = () => {
                   </div>
                 </div>
 
-                {/* Module Lessons List */}
+                {/* Module Content List */}
                 <div className="editor-sidebar-card">
-                  <div className="editor-sidebar-title">{currentModule.title} — Lessons</div>
+                  <div className="editor-sidebar-title">{currentModule.title} — Content Items</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {currentModule.lessons?.map((lsn: EditorLesson, idx: number) => {
                       const isActive = lsn.id === lessonId;
@@ -639,7 +639,7 @@ const LessonEditor = () => {
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <div className="editor-sidebar-lesson-dot" style={{ background: isActive ? "#FF6B00" : "var(--color-border)" }} />
                             <span className={`editor-sidebar-lesson-name ${isActive ? "active" : ""}`}>
-                              Lesson {idx + 1}: {lsn.title}
+                              Content {idx + 1}: {lsn.title}
                             </span>
                           </div>
                         </div>
@@ -647,7 +647,7 @@ const LessonEditor = () => {
                     })}
 
                     {(!currentModule.lessons || currentModule.lessons.length === 0) && (
-                      <div style={{ fontSize: 13, color: "var(--color-text-muted)", padding: "8px 0" }}>No lessons in this module.</div>
+                      <div style={{ fontSize: 13, color: "var(--color-text-muted)", padding: "8px 0" }}>No content in this module.</div>
                     )}
                   </div>
                 </div>

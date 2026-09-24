@@ -145,6 +145,33 @@ const CourseBuilder = () => {
     setModules(modules.map((m) => (m.id === moduleId ? { ...m, title: newTitle } : m)));
   };
 
+  const updateModuleDesc = (moduleId: number, newDesc: string) => {
+    setModules(modules.map((m) => (m.id === moduleId ? { ...m, description: newDesc } : m)));
+  };
+
+  const [draggedModuleIndex, setDraggedModuleIndex] = useState<number | null>(null);
+
+  const handleModuleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedModuleIndex(index);
+    // Setting data is required in some browsers (like Firefox) for drag to work
+    e.dataTransfer.setData("text/plain", index.toString());
+  };
+
+  const handleModuleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedModuleIndex === null || draggedModuleIndex === index) return;
+    const newModules = [...modules];
+    const draggedItem = newModules[draggedModuleIndex];
+    newModules.splice(draggedModuleIndex, 1);
+    newModules.splice(index, 0, draggedItem);
+    setModules(newModules);
+    setDraggedModuleIndex(index);
+  };
+
+  const handleModuleDragEnd = () => {
+    setDraggedModuleIndex(null);
+  };
+
   // ─── Lesson Actions ────────────────────────────────────────
   const addLesson = (moduleId: number) => {
     if (!newLessonTitle.trim()) return;
@@ -194,11 +221,11 @@ const CourseBuilder = () => {
 
   // ─── Helpers ───────────────────────────────────────────────
   const showToast = (msg: string) => {
-    setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const totalLessons = modules.reduce((acc, m) => acc + m.lessons.length, 0);
+  const totalContent = modules.reduce((acc, m) => acc + m.lessons.length, 0);
+  const totalLessons = modules.reduce((acc, m) => acc + m.lessons.filter((l) => l.type !== "assessment").length, 0);
   const totalAssessments = modules.reduce((acc, m) => acc + m.lessons.filter((l) => l.type === "assessment").length, 0);
 
   const handleSave = () => {
@@ -243,16 +270,27 @@ const CourseBuilder = () => {
             {/* Course Banner */}
             <div className="builder-banner">
               <div
-                className="builder-banner-image"
+                className="builder-banner-image editable-thumbnail"
+                onClick={() => {
+                  const url = window.prompt("Enter new thumbnail URL:", course.thumbnail_url || "");
+                  if (url !== null) setCourse({ ...course, thumbnail_url: url });
+                }}
                 style={{
                   background: course.thumbnail_url
                     ? `url(${course.thumbnail_url}) center/cover no-repeat`
                     : "linear-gradient(135deg, #FF9800 0%, #FFB74D 100%)",
+                  position: "relative",
+                  cursor: "pointer"
                 }}
-              />
+              >
+                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }} 
+                     onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                     onMouseLeave={(e) => e.currentTarget.style.opacity = "0"}>
+                  <Edit3 size={32} color="#fff" />
+                </div>
+              </div>
               <div className="builder-banner-info">
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 28 }}>{course.icon_emoji || "📘"}</span>
                   <div>
                     <h1 className="builder-banner-title">{course.title}</h1>
                     <p className="builder-banner-desc">{course.description || "No description provided."}</p>
@@ -287,7 +325,15 @@ const CourseBuilder = () => {
                   const isExpanded = expandedModule === module.id;
 
                   return (
-                    <div key={module.id} className={`builder-module ${isExpanded ? "expanded" : ""}`}>
+                    <div 
+                      key={module.id} 
+                      className={`builder-module ${isExpanded ? "expanded" : ""}`}
+                      draggable
+                      onDragStart={(e) => handleModuleDragStart(e, index)}
+                      onDragOver={(e) => handleModuleDragOver(e, index)}
+                      onDragEnd={handleModuleDragEnd}
+                      style={{ opacity: draggedModuleIndex === index ? 0.5 : 1 }}
+                    >
                       {/* Module Header */}
                       <div className="builder-module-header" onClick={() => setExpandedModule(isExpanded ? null : module.id)}>
                         <div className={`builder-module-number ${isExpanded ? "expanded" : ""}`}>
@@ -304,9 +350,18 @@ const CourseBuilder = () => {
                               placeholder="Module title..."
                             />
                           </div>
-                          <div className="builder-module-subtitle">
-                            {module.lessons.length} {module.lessons.length === 1 ? "lesson" : "lessons"}
-                            {module.description && ` · ${module.description}`}
+                          <div className="builder-module-subtitle" style={{ display: "flex", alignItems: "center" }}>
+                            <span style={{ marginRight: 8, whiteSpace: "nowrap" }}>
+                              {module.lessons.filter(l => l.type !== "assessment").length} {module.lessons.filter(l => l.type !== "assessment").length === 1 ? "lesson" : "lessons"} ·
+                            </span>
+                            <input
+                              className="builder-module-desc-input"
+                              value={module.description || ""}
+                              onChange={(e) => updateModuleDesc(module.id, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              placeholder="Add a short subtitle..."
+                              style={{ border: "none", background: "transparent", color: "inherit", outline: "none", flex: 1, minWidth: 0, fontFamily: "inherit" }}
+                            />
                           </div>
                         </div>
 
@@ -344,17 +399,13 @@ const CourseBuilder = () => {
                               className="builder-lesson-item"
                               onClick={() => openLessonEditor(lesson, module)}
                             >
-                              <div className={`builder-lesson-icon ${lesson.type}`}>
+                              <div style={{ color: "var(--color-text-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <LessonTypeIcon type={lesson.type} />
                               </div>
 
                               <div className="builder-lesson-info">
                                 <div className="builder-lesson-title">{lesson.title}</div>
                               </div>
-
-                              <span className={`builder-lesson-type-badge ${lesson.type}`}>
-                                {lesson.type}
-                              </span>
 
                               <div className="builder-lesson-actions">
                                 <button
@@ -421,12 +472,12 @@ const CourseBuilder = () => {
                       <div className="builder-stat-label">Modules</div>
                     </div>
                     <div className="builder-stat-item">
-                      <div className="builder-stat-value">{totalLessons}</div>
-                      <div className="builder-stat-label">Lessons</div>
+                      <div className="builder-stat-value">{totalContent}</div>
+                      <div className="builder-stat-label">Content</div>
                     </div>
                     <div className="builder-stat-item">
-                      <div className="builder-stat-value">{totalLessons - totalAssessments}</div>
-                      <div className="builder-stat-label">Content</div>
+                      <div className="builder-stat-value">{totalLessons}</div>
+                      <div className="builder-stat-label">Lessons</div>
                     </div>
                     <div className="builder-stat-item">
                       <div className="builder-stat-value">{totalAssessments}</div>
