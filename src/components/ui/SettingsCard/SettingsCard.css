@@ -43,7 +43,7 @@
 }
 
 .settings-nav-card-item.active {
-  background: var(--color-bg-muted);
+  background: var(--sidebar-active-bg);
   color: var(--sidebar-active-text);
   font-weight: 700;
   border-left: 4px solid #FF6B00;
