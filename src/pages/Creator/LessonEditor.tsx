@@ -26,7 +26,9 @@ type EditorQuestion = {
   id: number;
   question_text: string;
   position: number;
-  choices: EditorChoice[];
+  question_type: "multiple_choice" | "true_false" | "identification" | "enumeration" | "essay";
+  choices: EditorChoice[]; // For multiple choice & true/false
+  correct_answers: string[]; // For identification & enumeration
 };
 
 type EditorLesson = {
@@ -47,21 +49,23 @@ type EditorModule = {
 // ─── Mock Assessment Data ───────────────────────────────────
 const MOCK_QUESTIONS: EditorQuestion[] = [
   {
-    id: 1, question_text: "What is the first step in the sales funnel?", position: 1,
+    id: 1, question_text: "What is the first step in the sales funnel?", position: 1, question_type: "multiple_choice",
     choices: [
       { id: 1, choice_text: "Awareness", is_correct: true },
       { id: 2, choice_text: "Decision", is_correct: false },
       { id: 3, choice_text: "Retention", is_correct: false },
       { id: 4, choice_text: "Purchase", is_correct: false },
     ],
+    correct_answers: [],
   },
   {
-    id: 2, question_text: "Which technique is most effective for building rapport?", position: 2,
+    id: 2, question_text: "Which technique is most effective for building rapport?", position: 2, question_type: "multiple_choice",
     choices: [
       { id: 5, choice_text: "Active listening", is_correct: true },
       { id: 6, choice_text: "Hard selling", is_correct: false },
       { id: 7, choice_text: "Price matching", is_correct: false },
     ],
+    correct_answers: [],
   },
 ];
 
@@ -130,10 +134,12 @@ const LessonEditor = () => {
       id: ++nextQuestionId,
       question_text: "",
       position: questions.length + 1,
+      question_type: "multiple_choice",
       choices: [
         { id: ++nextChoiceId, choice_text: "", is_correct: true },
         { id: ++nextChoiceId, choice_text: "", is_correct: false },
       ],
+      correct_answers: [],
     };
     setQuestions([...questions, newQ]);
   };
@@ -174,6 +180,57 @@ const LessonEditor = () => {
         ? { ...q, choices: q.choices.map((c) => ({ ...c, is_correct: c.id === cId })) }
         : q
     ));
+  };
+
+  const updateQuestionType = (qId: number, type: EditorQuestion["question_type"]) => {
+    setQuestions(questions.map((q) => {
+      if (q.id !== qId) return q;
+      const updatedQ = { ...q, question_type: type };
+      
+      // Setup default choices/answers based on type
+      if (type === "true_false") {
+        updatedQ.choices = [
+          { id: ++nextChoiceId, choice_text: "True", is_correct: true },
+          { id: ++nextChoiceId, choice_text: "False", is_correct: false },
+        ];
+        updatedQ.correct_answers = [];
+      } else if (type === "identification" || type === "enumeration") {
+        updatedQ.choices = [];
+        updatedQ.correct_answers = type === "identification" ? [""] : ["", "", ""];
+      } else if (type === "essay") {
+        updatedQ.choices = [];
+        updatedQ.correct_answers = [];
+      } else if (type === "multiple_choice" && q.choices.length === 0) {
+        updatedQ.choices = [
+          { id: ++nextChoiceId, choice_text: "", is_correct: true },
+          { id: ++nextChoiceId, choice_text: "", is_correct: false },
+        ];
+      }
+      return updatedQ;
+    }));
+  };
+
+  const updateCorrectAnswer = (qId: number, index: number, text: string) => {
+    setQuestions(questions.map((q) => {
+      if (q.id !== qId) return q;
+      const newAnswers = [...q.correct_answers];
+      newAnswers[index] = text;
+      return { ...q, correct_answers: newAnswers };
+    }));
+  };
+
+  const addCorrectAnswerField = (qId: number) => {
+    setQuestions(questions.map((q) =>
+      q.id === qId ? { ...q, correct_answers: [...q.correct_answers, ""] } : q
+    ));
+  };
+
+  const removeCorrectAnswerField = (qId: number, index: number) => {
+    setQuestions(questions.map((q) => {
+      if (q.id !== qId) return q;
+      const newAnswers = q.correct_answers.filter((_, i) => i !== index);
+      return { ...q, correct_answers: newAnswers };
+    }));
   };
 
   // ─── Save Handler ──────────────────────────────────────────
@@ -381,45 +438,129 @@ const LessonEditor = () => {
                       {/* Questions */}
                       {questions.map((q) => (
                         <div key={q.id} className="editor-question-card">
-                          <div className="editor-question-header">
+                          <div className="editor-question-header" style={{ flexWrap: "wrap", gap: 12 }}>
                             <div className="editor-question-number">{q.position}</div>
                             <input
                               className="editor-question-input"
+                              style={{ flex: 1, minWidth: 200 }}
                               value={q.question_text}
                               onChange={(e) => updateQuestionText(q.id, e.target.value)}
                               placeholder="Type your question here..."
                             />
+                            <select
+                              value={q.question_type}
+                              onChange={(e) => updateQuestionType(q.id, e.target.value as EditorQuestion["question_type"])}
+                              style={{
+                                padding: "8px 12px", borderRadius: 8, border: "1px solid var(--color-border)",
+                                background: "var(--color-bg-subtle)", fontSize: 13, fontWeight: 600, color: "var(--color-text)",
+                                outline: "none", cursor: "pointer"
+                              }}
+                            >
+                              <option value="multiple_choice">Multiple Choice</option>
+                              <option value="true_false">True / False</option>
+                              <option value="identification">Identification</option>
+                              <option value="enumeration">Enumeration</option>
+                              <option value="essay">Essay</option>
+                            </select>
                             <button className="editor-question-delete" onClick={() => deleteQuestion(q.id)} title="Delete question">
                               <Trash2 size={14} />
                             </button>
                           </div>
 
                           <div className="editor-choices">
-                            {q.choices.map((c) => (
-                              <div key={c.id} className="editor-choice-row">
-                                <button
-                                  className={`editor-choice-correct-btn ${c.is_correct ? "correct" : ""}`}
-                                  onClick={() => toggleCorrectChoice(q.id, c.id)}
-                                  title={c.is_correct ? "Correct answer" : "Mark as correct"}
-                                >
-                                  {c.is_correct && <Check size={14} />}
+                            {/* MULTIPLE CHOICE */}
+                            {q.question_type === "multiple_choice" && (
+                              <>
+                                {q.choices.map((c) => (
+                                  <div key={c.id} className="editor-choice-row">
+                                    <button
+                                      className={`editor-choice-correct-btn ${c.is_correct ? "correct" : ""}`}
+                                      onClick={() => toggleCorrectChoice(q.id, c.id)}
+                                      title={c.is_correct ? "Correct answer" : "Mark as correct"}
+                                    >
+                                      {c.is_correct && <Check size={14} />}
+                                    </button>
+                                    <input
+                                      className="editor-choice-input"
+                                      value={c.choice_text}
+                                      onChange={(e) => updateChoiceText(q.id, c.id, e.target.value)}
+                                      placeholder="Choice text..."
+                                    />
+                                    <button className="editor-choice-delete" onClick={() => deleteChoice(q.id, c.id)} title="Remove choice">
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                ))}
+                                <button className="editor-add-choice-btn" onClick={() => addChoice(q.id)}>
+                                  <Plus size={14} /> Add Choice
                                 </button>
-                                <input
-                                  className="editor-choice-input"
-                                  value={c.choice_text}
-                                  onChange={(e) => updateChoiceText(q.id, c.id, e.target.value)}
-                                  placeholder="Choice text..."
-                                />
-                                <button className="editor-choice-delete" onClick={() => deleteChoice(q.id, c.id)} title="Remove choice">
-                                  <X size={14} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
+                              </>
+                            )}
 
-                          <button className="editor-add-choice-btn" onClick={() => addChoice(q.id)}>
-                            <Plus size={14} /> Add Choice
-                          </button>
+                            {/* TRUE / FALSE */}
+                            {q.question_type === "true_false" && (
+                              <div style={{ display: "flex", gap: 16 }}>
+                                {q.choices.map((c) => (
+                                  <div 
+                                    key={c.id} 
+                                    onClick={() => toggleCorrectChoice(q.id, c.id)}
+                                    style={{
+                                      flex: 1, padding: "12px", borderRadius: 8, border: `2px solid ${c.is_correct ? "#4CAF50" : "var(--color-border)"}`,
+                                      background: c.is_correct ? "rgba(76, 175, 80, 0.05)" : "var(--color-surface)",
+                                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                                      cursor: "pointer", fontWeight: 600, color: c.is_correct ? "#4CAF50" : "var(--color-text)",
+                                      transition: "all 0.2s"
+                                    }}
+                                  >
+                                    {c.is_correct && <CheckCircle size={16} />}
+                                    {c.choice_text}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* IDENTIFICATION / ENUMERATION */}
+                            {(q.question_type === "identification" || q.question_type === "enumeration") && (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase" }}>
+                                  Accepted Answer(s)
+                                </label>
+                                {q.correct_answers.map((ans, idx) => (
+                                  <div key={idx} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                    <input
+                                      className="editor-choice-input"
+                                      style={{ paddingLeft: 16 }}
+                                      value={ans}
+                                      onChange={(e) => updateCorrectAnswer(q.id, idx, e.target.value)}
+                                      placeholder={`Correct answer ${idx + 1}...`}
+                                    />
+                                    {q.question_type === "enumeration" && (
+                                      <button className="editor-choice-delete" onClick={() => removeCorrectAnswerField(q.id, idx)}>
+                                        <X size={14} />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                                {q.question_type === "enumeration" && (
+                                  <button className="editor-add-choice-btn" onClick={() => addCorrectAnswerField(q.id)} style={{ alignSelf: "flex-start" }}>
+                                    <Plus size={14} /> Add Answer Field
+                                  </button>
+                                )}
+                                <div style={{ fontSize: 12, color: "var(--color-text-muted)", marginTop: 4 }}>
+                                  * Learner answers are usually case-insensitive.
+                                </div>
+                              </div>
+                            )}
+
+                            {/* ESSAY */}
+                            {q.question_type === "essay" && (
+                              <div style={{ padding: "16px", borderRadius: 8, background: "var(--color-bg-subtle)", border: "1px dashed var(--color-border)", color: "var(--color-text-muted)", fontSize: 13, textAlign: "center" }}>
+                                <FileText size={24} style={{ margin: "0 auto 8px", opacity: 0.5 }} />
+                                Essay questions do not have a pre-defined correct answer. <br/>
+                                They require manual grading by an instructor.
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
 
