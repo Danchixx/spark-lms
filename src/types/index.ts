@@ -26,12 +26,12 @@ export type Company = {
   members: number | null;
   is_archived: boolean;
   archived_at: string | null;
-  archived_by: number | null;
+  archived_by: string | null;
 };
 
 // ─── Users (DB row) ──────────────────────────────────────────
 export type UserRow = {
-  id: number;
+  id: string;
   company_id: number;
   role_id: number;
   email: string;
@@ -51,7 +51,7 @@ export type UserRow = {
   created_at: string;
   is_archived: boolean;
   archived_at: string | null;
-  archived_by: number | null;
+  archived_by: string | null;
 };
 
 /** The user object after AuthContext unpacks Supabase joins */
@@ -68,24 +68,24 @@ export type Course = {
   description: string | null;
   thumbnail_url: string | null;
   icon_emoji: string | null;
-  created_by: number | null;
+  created_by: string | null;
   status: 'draft' | 'published' | 'archived';
   created_at: string;
   is_archived: boolean;
   archived_at: string | null;
-  archived_by: number | null;
+  archived_by: string | null;
 };
 
 export type CourseAssignment = {
   id: number;
-  user_id: number;
+  user_id: string;
   course_id: number;
-  assigned_by: number | null;
+  assigned_by: string | null;
   assigned_at: string;
   status: 'not_started' | 'ongoing' | 'completed';
   is_archived: boolean;
   archived_at: string | null;
-  archived_by: number | null;
+  archived_by: string | null;
 };
 
 export type CourseModule = {
@@ -97,7 +97,7 @@ export type CourseModule = {
   created_at: string;
   is_archived: boolean;
   archived_at: string | null;
-  archived_by: number | null;
+  archived_by: string | null;
 };
 
 export type CourseLesson = {
@@ -111,7 +111,7 @@ export type CourseLesson = {
   created_at: string;
   is_archived: boolean;
   archived_at: string | null;
-  archived_by: number | null;
+  archived_by: string | null;
 };
 
 // ─── Assessments ─────────────────────────────────────────────
@@ -124,7 +124,7 @@ export type Assessment = {
   time_limit: number | null;
   is_archived: boolean;
   archived_at: string | null;
-  archived_by: number | null;
+  archived_by: string | null;
 };
 
 export type AssessmentQuestion = {
@@ -132,6 +132,8 @@ export type AssessmentQuestion = {
   assessment_id: number;
   question_text: string;
   position: number;
+  question_type: 'multiple_choice' | 'true_false' | 'identification' | 'enumeration' | 'essay';
+  correct_answers: string[];
 };
 
 export type AssessmentChoice = {
@@ -144,7 +146,7 @@ export type AssessmentChoice = {
 export type AssessmentAttempt = {
   id: number;
   assessment_id: number;
-  user_id: number;
+  user_id: string;
   score: number | null;
   passed: boolean | null;
   attempted_at: string;
@@ -186,7 +188,7 @@ export type Certificate = {
 // ─── Quick Notes ─────────────────────────────────────────────
 export type QuickNote = {
   id: number;
-  user_id: number;
+  user_id: string;
   lesson_id: number;
   content: string | null;
   updated_at: string;
@@ -195,7 +197,7 @@ export type QuickNote = {
 // ─── Notification Preferences ────────────────────────────────
 export type NotificationPreferences = {
   id: number;
-  user_id: number;
+  user_id: string;
   course_assigned: boolean;
   course_reminder: boolean;
   assessment_due: boolean;

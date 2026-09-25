@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user?.id) return;
     
     // Handle mock user updates (local only)
-    if (user.id < 0) {
+    if (String(user.id).startsWith("-")) {
       const updatedUser = { ...user, ...updates };
       // Map names if firstname/lastname changed
       if (updates.firstname || updates.lastname) {

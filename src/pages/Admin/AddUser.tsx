@@ -181,7 +181,7 @@ const AdminAddUser = () => {
         job_title: formData.jobTitle || null,
         date_hired: formData.dateHired || null,
         avatar_url: avatarUrl,
-        created_by: user.id
+        created_by: user?.id
       };
 
       const { error: insertError } = await supabase

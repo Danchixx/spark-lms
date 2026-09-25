@@ -7,7 +7,7 @@ import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import PageTransition from "../../components/common/PageTransition";
 import ApprovalModal from "../../components/common/ApprovalModal/ApprovalModal";
-import { Search, Plus, Eye, Trash2, Clock, CheckCircle, XCircle, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Eye, Trash2, Clock, CheckCircle, XCircle, Users, ChevronLeft, ChevronRight, User } from "lucide-react";
 import Button from "../../components/ui/Button/Button";
 
 const StatCard = ({ icon: Icon, label, count, color }: { icon: any; label: string; count: number; color: string }) => (
@@ -103,7 +103,7 @@ const AdminApprovals = () => {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ is_archived: true, archived_at: new Date().toISOString(), archived_by: user.id })
+        .update({ is_archived: true, archived_at: new Date().toISOString(), archived_by: user?.id })
         .eq('id', selectedRequest.id);
 
       if (error) throw error;

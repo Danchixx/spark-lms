@@ -9,41 +9,7 @@ import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
-
-// ─── Mock Creator Courses ─────────────────────────────────────
-// These would come from Supabase: courses where created_by = current user
-const MOCK_CREATOR_COURSES = [
-  {
-    id: "c1",
-    title: "Sales Fundamentals",
-    description: "Master the basics of modern sales techniques",
-    thumbnail: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=600",
-    status: "published" as const,
-    modulesCount: 3,
-    lessonsCount: 9,
-    createdAt: "2026-08-15",
-  },
-  {
-    id: "c2",
-    title: "Customer Service Pro",
-    description: "Build exceptional customer service skills",
-    thumbnail: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&q=80&w=600",
-    status: "draft" as const,
-    modulesCount: 2,
-    lessonsCount: 4,
-    createdAt: "2026-09-10",
-  },
-  {
-    id: "c3",
-    title: "Technical Onboarding",
-    description: "Onboard new developers efficiently",
-    thumbnail: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=600",
-    status: "published" as const,
-    modulesCount: 5,
-    lessonsCount: 15,
-    createdAt: "2026-07-22",
-  },
-];
+import * as courseService from "../../services/courseCreatorService";
 
 // ─── Filter Nav ─────────────────────────────────────────────
 const CreatorFilterNav = ({ counts, active, onChange }: { counts: { all: number; published: number; draft: number }; active: string; onChange: (f: string) => void }) => {
@@ -101,7 +67,7 @@ const CreatorFilterNav = ({ counts, active, onChange }: { counts: { all: number;
 };
 
 // ─── Course Card ────────────────────────────────────────────
-const CreatorCourseCard = ({ course, onEdit }: { course: typeof MOCK_CREATOR_COURSES[0]; onEdit: (id: string) => void }) => {
+const CreatorCourseCard = ({ course, onEdit }: { course: any; onEdit: (id: string) => void }) => {
   const isDraft = course.status === "draft";
 
   return (
@@ -190,8 +156,24 @@ const CreatorCourses = () => {
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
-  // Mock data — replace with Supabase query: courses where created_by = user.id
-  const courses = MOCK_CREATOR_COURSES;
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch courses created by this user
+  useEffect(() => {
+    const loadCourses = async () => {
+      if (!user?.id) return;
+      try {
+        const data = await courseService.fetchCreatorCourses(user.id as string);
+        setCourses(data);
+      } catch (err) {
+        console.error("Failed to load creator courses:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCourses();
+  }, [user]);
 
   const filtered = activeFilter === "All"
     ? courses

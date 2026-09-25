@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, ChevronRight, Play, FileText, PenTool,
@@ -13,6 +13,7 @@ import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import RichTextEditor from "../../components/ui/RichTextEditor/RichTextEditor";
+import * as courseService from "../../services/courseCreatorService";
 import "./LessonEditor.css";
 
 // ─── Types ──────────────────────────────────────────────────
@@ -118,15 +119,45 @@ const LessonEditor = () => {
   const [lessonType, setLessonType] = useState<"video" | "reading" | "assessment">(lessonData?.type || "video");
   const [videoUrl, setVideoUrl] = useState(lessonData?.video_url || "");
   const [readingContent, setReadingContent] = useState(lessonData?.content || "");
-  const [questions, setQuestions] = useState<EditorQuestion[]>(
-    lessonData?.type === "assessment" ? MOCK_QUESTIONS : []
-  );
+  const [questions, setQuestions] = useState<EditorQuestion[]>([]);
   const [passingScore, setPassingScore] = useState(70);
   const [timeLimit, setTimeLimit] = useState(15);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const currentModule: EditorModule = moduleData || { id: 0, title: "Module", lessons: [] };
   const allModulesList: EditorModule[] = allModules || [];
+
+  // ─── Fetch assessment data from Supabase on mount ─────────
+  useEffect(() => {
+    const loadAssessment = async () => {
+      if (!lessonId || lessonData?.type !== "assessment") return;
+      try {
+        const { assessment, questions: fetchedQuestions } = await courseService.fetchLessonWithAssessment(Number(lessonId));
+        if (assessment) {
+          setPassingScore(assessment.passing_score || 70);
+          setTimeLimit(assessment.time_limit ? Math.round(assessment.time_limit / 60) : 15);
+        }
+        if (fetchedQuestions && fetchedQuestions.length > 0) {
+          setQuestions(fetchedQuestions.map((q: any) => ({
+            id: q.id,
+            question_text: q.question_text,
+            position: q.position,
+            question_type: q.question_type || "multiple_choice",
+            choices: (q.choices || []).map((c: any) => ({
+              id: c.id,
+              choice_text: c.choice_text,
+              is_correct: c.is_correct,
+            })),
+            correct_answers: q.correct_answers || [],
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to load assessment:", err);
+      }
+    };
+    loadAssessment();
+  }, [lessonId]);
 
   // ─── Assessment Actions ────────────────────────────────────
   const addQuestion = () => {
@@ -234,26 +265,42 @@ const LessonEditor = () => {
   };
 
   // ─── Save Handler ──────────────────────────────────────────
-  const handleSave = () => {
-    const payload = {
-      lesson: {
-        id: lessonId,
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // 1. Update the lesson itself
+      await courseService.updateLesson(Number(lessonId), {
         title: lessonTitle,
         type: lessonType,
         content: lessonType === "reading" ? readingContent : null,
         video_url: lessonType === "video" ? videoUrl : null,
-      },
-      assessment: lessonType === "assessment" ? {
-        passing_score: passingScore,
-        time_limit: timeLimit * 60,
-        questions: questions.map((q) => ({
-          ...q,
-          choices: q.choices.map((c) => ({ ...c })),
-        })),
-      } : null,
-    };
-    console.log("Save lesson payload:", payload);
-    showToast("Lesson saved successfully!");
+      });
+
+      // 2. Save assessment if applicable
+      if (lessonType === "assessment") {
+        await courseService.saveAssessment(Number(lessonId), lessonTitle, {
+          passing_score: passingScore,
+          time_limit: timeLimit * 60,
+          questions: questions.map((q) => ({
+            question_text: q.question_text,
+            position: q.position,
+            question_type: q.question_type,
+            correct_answers: q.correct_answers,
+            choices: q.choices.map((c) => ({
+              choice_text: c.choice_text,
+              is_correct: c.is_correct,
+            })),
+          })),
+        });
+      }
+
+      showToast("Lesson saved successfully!");
+    } catch (err: any) {
+      console.error("Failed to save lesson:", err);
+      showToast(`Error: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const showToast = (msg: string) => {
@@ -279,7 +326,7 @@ const LessonEditor = () => {
     setLessonType(lesson.type);
     setVideoUrl(lesson.video_url || "");
     setReadingContent(lesson.content || "");
-    setQuestions(lesson.type === "assessment" ? MOCK_QUESTIONS : []);
+    setQuestions([]);
   };
 
   const embedUrl = convertYoutubeUrl(videoUrl);

@@ -8,6 +8,7 @@ import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
+import { createCourse, uploadThumbnail } from "../../services/courseCreatorService";
 import "./CreateCourse.css";
 
 const CreateCourse = () => {
@@ -27,6 +28,7 @@ const CreateCourse = () => {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Thumbnail Handlers ────────────────────────────────────
@@ -60,40 +62,66 @@ const CreateCourse = () => {
   };
 
   // ─── Submit Handlers ──────────────────────────────────────
-  const handleSubmit = (submitStatus: "draft" | "published") => {
+  const handleSubmit = async (submitStatus: "draft" | "published") => {
     if (!title.trim()) {
       setToastMessage("Please enter a course title.");
       setTimeout(() => setToastMessage(null), 3000);
       return;
     }
 
-    // Mock course data — ready for backend integration
-    const courseData = {
-      title: title.trim(),
-      description: description.trim() || null,
-      icon_emoji: iconEmoji || null,
-      thumbnail_url: thumbnailPreview,
-      status: submitStatus,
-      company_id: company?.id,
-      created_by: user?.id,
-    };
+    setSaving(true);
 
-    setToastMessage(
-      submitStatus === "draft"
-        ? `"${title}" saved as draft!`
-        : `"${title}" published successfully!`
-    );
-    setTimeout(() => setToastMessage(null), 3000);
-
-    // Navigate to Course Builder with mock course data
-    setTimeout(() => {
-      navigate(`/${slug}/courses/builder`, {
-        state: {
-          courseId: "new",
-          courseData,
-        },
+    try {
+      // 1. Create the course in Supabase
+      const course = await createCourse({
+        company_id: company?.id as number,
+        title: title.trim(),
+        description: description.trim() || null,
+        icon_emoji: iconEmoji || null,
+        thumbnail_url: null, // will be updated after upload
+        status: submitStatus,
+        created_by: user?.id as string,
       });
-    }, 800);
+
+      // 2. Upload thumbnail if provided
+      let thumbnailUrl = null;
+      if (thumbnailFile && company?.id) {
+        try {
+          thumbnailUrl = await uploadThumbnail(thumbnailFile, company.id as number, course.id);
+          // Update the course with the thumbnail URL
+          const { supabase } = await import("../../lib/supabase");
+          await supabase.from('courses').update({ thumbnail_url: thumbnailUrl }).eq('id', course.id);
+        } catch (uploadErr) {
+          console.warn("Thumbnail upload failed, continuing without it:", uploadErr);
+        }
+      }
+
+      setToastMessage(
+        submitStatus === "draft"
+          ? `"${title}" saved as draft!`
+          : `"${title}" published successfully!`
+      );
+      setTimeout(() => setToastMessage(null), 3000);
+
+      // 3. Navigate to Course Builder with the real course ID
+      setTimeout(() => {
+        navigate(`/${slug}/courses/builder`, {
+          state: {
+            courseId: course.id,
+            courseData: {
+              ...course,
+              thumbnail_url: thumbnailUrl || course.thumbnail_url,
+            },
+          },
+        });
+      }, 800);
+    } catch (err: any) {
+      console.error("Failed to create course:", err);
+      setToastMessage(`Error: ${err.message || "Failed to create course."}`);
+      setTimeout(() => setToastMessage(null), 4000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

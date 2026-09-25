@@ -8,6 +8,7 @@ import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
+import * as courseService from "../../services/courseCreatorService";
 import "./CourseBuilder.css";
 
 // ─── Types (mirrors DB schema) ──────────────────────────────
@@ -94,8 +95,9 @@ const CourseBuilder = () => {
 
   // ─── State ─────────────────────────────────────────────────
   const courseState = location.state?.courseData;
+  const courseId = location.state?.courseId;
   const [course, setCourse] = useState<BuilderCourse>({
-    id: location.state?.courseId || "new",
+    id: courseId || "new",
     title: courseState?.title || "Untitled Course",
     description: courseState?.description || null,
     thumbnail_url: courseState?.thumbnail_url || null,
@@ -104,14 +106,56 @@ const CourseBuilder = () => {
   });
 
   const [modules, setModules] = useState<BuilderModule[]>(
-    location.state?.courseId === "new" ? [] : MOCK_MODULES
+    location.state?.allModules || []
   );
   const [expandedModule, setExpandedModule] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [showAddLessonModal, setShowAddLessonModal] = useState<number | null>(null); // module id
+  const [showAddLessonModal, setShowAddLessonModal] = useState<number | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [newLessonType, setNewLessonType] = useState<"video" | "reading" | "assessment">("video");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: "module" | "lesson"; moduleId: number; lessonId?: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // ─── Fetch real data from Supabase on mount ────────────────
+  useEffect(() => {
+    const loadCourse = async () => {
+      if (!courseId || courseId === "new") {
+        setLoading(false);
+        return;
+      }
+      try {
+        const { course: fetchedCourse, modules: fetchedModules } = await courseService.fetchCourseWithModules(Number(courseId));
+        setCourse({
+          id: fetchedCourse.id,
+          title: fetchedCourse.title,
+          description: fetchedCourse.description,
+          thumbnail_url: fetchedCourse.thumbnail_url,
+          icon_emoji: fetchedCourse.icon_emoji,
+          status: fetchedCourse.status,
+        });
+        setModules(fetchedModules.map((m: any) => ({
+          id: m.id,
+          title: m.title,
+          description: m.description,
+          order: m.order,
+          lessons: (m.lessons || []).map((l: any) => ({
+            id: l.id,
+            title: l.title,
+            type: l.type,
+            content: l.content,
+            video_url: l.video_url,
+            position: l.position,
+          })),
+        })));
+      } catch (err) {
+        console.error("Failed to load course:", err);
+        showToast("Failed to load course data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCourse();
+  }, [courseId]);
 
   // Auto-expand first module if there's only one
   useEffect(() => {
@@ -121,24 +165,41 @@ const CourseBuilder = () => {
   }, [modules, expandedModule]);
 
   // ─── Module Actions ────────────────────────────────────────
-  const addModule = () => {
-    const newModule: BuilderModule = {
-      id: ++nextModuleId,
-      title: `Module ${modules.length + 1}`,
-      description: null,
-      order: modules.length + 1,
-      lessons: [],
-    };
-    setModules([...modules, newModule]);
-    setExpandedModule(newModule.id);
-    showToast("Module added!");
+  const addModule = async () => {
+    try {
+      const newOrder = modules.length + 1;
+      const mod = await courseService.createModule(Number(course.id), {
+        title: `Module ${newOrder}`,
+        description: null,
+        order: newOrder,
+      });
+      const newModule: BuilderModule = {
+        id: mod.id,
+        title: mod.title,
+        description: mod.description,
+        order: mod.order,
+        lessons: [],
+      };
+      setModules([...modules, newModule]);
+      setExpandedModule(newModule.id);
+      showToast("Module added!");
+    } catch (err: any) {
+      console.error("Failed to add module:", err);
+      showToast(`Error: ${err.message}`);
+    }
   };
 
-  const deleteModule = (moduleId: number) => {
-    setModules(modules.filter((m) => m.id !== moduleId).map((m, i) => ({ ...m, order: i + 1 })));
-    if (expandedModule === moduleId) setExpandedModule(null);
-    setShowDeleteConfirm(null);
-    showToast("Module deleted.");
+  const deleteModule = async (moduleId: number) => {
+    try {
+      await courseService.deleteModule(moduleId, user?.id as string);
+      setModules(modules.filter((m) => m.id !== moduleId).map((m, i) => ({ ...m, order: i + 1 })));
+      if (expandedModule === moduleId) setExpandedModule(null);
+      setShowDeleteConfirm(null);
+      showToast("Module deleted.");
+    } catch (err: any) {
+      console.error("Failed to delete module:", err);
+      showToast(`Error: ${err.message}`);
+    }
   };
 
   const updateModuleTitle = (moduleId: number, newTitle: string) => {
@@ -162,6 +223,7 @@ const CourseBuilder = () => {
     if (draggedModuleIndex === null || draggedModuleIndex === index) return;
     const newModules = [...modules];
     const draggedItem = newModules[draggedModuleIndex];
+    if (!draggedItem) return;
     newModules.splice(draggedModuleIndex, 1);
     newModules.splice(index, 0, draggedItem);
     setModules(newModules);
@@ -173,36 +235,56 @@ const CourseBuilder = () => {
   };
 
   // ─── Lesson Actions ────────────────────────────────────────
-  const addLesson = (moduleId: number) => {
+  const addLesson = async (moduleId: number) => {
     if (!newLessonTitle.trim()) return;
 
-    const newLesson: BuilderLesson = {
-      id: ++nextLessonId,
-      title: newLessonTitle.trim(),
-      type: newLessonType,
-      content: null,
-      video_url: null,
-      position: (modules.find((m) => m.id === moduleId)?.lessons.length || 0) + 1,
-    };
+    try {
+      const position = (modules.find((m) => m.id === moduleId)?.lessons.length || 0) + 1;
+      const lesson = await courseService.createLesson(moduleId, {
+        title: newLessonTitle.trim(),
+        type: newLessonType,
+        content: null,
+        video_url: null,
+        position,
+      });
 
-    setModules(modules.map((m) =>
-      m.id === moduleId ? { ...m, lessons: [...m.lessons, newLesson] } : m
-    ));
+      const newLesson: BuilderLesson = {
+        id: lesson.id,
+        title: lesson.title,
+        type: lesson.type,
+        content: lesson.content,
+        video_url: lesson.video_url,
+        position: lesson.position,
+      };
 
-    setShowAddLessonModal(null);
-    setNewLessonTitle("");
-    setNewLessonType("video");
-    showToast(`"${newLesson.title}" added!`);
+      setModules(modules.map((m) =>
+        m.id === moduleId ? { ...m, lessons: [...m.lessons, newLesson] } : m
+      ));
+
+      setShowAddLessonModal(null);
+      setNewLessonTitle("");
+      setNewLessonType("video");
+      showToast(`"${newLesson.title}" added!`);
+    } catch (err: any) {
+      console.error("Failed to add lesson:", err);
+      showToast(`Error: ${err.message}`);
+    }
   };
 
-  const deleteLesson = (moduleId: number, lessonId: number) => {
-    setModules(modules.map((m) =>
-      m.id === moduleId
-        ? { ...m, lessons: m.lessons.filter((l) => l.id !== lessonId).map((l, i) => ({ ...l, position: i + 1 })) }
-        : m
-    ));
-    setShowDeleteConfirm(null);
-    showToast("Lesson deleted.");
+  const deleteLesson = async (moduleId: number, lessonId: number) => {
+    try {
+      await courseService.deleteLesson(lessonId, user?.id as string);
+      setModules(modules.map((m) =>
+        m.id === moduleId
+          ? { ...m, lessons: m.lessons.filter((l) => l.id !== lessonId).map((l, i) => ({ ...l, position: i + 1 })) }
+          : m
+      ));
+      setShowDeleteConfirm(null);
+      showToast("Lesson deleted.");
+    } catch (err: any) {
+      console.error("Failed to delete lesson:", err);
+      showToast(`Error: ${err.message}`);
+    }
   };
 
   const openLessonEditor = (lesson: BuilderLesson, module: BuilderModule) => {
@@ -228,17 +310,32 @@ const CourseBuilder = () => {
   const totalLessons = modules.reduce((acc, m) => acc + m.lessons.filter((l) => l.type !== "assessment").length, 0);
   const totalAssessments = modules.reduce((acc, m) => acc + m.lessons.filter((l) => l.type === "assessment").length, 0);
 
-  const handleSave = () => {
-    // Mock save — ready for backend integration
-    const savePayload = {
-      course,
-      modules: modules.map((m) => ({
-        ...m,
-        lessons: m.lessons.map((l) => ({ ...l })),
-      })),
-    };
-    console.log("Save payload:", savePayload);
-    showToast("Course saved successfully!");
+  const handleSave = async () => {
+    try {
+      // 1. Update course metadata
+      await courseService.updateCourse(Number(course.id), {
+        title: course.title,
+        description: course.description,
+        status: course.status,
+        thumbnail_url: course.thumbnail_url,
+        icon_emoji: course.icon_emoji,
+      });
+
+      // 2. Reorder modules
+      await courseService.reorderModules(
+        modules.map((m, i) => ({ id: m.id, order: i + 1 }))
+      );
+
+      // 3. Update module titles/descriptions
+      for (const m of modules) {
+        await courseService.updateModule(m.id, { title: m.title, description: m.description });
+      }
+
+      showToast("Course saved successfully!");
+    } catch (err: any) {
+      console.error("Failed to save course:", err);
+      showToast(`Error: ${err.message}`);
+    }
   };
 
   return (
