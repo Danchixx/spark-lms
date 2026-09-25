@@ -82,6 +82,70 @@ export async function updateCourse(courseId: number, data: CourseUpdatePayload) 
   return course;
 }
 
+/** Hard-delete a course and ALL its modules, lessons, assessments, questions, and choices */
+export async function deleteCourse(courseId: number) {
+  // 1. Get all modules
+  const { data: modules } = await supabase
+    .from('course_modules')
+    .select('id')
+    .eq('course_id', courseId);
+
+  if (modules && modules.length > 0) {
+    const moduleIds = modules.map((m: any) => m.id);
+
+    // 2. Get all lessons across all modules
+    const { data: lessons } = await supabase
+      .from('course_lessons')
+      .select('id')
+      .in('module_id', moduleIds);
+
+    if (lessons && lessons.length > 0) {
+      const lessonIds = lessons.map((l: any) => l.id);
+
+      // 3. Get all assessments
+      const { data: assessments } = await supabase
+        .from('assessments')
+        .select('id')
+        .in('lesson_id', lessonIds);
+
+      if (assessments && assessments.length > 0) {
+        const assessmentIds = assessments.map((a: any) => a.id);
+
+        // 4. Get all questions
+        const { data: questions } = await supabase
+          .from('assessment_questions')
+          .select('id')
+          .in('assessment_id', assessmentIds);
+
+        if (questions && questions.length > 0) {
+          const questionIds = questions.map((q: any) => q.id);
+          // 5. Delete choices
+          await supabase.from('assessment_choices').delete().in('question_id', questionIds);
+        }
+
+        // 6. Delete questions
+        await supabase.from('assessment_questions').delete().in('assessment_id', assessmentIds);
+        // 7. Delete assessments
+        await supabase.from('assessments').delete().in('lesson_id', lessonIds);
+      }
+
+      // 8. Delete lessons
+      await supabase.from('course_lessons').delete().in('module_id', moduleIds);
+    }
+
+    // 9. Delete modules
+    await supabase.from('course_modules').delete().eq('course_id', courseId);
+  }
+
+  // 10. Delete the course itself
+  const { error } = await supabase
+    .from('courses')
+    .delete()
+    .eq('id', courseId);
+
+  if (error) throw error;
+}
+
 /** Fetch a course with all its modules and lessons (for CourseBuilder) */
 export async function fetchCourseWithModules(courseId: number) {
   // 1. Fetch the course
@@ -161,11 +225,50 @@ export async function updateModule(moduleId: number, data: Partial<ModulePayload
   return mod;
 }
 
-/** Soft-delete a module */
-export async function deleteModule(moduleId: number, userId?: string) {
+/** Hard-delete a module and all its lessons (with their assessment data) */
+export async function deleteModule(moduleId: number, _userId?: string) {
+  // 1. Get all lessons in this module
+  const { data: lessons } = await supabase
+    .from('course_lessons')
+    .select('id')
+    .eq('module_id', moduleId);
+
+  // 2. Delete each lesson's assessment data
+  if (lessons && lessons.length > 0) {
+    const lessonIds = lessons.map((l: any) => l.id);
+
+    // Get assessments for these lessons
+    const { data: assessments } = await supabase
+      .from('assessments')
+      .select('id')
+      .in('lesson_id', lessonIds);
+
+    if (assessments && assessments.length > 0) {
+      const assessmentIds = assessments.map((a: any) => a.id);
+
+      // Get questions to delete their choices
+      const { data: questions } = await supabase
+        .from('assessment_questions')
+        .select('id')
+        .in('assessment_id', assessmentIds);
+
+      if (questions && questions.length > 0) {
+        const questionIds = questions.map((q: any) => q.id);
+        await supabase.from('assessment_choices').delete().in('question_id', questionIds);
+      }
+
+      await supabase.from('assessment_questions').delete().in('assessment_id', assessmentIds);
+      await supabase.from('assessments').delete().in('lesson_id', lessonIds);
+    }
+
+    // 3. Delete lessons
+    await supabase.from('course_lessons').delete().eq('module_id', moduleId);
+  }
+
+  // 4. Delete the module
   const { error } = await supabase
     .from('course_modules')
-    .update({ is_archived: true, archived_at: new Date().toISOString(), archived_by: userId || null })
+    .delete()
     .eq('id', moduleId);
 
   if (error) throw error;
@@ -216,11 +319,35 @@ export async function updateLesson(lessonId: number, data: Partial<LessonPayload
   return lesson;
 }
 
-/** Soft-delete a lesson */
-export async function deleteLesson(lessonId: number, userId?: string) {
+/** Hard-delete a lesson and its assessment data */
+export async function deleteLesson(lessonId: number, _userId?: string) {
+  // 1. Delete assessment data if it exists
+  const { data: assessments } = await supabase
+    .from('assessments')
+    .select('id')
+    .eq('lesson_id', lessonId);
+
+  if (assessments && assessments.length > 0) {
+    const assessmentIds = assessments.map((a: any) => a.id);
+
+    const { data: questions } = await supabase
+      .from('assessment_questions')
+      .select('id')
+      .in('assessment_id', assessmentIds);
+
+    if (questions && questions.length > 0) {
+      const questionIds = questions.map((q: any) => q.id);
+      await supabase.from('assessment_choices').delete().in('question_id', questionIds);
+    }
+
+    await supabase.from('assessment_questions').delete().in('assessment_id', assessmentIds);
+    await supabase.from('assessments').delete().eq('lesson_id', lessonId);
+  }
+
+  // 2. Delete the lesson
   const { error } = await supabase
     .from('course_lessons')
-    .update({ is_archived: true, archived_at: new Date().toISOString(), archived_by: userId || null })
+    .delete()
     .eq('id', lessonId);
 
   if (error) throw error;

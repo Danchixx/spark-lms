@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, ChevronRight, Play, FileText, PenTool,
-  Plus, Trash2, Check, X, CheckCircle, Video, BookOpen, Timer, Target,
+  Plus, Trash2, Check, X, CheckCircle, AlertCircle, Video, BookOpen, Timer, Target,
   Bold, Italic, Heading1, Heading2, List, ListOrdered, Quote,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -123,6 +124,7 @@ const LessonEditor = () => {
   const [passingScore, setPassingScore] = useState(70);
   const [timeLimit, setTimeLimit] = useState(15);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
   const [saving, setSaving] = useState(false);
 
   const currentModule: EditorModule = moduleData || { id: 0, title: "Module", lessons: [] };
@@ -297,15 +299,16 @@ const LessonEditor = () => {
       showToast("Lesson saved successfully!");
     } catch (err: any) {
       console.error("Failed to save lesson:", err);
-      showToast(`Error: ${err.message}`);
+      showToast(`Error: ${err.message}`, "error");
     } finally {
       setSaving(false);
     }
   };
 
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setToastType(type);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   const navigateToLesson = (lesson: EditorLesson) => {
@@ -721,27 +724,41 @@ const LessonEditor = () => {
         </div>
       </div>
 
-      {/* Toast */}
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, x: "-50%" }}
-            animate={{ opacity: 1, y: 0, x: "-50%" }}
-            exit={{ opacity: 0, y: 50, x: "-50%" }}
-            style={{
-              position: "fixed", bottom: 40, left: "50%", zIndex: 1000,
-              background: "#333", color: "#fff",
-              padding: "16px 24px", borderRadius: 8,
-              display: "flex", alignItems: "center", gap: 12,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-              fontSize: 14, fontWeight: 500,
-            }}
-          >
-            <CheckCircle size={18} color="#4CAF50" />
-            {toastMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Toast (portaled to body to escape overflow:hidden) */}
+      {createPortal(
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              style={{
+                position: "fixed",
+                bottom: 40,
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 99999,
+                background: "#333",
+                color: "#fff",
+                padding: "14px 28px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+                fontSize: 14,
+                fontWeight: 600,
+                fontFamily: "'Barlow', sans-serif",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <CheckCircle size={18} color="#4CAF50" />
+              {toastMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

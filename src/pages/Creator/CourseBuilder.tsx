@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, ChevronRight, ChevronDown, Plus, Play, FileText, PenTool, Trash2, GripVertical, Edit3, X, CheckCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, ChevronDown, Plus, Play, FileText, PenTool, Trash2, GripVertical, Edit3, X, CheckCircle, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
@@ -110,10 +111,12 @@ const CourseBuilder = () => {
   );
   const [expandedModule, setExpandedModule] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
   const [showAddLessonModal, setShowAddLessonModal] = useState<number | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [newLessonType, setNewLessonType] = useState<"video" | "reading" | "assessment">("video");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: "module" | "lesson"; moduleId: number; lessonId?: number } | null>(null);
+  const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // ─── Fetch real data from Supabase on mount ────────────────
@@ -149,7 +152,7 @@ const CourseBuilder = () => {
         })));
       } catch (err) {
         console.error("Failed to load course:", err);
-        showToast("Failed to load course data.");
+        showToast("Failed to load course data.", "error");
       } finally {
         setLoading(false);
       }
@@ -185,7 +188,7 @@ const CourseBuilder = () => {
       showToast("Module added!");
     } catch (err: any) {
       console.error("Failed to add module:", err);
-      showToast(`Error: ${err.message}`);
+      showToast(`Error: ${err.message}`, "error");
     }
   };
 
@@ -198,7 +201,7 @@ const CourseBuilder = () => {
       showToast("Module deleted.");
     } catch (err: any) {
       console.error("Failed to delete module:", err);
-      showToast(`Error: ${err.message}`);
+      showToast(`Error: ${err.message}`, "error");
     }
   };
 
@@ -211,11 +214,16 @@ const CourseBuilder = () => {
   };
 
   const [draggedModuleIndex, setDraggedModuleIndex] = useState<number | null>(null);
+  const [isDraggingModule, setIsDraggingModule] = useState(false);
 
   const handleModuleDragStart = (e: React.DragEvent, index: number) => {
+    if (!isDraggingModule) {
+      e.preventDefault();
+      return;
+    }
     setDraggedModuleIndex(index);
-    // Setting data is required in some browsers (like Firefox) for drag to work
     e.dataTransfer.setData("text/plain", index.toString());
+    e.dataTransfer.effectAllowed = "move";
   };
 
   const handleModuleDragOver = (e: React.DragEvent, index: number) => {
@@ -232,6 +240,36 @@ const CourseBuilder = () => {
 
   const handleModuleDragEnd = () => {
     setDraggedModuleIndex(null);
+    setIsDraggingModule(false);
+  };
+
+  // ─── Lesson Drag ───────────────────────────────────────────
+  const [draggedLesson, setDraggedLesson] = useState<{ moduleId: number; lessonIndex: number } | null>(null);
+
+  const handleLessonDragStart = (e: React.DragEvent, moduleId: number, lessonIndex: number) => {
+    e.stopPropagation();
+    setDraggedLesson({ moduleId, lessonIndex });
+    e.dataTransfer.setData("text/plain", lessonIndex.toString());
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleLessonDragOver = (e: React.DragEvent, moduleId: number, lessonIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedLesson || draggedLesson.moduleId !== moduleId || draggedLesson.lessonIndex === lessonIndex) return;
+    const mod = modules.find((m) => m.id === moduleId);
+    if (!mod) return;
+    const newLessons = [...mod.lessons];
+    const draggedItem = newLessons[draggedLesson.lessonIndex];
+    if (!draggedItem) return;
+    newLessons.splice(draggedLesson.lessonIndex, 1);
+    newLessons.splice(lessonIndex, 0, draggedItem);
+    setModules(modules.map((m) => m.id === moduleId ? { ...m, lessons: newLessons.map((l, i) => ({ ...l, position: i + 1 })) } : m));
+    setDraggedLesson({ moduleId, lessonIndex });
+  };
+
+  const handleLessonDragEnd = () => {
+    setDraggedLesson(null);
   };
 
   // ─── Lesson Actions ────────────────────────────────────────
@@ -267,7 +305,7 @@ const CourseBuilder = () => {
       showToast(`"${newLesson.title}" added!`);
     } catch (err: any) {
       console.error("Failed to add lesson:", err);
-      showToast(`Error: ${err.message}`);
+      showToast(`Error: ${err.message}`, "error");
     }
   };
 
@@ -283,7 +321,7 @@ const CourseBuilder = () => {
       showToast("Lesson deleted.");
     } catch (err: any) {
       console.error("Failed to delete lesson:", err);
-      showToast(`Error: ${err.message}`);
+      showToast(`Error: ${err.message}`, "error");
     }
   };
 
@@ -302,8 +340,10 @@ const CourseBuilder = () => {
   };
 
   // ─── Helpers ───────────────────────────────────────────────
-  const showToast = (msg: string) => {
-    setTimeout(() => setToastMessage(null), 3000);
+  const showToast = (msg: string, type: "success" | "error" = "success") => {
+    setToastMessage(msg);
+    setToastType(type);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   const totalContent = modules.reduce((acc, m) => acc + m.lessons.length, 0);
@@ -334,7 +374,19 @@ const CourseBuilder = () => {
       showToast("Course saved successfully!");
     } catch (err: any) {
       console.error("Failed to save course:", err);
-      showToast(`Error: ${err.message}`);
+      showToast(`Error: ${err.message}`, "error");
+    }
+  };
+
+  const handleDeleteCourse = async () => {
+    try {
+      await courseService.deleteCourse(Number(course.id));
+      showToast("Course deleted.");
+      navigate(`/${slug}/courses`);
+    } catch (err: any) {
+      console.error("Failed to delete course:", err);
+      showToast(`Error: ${err.message}`, "error");
+      setShowDeleteCourseConfirm(false);
     }
   };
 
@@ -380,17 +432,48 @@ const CourseBuilder = () => {
                   cursor: "pointer"
                 }}
               >
-                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }} 
-                     onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
-                     onMouseLeave={(e) => e.currentTarget.style.opacity = "0"}>
+                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = "0"}>
                   <Edit3 size={32} color="#fff" />
                 </div>
               </div>
               <div className="builder-banner-info">
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div>
-                    <h1 className="builder-banner-title">{course.title}</h1>
-                    <p className="builder-banner-desc">{course.description || "No description provided."}</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <input
+                      value={course.title}
+                      onChange={(e) => setCourse({ ...course, title: e.target.value })}
+                      placeholder="Course title..."
+                      style={{
+                        width: "100%",
+                        fontSize: 22,
+                        fontWeight: 800,
+                        color: "var(--color-text-header)",
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        padding: 0,
+                        fontFamily: "inherit",
+                      }}
+                    />
+                    <input
+                      value={course.description || ""}
+                      onChange={(e) => setCourse({ ...course, description: e.target.value })}
+                      placeholder="Add a course description..."
+                      style={{
+                        width: "100%",
+                        fontSize: 13,
+                        color: "var(--color-text-muted)",
+                        lineHeight: 1.5,
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        padding: 0,
+                        marginTop: 4,
+                        fontFamily: "inherit",
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="builder-banner-meta">
@@ -422,10 +505,10 @@ const CourseBuilder = () => {
                   const isExpanded = expandedModule === module.id;
 
                   return (
-                    <div 
-                      key={module.id} 
+                    <div
+                      key={module.id}
                       className={`builder-module ${isExpanded ? "expanded" : ""}`}
-                      draggable
+                      draggable={isDraggingModule}
                       onDragStart={(e) => handleModuleDragStart(e, index)}
                       onDragOver={(e) => handleModuleDragOver(e, index)}
                       onDragEnd={handleModuleDragEnd}
@@ -463,7 +546,17 @@ const CourseBuilder = () => {
                         </div>
 
                         <div className="builder-module-actions">
-                          <button className="builder-module-action-btn" title="Drag to reorder" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="builder-module-action-btn"
+                            title="Drag to reorder"
+                            style={{ cursor: "grab" }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              setIsDraggingModule(true);
+                            }}
+                            onMouseUp={() => setIsDraggingModule(false)}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <GripVertical size={16} />
                           </button>
                           <button
@@ -490,11 +583,19 @@ const CourseBuilder = () => {
                       {/* Module Content (Accordion) */}
                       <div className={`builder-module-content ${isExpanded ? "expanded" : "collapsed"}`}>
                         <div className="builder-lesson-list">
-                          {module.lessons.map((lesson) => (
+                          {module.lessons.map((lesson, lessonIndex) => (
                             <div
                               key={lesson.id}
                               className="builder-lesson-item"
+                              draggable
+                              onDragStart={(e) => handleLessonDragStart(e, module.id, lessonIndex)}
+                              onDragOver={(e) => handleLessonDragOver(e, module.id, lessonIndex)}
+                              onDragEnd={handleLessonDragEnd}
                               onClick={() => openLessonEditor(lesson, module)}
+                              style={{
+                                opacity: draggedLesson?.moduleId === module.id && draggedLesson?.lessonIndex === lessonIndex ? 0.5 : 1,
+                                cursor: "grab",
+                              }}
                             >
                               <div style={{ color: "var(--color-text-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <LessonTypeIcon type={lesson.type} />
@@ -622,6 +723,14 @@ const CourseBuilder = () => {
                   </Button>
                   <Button variant="outline" rounded="pill" onClick={() => navigate(`/${slug}/courses`)} style={{ width: "100%" }}>
                     Back to Courses
+                  </Button>
+                  <Button
+                    variant="danger"
+                    rounded="pill"
+                    onClick={() => setShowDeleteCourseConfirm(true)}
+                    style={{ width: "100%" }}
+                  >
+                    Delete Course
                   </Button>
                 </div>
               </div>
@@ -768,27 +877,91 @@ const CourseBuilder = () => {
         )}
       </AnimatePresence>
 
-      {/* ─── Toast ─────────────────────────────────────────────── */}
+      {/* ─── Delete Course Confirmation Modal ─────────────────── */}
       <AnimatePresence>
-        {toastMessage && (
+        {showDeleteCourseConfirm && (
           <motion.div
-            initial={{ opacity: 0, y: 50, x: "-50%" }}
-            animate={{ opacity: 1, y: 0, x: "-50%" }}
-            exit={{ opacity: 0, y: 50, x: "-50%" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             style={{
-              position: "fixed", bottom: 40, left: "50%", zIndex: 1000,
-              background: "#333", color: "#fff",
-              padding: "16px 24px", borderRadius: 8,
-              display: "flex", alignItems: "center", gap: 12,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-              fontSize: 14, fontWeight: 500,
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999,
             }}
+            onClick={() => setShowDeleteCourseConfirm(false)}
           >
-            <CheckCircle size={18} color="#4CAF50" />
-            {toastMessage}
+            <motion.div
+              initial={{ y: 20, scale: 0.98 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 20, scale: 0.98 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "var(--color-surface)", borderRadius: 16, padding: 28,
+                maxWidth: 420, width: "100%", boxShadow: "0 20px 40px rgba(0,0,0,0.15)", textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+              <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "var(--color-text-header)" }}>
+                Delete Entire Course?
+              </h3>
+              <p style={{ margin: "0 0 8px", fontSize: 14, color: "var(--color-text-muted)" }}>
+                This will permanently delete <strong style={{ color: "var(--color-text-header)" }}>{course.title}</strong> and all its content:
+              </p>
+              <p style={{ margin: "0 0 24px", fontSize: 13, color: "var(--color-text-muted)" }}>
+                {modules.length} module{modules.length !== 1 ? "s" : ""}, {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}, {totalAssessments} assessment{totalAssessments !== 1 ? "s" : ""}.
+                <br />This action <strong style={{ color: "#d32f2f" }}>cannot be undone</strong>.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <Button variant="outline" rounded="pill" onClick={() => setShowDeleteCourseConfirm(false)}>Cancel</Button>
+                <Button
+                  rounded="pill"
+                  style={{ background: "#d32f2f", color: "#fff", border: "none" }}
+                  onClick={handleDeleteCourse}
+                >
+                  Delete Course
+                </Button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ─── Toast (portaled to body to escape overflow:hidden) ── */}
+      {createPortal(
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              style={{
+                position: "fixed",
+                bottom: 40,
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 99999,
+                background: "#333",
+                color: "#fff",
+                padding: "14px 28px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+                fontSize: 14,
+                fontWeight: 600,
+                fontFamily: "'Barlow', sans-serif",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <CheckCircle size={18} color="#4CAF50" />
+              {toastMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };
