@@ -654,7 +654,7 @@ const LessonEditor = () => {
                     </div>
                     <div className="editor-info-row">
                       <span className="editor-info-label">Position</span>
-                      <span className="editor-info-value">Lesson {lessonData?.position || 1}</span>
+                      <span className="editor-info-value">Content {lessonData?.position || 1}</span>
                     </div>
                     {lessonType === "assessment" && (
                       <>
