@@ -33,7 +33,7 @@ const RichTextEditor = ({ content, onChange, placeholder }: RichTextEditorProps)
             'Arial', 'Comic Sans MS', 'Courier New', 'Impact',
             'Georgia','Tahoma', 'Trebuchet MS', 'Verdana'
           ],
-          defaultStyle: "font-family: 'Barlow', sans-serif; font-size: 15px; color: #1a1a1a;",
+          defaultStyle: "font-family: 'Barlow', sans-serif; font-size: 15px; color: var(--color-text);",
           minHeight: '400px',
         }}
       />

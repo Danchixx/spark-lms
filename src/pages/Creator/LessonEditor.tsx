@@ -639,10 +639,11 @@ const LessonEditor = () => {
                     <div className="editor-info-row">
                       <span className="editor-info-label">Type</span>
                       <span style={{
-                        padding: "2px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                        padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
                         textTransform: "uppercase",
-                        background: lessonType === "video" ? "rgba(59,130,246,0.08)" : lessonType === "reading" ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)",
-                        color: lessonType === "video" ? "#3b82f6" : lessonType === "reading" ? "#10b981" : "#f59e0b",
+                        background: "var(--color-bg-subtle)",
+                        color: "var(--color-text-muted)",
+                        border: "1px solid var(--color-border)"
                       }}>
                         {lessonType}
                       </span>

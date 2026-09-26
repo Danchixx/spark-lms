@@ -11,7 +11,7 @@
 
 .rich-text-editor-container .sun-editor {
   border: none !important;
-  background: var(--color-surface);
+  background: var(--color-surface) !important;
 }
 
 .rich-text-editor-container .se-toolbar {
@@ -27,6 +27,145 @@
 .rich-text-editor-container .se-resizing-bar {
   background: var(--color-bg-subtle) !important;
   border-top: 1px solid var(--color-border) !important;
+}
+
+/* ─── Dark Mode Overrides for SunEditor ─────────────────────── */
+
+/* Editing area */
+.dark .rich-text-editor-container .se-wrapper-inner {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}
+
+.dark .rich-text-editor-container .se-wrapper .se-placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+/* Toolbar buttons */
+.dark .rich-text-editor-container .se-btn {
+  color: var(--color-text-muted) !important;
+  background: transparent !important;
+}
+
+.dark .rich-text-editor-container .se-btn:hover {
+  color: var(--color-text) !important;
+  background: var(--color-border) !important;
+}
+
+.dark .rich-text-editor-container .se-btn.active {
+  color: #FF6B00 !important;
+  background: rgba(255, 107, 0, 0.15) !important;
+}
+
+.dark .rich-text-editor-container .se-btn-tray {
+  background: var(--color-surface) !important;
+}
+
+/* Toolbar button group borders */
+.dark .rich-text-editor-container .se-btn-module-border {
+  border: 1px solid var(--color-border) !important;
+}
+
+/* Toolbar separators */
+.dark .rich-text-editor-container .se-toolbar-separator-vertical {
+  background: var(--color-border) !important;
+}
+
+/* Dropdowns and selects */
+.dark .sun-editor .se-btn-select {
+  background: var(--color-surface) !important;
+  color: var(--color-text-muted) !important;
+  border-color: var(--color-border) !important;
+}
+
+.dark .sun-editor .se-list-layer {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .sun-editor .se-list-layer .se-list-inner {
+  background: var(--color-surface) !important;
+}
+
+.dark .sun-editor .se-list-layer button {
+  color: var(--color-text) !important;
+}
+
+.dark .sun-editor .se-list-layer button:hover {
+  background: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+.dark .sun-editor .se-list-layer .se-list-font-size li button,
+.dark .sun-editor .se-list-layer .se-list-font li button,
+.dark .sun-editor .se-list-layer .se-list-format li button {
+  color: var(--color-text) !important;
+}
+
+/* Color picker */
+.dark .sun-editor .se-list-layer .se-color-pallet {
+  background: var(--color-surface) !important;
+}
+
+/* Tooltip */
+.dark .sun-editor .se-tooltip-inner {
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+/* Dialog (link, image, video modals) */
+.dark .sun-editor .se-dialog-inner .se-dialog-content {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.dark .sun-editor .se-dialog-inner .se-dialog-header {
+  background: var(--color-bg) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  color: var(--color-text-header) !important;
+}
+
+.dark .sun-editor .se-dialog-inner .se-dialog-body label {
+  color: var(--color-text) !important;
+}
+
+.dark .sun-editor .se-dialog-inner .se-dialog-body input,
+.dark .sun-editor .se-dialog-inner .se-dialog-body textarea {
+  background: var(--color-input-bg) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+.dark .sun-editor .se-dialog-inner .se-dialog-footer {
+  background: var(--color-bg) !important;
+  border-top: 1px solid var(--color-border) !important;
+}
+
+.dark .sun-editor .se-dialog-inner .se-dialog-close {
+  color: var(--color-text-muted) !important;
+}
+
+/* Resizing bar */
+.dark .rich-text-editor-container .se-resizing-bar .se-navigation {
+  color: var(--color-text-muted) !important;
+}
+
+/* Code view */
+.dark .rich-text-editor-container .se-wrapper-code {
+  background: var(--color-bg) !important;
+  color: #e2e8f0 !important;
+}
+
+/* SVG icon fills in dark mode */
+.dark .rich-text-editor-container .se-btn svg {
+  fill: var(--color-text-muted) !important;
+}
+
+.dark .rich-text-editor-container .se-btn:hover svg {
+  fill: var(--color-text) !important;
 }
 
 /* Global reading class so LessonCard can inherit typography from Editor */
@@ -65,3 +204,4 @@
 .tiptap-content th, .tiptap-content td {
   padding: 8px 12px;
 }
+
