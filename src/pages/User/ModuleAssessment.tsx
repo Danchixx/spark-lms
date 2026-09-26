@@ -35,6 +35,7 @@ const ModuleAssessment = () => {
   // Assessment data from DB
   const [questions, setQuestions] = useState<any[]>([]);
   const [assessmentId, setAssessmentId] = useState<number | null>(null);
+  const [assessmentTitle, setAssessmentTitle] = useState<string>("");
   const [assessmentTimeLimit, setAssessmentTimeLimit] = useState(DEFAULT_TIME_SECONDS);
   const [loadingAssessment, setLoadingAssessment] = useState(true);
 
@@ -77,7 +78,7 @@ const ModuleAssessment = () => {
         // Get the assessment linked to this lesson
         const { data: assessmentData, error: assessErr } = await supabase
           .from('assessments')
-          .select('id, passing_score, time_limit')
+          .select('id, title, passing_score, time_limit')
           .eq('lesson_id', assessmentLesson.id)
           .single();
 
@@ -85,15 +86,16 @@ const ModuleAssessment = () => {
         if (!assessmentData) return;
 
         setAssessmentId(assessmentData.id);
-        const timeLimitMinutes = assessmentData.time_limit || 15;
-        setAssessmentTimeLimit(timeLimitMinutes * 60);
-        setTimeLeft(timeLimitMinutes * 60);
+        setAssessmentTitle(assessmentData.title);
+        const timeLimitSeconds = assessmentData.time_limit || (15 * 60);
+        setAssessmentTimeLimit(timeLimitSeconds);
+        setTimeLeft(timeLimitSeconds);
 
         // Get questions with choices
         const { data: questionData, error: qErr } = await supabase
           .from('assessment_questions')
           .select(`
-            id, question_text, position,
+            id, question_text, position, question_type, correct_answers,
             assessment_choices ( id, choice_text, is_correct )
           `)
           .eq('assessment_id', assessmentData.id);
@@ -109,6 +111,8 @@ const ModuleAssessment = () => {
           return {
             id: q.id,
             question: q.question_text,
+            type: q.question_type || 'multiple_choice',
+            correct_answers: q.correct_answers || [],
             choices: shuffledChoices.map((c: any) => c.choice_text),
             choiceIds: shuffledChoices.map((c: any) => c.id),
             correctIndex: shuffledChoices.findIndex((c: any) => c.is_correct),
@@ -161,8 +165,8 @@ const ModuleAssessment = () => {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  const handleSelectAnswer = (choiceIdx: number) => {
-    setAnswers((prev) => ({ ...prev, [currentQIndex]: choiceIdx }));
+  const handleAnswerChange = (value: any) => {
+    setAnswers((prev) => ({ ...prev, [currentQIndex]: value }));
   };
 
   const handleNext = () => {
@@ -178,9 +182,27 @@ const ModuleAssessment = () => {
   const calcScore = () => {
     let correct = 0;
     for (let i = 0; i < totalQuestions; i++) {
-      if (answers[i] === questions[i]?.correctIndex) correct++;
+      const q = questions[i];
+      const ans = answers[i];
+      if (!q) continue;
+
+      if (q.type === 'multiple_choice' || q.type === 'true_false') {
+        if (ans === q.correctIndex) correct++;
+      } else if (q.type === 'identification') {
+        const isCorrect = q.correct_answers.some((ca: string) => 
+          ca.trim().toLowerCase() === (ans || "").trim().toLowerCase()
+        );
+        if (isCorrect) correct++;
+      } else if (q.type === 'enumeration') {
+        if (Array.isArray(ans)) {
+          const userAns = ans.map((a: string) => (a || "").trim().toLowerCase());
+          const correctAns = q.correct_answers.map((ca: string) => (ca || "").trim().toLowerCase());
+          const allFound = correctAns.every((ca: string) => userAns.includes(ca));
+          if (allFound) correct++;
+        }
+      }
     }
-    return Math.round((correct / totalQuestions) * 100);
+    return Math.round((correct / totalQuestions) * 100) || 0;
   };
 
   const saveAttempt = async (score: number) => {
@@ -307,12 +329,12 @@ const ModuleAssessment = () => {
 
                   {/* Left: Assessment Card */}
                   <AssessmentCard
-                    moduleName={`Module ${moduleIndex + 1} Assessment – ${moduleData.title}`}
+                    moduleName={`Module ${moduleIndex + 1} Assessment – ${assessmentTitle || moduleData.title}`}
                 currentQuestion={currentQuestion}
                 currentIndex={currentQIndex}
                 totalQuestions={totalQuestions}
                 selectedAnswer={answers[currentQIndex]}
-                onSelectAnswer={handleSelectAnswer}
+                onAnswerChange={handleAnswerChange}
                 onBack={handleBack}
                 onNext={handleNext}
                 onSubmit={handleSubmitClick}

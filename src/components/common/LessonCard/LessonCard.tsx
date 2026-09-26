@@ -12,8 +12,20 @@ interface LessonCardProps {
   onProceedAssessment?: () => void;
 }
 
+const convertYoutubeUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.includes("/embed/")) return url;
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/);
+  if (match?.[1]) return `https://www.youtube.com/embed/${match[1]}`;
+  return url;
+};
+
 const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProceedAssessment }: LessonCardProps) => {
   if (!lesson) return null;
+
+  const videoUrl = lesson.video_url;
+  const embedUrl = convertYoutubeUrl(videoUrl);
+  const isMp4 = videoUrl?.toLowerCase().endsWith('.mp4');
 
   return (
     <div className="lesson-card-wrapper">
@@ -21,21 +33,38 @@ const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProc
 
       {lesson.type === "video" && (
         <>
-          <div className="lesson-video-player">
-            <div className="lesson-video-play-btn">
-              <Play size={28} color="white" fill="white" style={{ marginLeft: 4 }} />
-            </div>
-            <div className="lesson-video-subtitle">Intro Video · 4:32</div>
+          <div className="lesson-video-player" style={{ padding: embedUrl && !isMp4 ? 0 : undefined }}>
+            {embedUrl ? (
+              isMp4 ? (
+                <video src={embedUrl} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                <iframe 
+                  src={embedUrl} 
+                  style={{ width: '100%', height: '100%', border: 'none' }} 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen 
+                />
+              )
+            ) : (
+              <>
+                <div className="lesson-video-play-btn">
+                  <Play size={28} color="white" fill="white" style={{ marginLeft: 4 }} />
+                </div>
+                <div className="lesson-video-subtitle">No video provided</div>
+              </>
+            )}
           </div>
-          <div className="lesson-video-controls">
-            <Play size={16} color="#1a1a1a" fill="#1a1a1a" />
-            <div className="lesson-video-track">
-              <div className="lesson-video-progress">
-                <div className="lesson-video-thumb" />
+          {!embedUrl && (
+            <div className="lesson-video-controls">
+              <Play size={16} color="#1a1a1a" fill="#1a1a1a" />
+              <div className="lesson-video-track">
+                <div className="lesson-video-progress">
+                  <div className="lesson-video-thumb" />
+                </div>
               </div>
+              <div className="lesson-video-time">0:00 / 0:00</div>
             </div>
-            <div className="lesson-video-time">1:53 / 4:32</div>
-          </div>
+          )}
         </>
       )}
 

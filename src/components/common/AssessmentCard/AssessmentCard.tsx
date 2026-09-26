@@ -6,13 +6,13 @@ interface AssessmentCardProps {
   currentQuestion: any;
   currentIndex: number;
   totalQuestions: number;
-  selectedAnswer: number | undefined;
-  onSelectAnswer: (idx: number) => void;
+  selectedAnswer: any;
+  onAnswerChange: (value: any) => void;
   onBack: () => void;
   onNext: () => void;
   onSubmit: () => void;
   onDotClick: (idx: number) => void;
-  answers: Record<number, number>;
+  answers: Record<number, any>;
   isLastQuestion: boolean;
 }
 
@@ -22,7 +22,7 @@ const AssessmentCard = ({
   currentIndex,
   totalQuestions,
   selectedAnswer,
-  onSelectAnswer,
+  onAnswerChange,
   onBack,
   onNext,
   onSubmit,
@@ -48,18 +48,60 @@ const AssessmentCard = ({
       </div>
 
       <div className="assessment-choices">
-        {currentQuestion.choices.map((choice: string, idx: number) => (
-          <div
-            key={idx}
-            className={`assessment-choice ${selectedAnswer === idx ? "assessment-choice--selected" : ""}`}
-            onClick={() => onSelectAnswer(idx)}
-          >
-            <div className="assessment-choice-radio">
-              <div className="assessment-choice-radio-inner" />
+        {(currentQuestion.type === 'multiple_choice' || currentQuestion.type === 'true_false') && (
+          currentQuestion.choices.map((choice: string, idx: number) => (
+            <div
+              key={idx}
+              className={`assessment-choice ${selectedAnswer === idx ? "assessment-choice--selected" : ""}`}
+              onClick={() => onAnswerChange(idx)}
+            >
+              <div className="assessment-choice-radio">
+                <div className="assessment-choice-radio-inner" />
+              </div>
+              {choice}
             </div>
-            {choice}
+          ))
+        )}
+
+        {currentQuestion.type === 'identification' && (
+          <input
+            className="assessment-text-input"
+            type="text"
+            placeholder="Type your answer here..."
+            value={(selectedAnswer as string) || ""}
+            onChange={(e) => onAnswerChange(e.target.value)}
+          />
+        )}
+
+        {currentQuestion.type === 'enumeration' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {currentQuestion.correct_answers?.map((_: any, idx: number) => (
+              <input
+                key={idx}
+                className="assessment-text-input"
+                type="text"
+                placeholder={`Answer ${idx + 1}...`}
+                value={(selectedAnswer && selectedAnswer[idx]) || ""}
+                onChange={(e) => {
+                  const newAnswers = [...(selectedAnswer || Array(currentQuestion.correct_answers.length).fill(""))];
+                  newAnswers[idx] = e.target.value;
+                  onAnswerChange(newAnswers);
+                }}
+              />
+            ))}
           </div>
-        ))}
+        )}
+
+        {currentQuestion.type === 'essay' && (
+          <textarea
+            className="assessment-text-input"
+            rows={6}
+            placeholder="Write your essay answer here..."
+            value={(selectedAnswer as string) || ""}
+            onChange={(e) => onAnswerChange(e.target.value)}
+            style={{ resize: "vertical" }}
+          />
+        )}
       </div>
 
       <div className="assessment-card-footer">
