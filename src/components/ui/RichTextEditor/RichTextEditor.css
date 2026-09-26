@@ -1,8 +1,7 @@
 .rich-text-editor-container {
-  border-radius: 12px;
-  overflow: hidden;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-radius: 12px;
 }
 
 .rich-text-editor-container .se-wrapper {
@@ -12,6 +11,17 @@
 .rich-text-editor-container .sun-editor {
   border: none !important;
   background: var(--color-surface) !important;
+  border-radius: 12px;
+}
+
+.rich-text-editor-container .sun-editor .se-toolbar {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.rich-text-editor-container .sun-editor .se-resizing-bar {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .rich-text-editor-container .se-toolbar {
@@ -78,10 +88,14 @@
   border-color: var(--color-border) !important;
 }
 
-.dark .sun-editor .se-list-layer {
+.dark .sun-editor .se-list-layer,
+.rich-text-editor-container .sun-editor .se-list-layer {
   background: var(--color-surface) !important;
   border: 1px solid var(--color-border) !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  top: 100% !important;
+  bottom: auto !important;
+  margin-top: 4px !important;
 }
 
 .dark .sun-editor .se-list-layer .se-list-inner {
@@ -101,6 +115,26 @@
 .dark .sun-editor .se-list-layer .se-list-font li button,
 .dark .sun-editor .se-list-layer .se-list-format li button {
   color: var(--color-text) !important;
+}
+
+/* Format Dropdown internal tags (h1-h6, pre, etc) */
+.dark .sun-editor .se-list-layer .se-list-format h1,
+.dark .sun-editor .se-list-layer .se-list-format h2,
+.dark .sun-editor .se-list-layer .se-list-format h3,
+.dark .sun-editor .se-list-layer .se-list-format h4,
+.dark .sun-editor .se-list-layer .se-list-format h5,
+.dark .sun-editor .se-list-layer .se-list-format h6,
+.dark .sun-editor .se-list-layer .se-list-format p,
+.dark .sun-editor .se-list-layer .se-list-format div,
+.dark .sun-editor .se-list-layer .se-list-format blockquote {
+  color: var(--color-text) !important;
+  background: transparent !important;
+}
+
+.dark .sun-editor .se-list-layer .se-list-format pre {
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
 }
 
 /* Color picker */
