@@ -131,6 +131,10 @@ const UserProfile = () => {
     role: targetUser.role,
     coursesAssigned: assignedCourses.length,
     avatarUrl: targetUser.avatar_url,
+    prcId: targetUser.cpd_prc_id || "",
+    position: targetUser.cpd_position || "",
+    schoolName: targetUser.cpd_school_name || "",
+    isCpd: company?.name?.toUpperCase() === "SPARK CPD",
   };
 
   return (

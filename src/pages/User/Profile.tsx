@@ -108,6 +108,10 @@ const Profile = () => {
     role: user?.role || "User",
     coursesAssigned: courses.length,
     avatarUrl: user?.avatar_url || null,
+    prcId: user?.cpd_prc_id || "",
+    position: user?.cpd_position || "",
+    schoolName: user?.cpd_school_name || "",
+    isCpd: company?.name?.toUpperCase() === "SPARK CPD",
   };
 
   const handleSaveDetails = async (updated: any) => {

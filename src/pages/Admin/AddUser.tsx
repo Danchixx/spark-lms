@@ -70,6 +70,9 @@ const AdminAddUser = () => {
     jobTitle: "",
     department: "Select Department",
     dateHired: "",
+    prcId: "",
+    position: "",
+    schoolName: "",
     sendEmail: true,
     selectedCourses: [] as number[],
   });
@@ -116,9 +119,15 @@ const AdminAddUser = () => {
     if (formData.contact && !/^[0-9]{11}$/.test(formData.contact)) return setErrorMsg("Contact number must be exactly 11 digits.");
     
     if (!formData.address) return setErrorMsg("Address is required.");
-    if (!formData.employeeId) return setErrorMsg("Employee ID is required.");
-    if (!formData.jobTitle) return setErrorMsg("Job Title is required.");
-    if (formData.department === "Select Department") return setErrorMsg("Please select a department.");
+    if (company?.name?.toUpperCase() === "SPARK CPD") {
+      if (!formData.prcId) return setErrorMsg("PRC ID is required.");
+      if (!formData.position) return setErrorMsg("Position is required.");
+      if (!formData.schoolName) return setErrorMsg("School Name is required.");
+    } else {
+      if (!formData.employeeId) return setErrorMsg("Employee ID is required.");
+      if (!formData.jobTitle) return setErrorMsg("Job Title is required.");
+      if (formData.department === "Select Department") return setErrorMsg("Please select a department.");
+    }
     
     setIsSubmitting(true);
     setErrorMsg("");
@@ -180,6 +189,9 @@ const AdminAddUser = () => {
         department: formData.department !== "Select Department" ? formData.department : null,
         job_title: formData.jobTitle || null,
         date_hired: formData.dateHired || null,
+        cpd_prc_id: formData.prcId || null,
+        cpd_position: formData.position || null,
+        cpd_school_name: formData.schoolName || null,
         avatar_url: avatarUrl,
         created_by: user?.id
       };
@@ -370,37 +382,53 @@ const AdminAddUser = () => {
                                 </div>
                             </div>
 
-                            {/* Employment Details */}
-                            <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden" }}>
-                                <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: 12 }}>
-                                    <Briefcase size={18} color="var(--color-text-header)" />
-                                    <h2 style={{ fontSize: 15, margin: 0, color: "var(--color-text-header)", fontWeight: 700 }}>Employment Details</h2>
-                                </div>
-                                <div style={{ padding: 24 }}>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                                        <InputBox label="Employee ID" required value={formData.employeeId} onChange={(val) => handleUpdate("employeeId", val)} />
-                                        <InputBox label="Job Title" required value={formData.jobTitle} onChange={(val) => handleUpdate("jobTitle", val)} />
+                            {/* Employment / Profession Details */}
+                            {company?.name?.toUpperCase() === "SPARK CPD" ? (
+                                <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden" }}>
+                                    <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: 12 }}>
+                                        <Briefcase size={18} color="var(--color-text-header)" />
+                                        <h2 style={{ fontSize: 15, margin: 0, color: "var(--color-text-header)", fontWeight: 700 }}>Profession Details</h2>
                                     </div>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                                        <div style={{ flex: 1 }}>
-                                            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)", marginBottom: 6 }}>Department <span style={{ color: "#e74c3c" }}>*</span></label>
-                                            <select 
-                                                value={formData.department} 
-                                                onChange={(e) => handleUpdate("department", e.target.value)}
-                                                style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: 8, background: "var(--color-surface)", fontSize: 13, color: "var(--color-text)" }}
-                                            >
-                                                <option>Select Department</option>
-                                                <option>IT Dept.</option>
-                                                <option>HR Dept.</option>
-                                                <option>Sales</option>
-                                                <option>Marketing</option>
-                                                <option>Operations</option>
-                                            </select>
+                                    <div style={{ padding: 24 }}>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                                            <InputBox label="PRC ID" required value={formData.prcId} onChange={(val) => handleUpdate("prcId", val)} />
+                                            <InputBox label="Position" required value={formData.position} onChange={(val) => handleUpdate("position", val)} />
                                         </div>
-                                        <InputBox label="Date Hired" type="date" value={formData.dateHired} onChange={(val) => handleUpdate("dateHired", val)} />
+                                        <InputBox label="School Name" required value={formData.schoolName} onChange={(val) => handleUpdate("schoolName", val)} />
                                     </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden" }}>
+                                    <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: 12 }}>
+                                        <Briefcase size={18} color="var(--color-text-header)" />
+                                        <h2 style={{ fontSize: 15, margin: 0, color: "var(--color-text-header)", fontWeight: 700 }}>Employment Details</h2>
+                                    </div>
+                                    <div style={{ padding: 24 }}>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                                            <InputBox label="Employee ID" required value={formData.employeeId} onChange={(val) => handleUpdate("employeeId", val)} />
+                                            <InputBox label="Job Title" required value={formData.jobTitle} onChange={(val) => handleUpdate("jobTitle", val)} />
+                                        </div>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                                            <div style={{ flex: 1 }}>
+                                                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)", marginBottom: 6 }}>Department <span style={{ color: "#e74c3c" }}>*</span></label>
+                                                <select 
+                                                    value={formData.department} 
+                                                    onChange={(e) => handleUpdate("department", e.target.value)}
+                                                    style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: 8, background: "var(--color-surface)", fontSize: 13, color: "var(--color-text)" }}
+                                                >
+                                                    <option>Select Department</option>
+                                                    <option>IT Dept.</option>
+                                                    <option>HR Dept.</option>
+                                                    <option>Sales</option>
+                                                    <option>Marketing</option>
+                                                    <option>Operations</option>
+                                                </select>
+                                            </div>
+                                            <InputBox label="Date Hired" type="date" value={formData.dateHired} onChange={(val) => handleUpdate("dateHired", val)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Account Setup */}
                             <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden" }}>

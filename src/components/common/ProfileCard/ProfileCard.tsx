@@ -25,6 +25,10 @@ interface ProfileData {
   role: string;
   coursesAssigned: number;
   avatarUrl: string | null;
+  prcId?: string;
+  position?: string;
+  schoolName?: string;
+  isCpd?: boolean;
 }
 
 interface ProfileCardProps {
@@ -149,6 +153,10 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
   const [department, setDepartment] = useState(profileData.department);
   const [jobTitle, setJobTitle] = useState(profileData.jobTitle);
   const [dateHired, setDateHired] = useState(profileData.dateHired);
+  
+  const [prcId, setPrcId] = useState(profileData.prcId || "");
+  const [position, setPosition] = useState(profileData.position || "");
+  const [schoolName, setSchoolName] = useState(profileData.schoolName || "");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -165,7 +173,10 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
       employeeId,
       department,
       jobTitle,
-      dateHired
+      dateHired,
+      prcId,
+      position,
+      schoolName
     });
   };
 
@@ -180,6 +191,9 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
     setDepartment(profileData.department);
     setJobTitle(profileData.jobTitle);
     setDateHired(profileData.dateHired);
+    setPrcId(profileData.prcId || "");
+    setPosition(profileData.position || "");
+    setSchoolName(profileData.schoolName || "");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -276,11 +290,20 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
             <p style={{ fontSize: 11, fontWeight: 700, color: "#FF6B00", letterSpacing: 2, marginBottom: 16 }}>{profileData.role?.toUpperCase() || "USER"}</p>
 
             <div style={{ width: "100%", paddingTop: 8 }}>
-              <SideInfoRow label="Department" value={profileData.department} />
-              <SideInfoRow label="Job Title" value={profileData.jobTitle} />
+              {profileData.isCpd ? (
+                <>
+                  <SideInfoRow label="School Name" value={profileData.schoolName || ""} />
+                  <SideInfoRow label="Position" value={profileData.position || ""} />
+                </>
+              ) : (
+                <>
+                  <SideInfoRow label="Department" value={profileData.department} />
+                  <SideInfoRow label="Job Title" value={profileData.jobTitle} />
+                </>
+              )}
               <SideInfoRow 
-                label={profileData.role?.toLowerCase() === "user" ? "Courses" : "Employee ID"} 
-                value={profileData.role?.toLowerCase() === "user" ? `${profileData.coursesAssigned ?? 0} assigned` : profileData.employeeId} 
+                label={profileData.role?.toLowerCase() === "user" ? "Courses" : (profileData.isCpd ? "PRC ID" : "Employee ID")} 
+                value={profileData.role?.toLowerCase() === "user" ? `${profileData.coursesAssigned ?? 0} assigned` : (profileData.isCpd ? (profileData.prcId || "") : profileData.employeeId)} 
               />
             </div>
 
@@ -329,26 +352,46 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
               )}
             </div>
 
-            <SectionTitle icon={Briefcase} title="Employment Details" />
+            <SectionTitle icon={Briefcase} title={profileData.isCpd ? "Profession Details" : "Employment Details"} />
             <div style={{ border: "1px solid var(--color-border)", margin: "16px", borderRadius: 10, overflow: "hidden" }}>
               {editing ? (
-                <>
-                  <EditableFieldPair
-                    left={{ label: "Employee ID", value: employeeId, locked: !isStaff, onChange: setEmployeeId }}
-                    right={{ label: "Job Title", value: jobTitle, locked: !isStaff, onChange: setJobTitle }}
-                  />
-                  <EditableFieldPair
-                    left={{ label: "Department", value: department, locked: !isStaff, onChange: setDepartment }}
-                    right={{ label: "Date Hired", value: dateHired, locked: !isStaff, onChange: setDateHired }}
-                  />
-                  <EditableFieldRow label="Member Since" value={profileData.memberSince} locked={true} />
-                </>
+                profileData.isCpd ? (
+                  <>
+                    <EditableFieldPair
+                      left={{ label: "PRC ID", value: prcId, locked: !isStaff, onChange: setPrcId }}
+                      right={{ label: "Position", value: position, locked: !isStaff, onChange: setPosition }}
+                    />
+                    <EditableFieldPair
+                      left={{ label: "School Name", value: schoolName, locked: !isStaff, onChange: setSchoolName }}
+                      right={{ label: "Member Since", value: profileData.memberSince, locked: true }}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <EditableFieldPair
+                      left={{ label: "Employee ID", value: employeeId, locked: !isStaff, onChange: setEmployeeId }}
+                      right={{ label: "Job Title", value: jobTitle, locked: !isStaff, onChange: setJobTitle }}
+                    />
+                    <EditableFieldPair
+                      left={{ label: "Department", value: department, locked: !isStaff, onChange: setDepartment }}
+                      right={{ label: "Date Hired", value: dateHired, locked: !isStaff, onChange: setDateHired }}
+                    />
+                    <EditableFieldRow label="Member Since" value={profileData.memberSince} locked={true} />
+                  </>
+                )
               ) : (
-                <>
-                  <FieldPair left={{ label: "Employee ID", value: profileData.employeeId }} right={{ label: "Job Title", value: profileData.jobTitle }} />
-                  <FieldPair left={{ label: "Department", value: profileData.department }} right={{ label: "Date Hired", value: profileData.dateHired }} />
-                  <FieldRow label="Member Since" value={profileData.memberSince} />
-                </>
+                profileData.isCpd ? (
+                  <>
+                    <FieldPair left={{ label: "PRC ID", value: profileData.prcId || "" }} right={{ label: "Position", value: profileData.position || "" }} />
+                    <FieldPair left={{ label: "School Name", value: profileData.schoolName || "" }} right={{ label: "Member Since", value: profileData.memberSince }} />
+                  </>
+                ) : (
+                  <>
+                    <FieldPair left={{ label: "Employee ID", value: profileData.employeeId }} right={{ label: "Job Title", value: profileData.jobTitle }} />
+                    <FieldPair left={{ label: "Department", value: profileData.department }} right={{ label: "Date Hired", value: profileData.dateHired }} />
+                    <FieldRow label="Member Since" value={profileData.memberSince} />
+                  </>
+                )
               )}
             </div>
           </div>

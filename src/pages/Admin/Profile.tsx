@@ -88,6 +88,10 @@ const AdminProfile = () => {
     role: user?.role || "Admin",
     coursesAssigned: courses.length,
     avatarUrl: user?.avatar_url || null,
+    prcId: user?.cpd_prc_id || "",
+    position: user?.cpd_position || "",
+    schoolName: user?.cpd_school_name || "",
+    isCpd: company?.name?.toUpperCase() === "SPARK CPD",
   };
 
   const handleSaveDetails = async (updated: any) => {
@@ -103,6 +107,9 @@ const AdminProfile = () => {
       if (updated.jobTitle !== undefined) updates.job_title = updated.jobTitle;
       if (updated.department !== undefined) updates.department = updated.department;
       if (updated.dateHired !== undefined) updates.date_hired = updated.dateHired;
+      if (updated.prcId !== undefined) updates.cpd_prc_id = updated.prcId;
+      if (updated.position !== undefined) updates.cpd_position = updated.position;
+      if (updated.schoolName !== undefined) updates.cpd_school_name = updated.schoolName;
 
       await updateProfile(updates);
       setSuccessMessage("Your profile have been updated successfully.");
