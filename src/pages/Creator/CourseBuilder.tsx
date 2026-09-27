@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ChevronRight, ChevronDown, Plus, Play, FileText, PenTool, Trash2, GripVertical, Edit3, X, CheckCircle, AlertCircle } from "lucide-react";
@@ -10,6 +10,7 @@ import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import * as courseService from "../../services/courseCreatorService";
+import { supabase } from "../../lib/supabase";
 import "./CourseBuilder.css";
 
 // ─── Types (mirrors DB schema) ──────────────────────────────
@@ -118,6 +119,8 @@ const CourseBuilder = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: "module" | "lesson"; moduleId: number; lessonId?: number } | null>(null);
   const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Fetch real data from Supabase on mount ────────────────
   useEffect(() => {
@@ -390,6 +393,46 @@ const CourseBuilder = () => {
     }
   };
 
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("File size must be less than 2MB", "error");
+      return;
+    }
+
+    setIsUploading(true);
+    showToast("Uploading thumbnail...");
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `${course.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("course_thumbnails")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from("course_thumbnails")
+        .getPublicUrl(filePath);
+
+      setCourse({ ...course, thumbnail_url: data.publicUrl });
+      showToast("Thumbnail uploaded successfully!");
+    } catch (error: any) {
+      console.error("Error uploading thumbnail:", error);
+      showToast(error.message || "Failed to upload thumbnail", "error");
+    } finally {
+      setIsUploading(false);
+      if (thumbnailInputRef.current) {
+        thumbnailInputRef.current.value = "";
+      }
+    }
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
@@ -418,18 +461,24 @@ const CourseBuilder = () => {
 
             {/* Course Banner */}
             <div className="builder-banner">
+              <input 
+                type="file" 
+                ref={thumbnailInputRef} 
+                accept="image/*" 
+                style={{ display: "none" }} 
+                onChange={handleThumbnailUpload} 
+              />
               <div
                 className="builder-banner-image editable-thumbnail"
                 onClick={() => {
-                  const url = window.prompt("Enter new thumbnail URL:", course.thumbnail_url || "");
-                  if (url !== null) setCourse({ ...course, thumbnail_url: url });
+                  if (!isUploading) thumbnailInputRef.current?.click();
                 }}
                 style={{
                   background: course.thumbnail_url
                     ? `url(${course.thumbnail_url}) center/cover no-repeat`
                     : "linear-gradient(135deg, #FF9800 0%, #FFB74D 100%)",
                   position: "relative",
-                  cursor: "pointer"
+                  cursor: isUploading ? "wait" : "pointer"
                 }}
               >
                 <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
