@@ -153,8 +153,14 @@ const AdminAddUser = () => {
       const generatedPassword = `Spark-${sanitizedCompany}-${random4}`;
 
       // 4. Create Auth User via Edge Function
+      const isSparkCpd = company?.name?.toUpperCase() === "SPARK CPD";
       const { data: fnData, error: fnError } = await supabase.functions.invoke('create-admin-user', {
-        body: { email: formData.email, password: generatedPassword }
+        body: { 
+          email: formData.email, 
+          password: generatedPassword,
+          name: `${formData.firstName} ${formData.lastName}`,
+          sendEmail: isSparkCpd
+        }
       });
       
       if (fnError) throw new Error(`Failed to create Auth User: ${fnError.message}`);
@@ -578,8 +584,17 @@ const AdminAddUser = () => {
                                             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                                                 <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Full Name</span><span style={{ fontWeight: 600, fontSize: 13 }}>{currentFullName}</span></div>
                                                 <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Email</span><span style={{ fontWeight: 600, fontSize: 13 }}>{currentEmail}</span></div>
-                                                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Department</span><span style={{ fontWeight: 600, fontSize: 13 }}>{formData.department}</span></div>
-                                                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Job Title</span><span style={{ fontWeight: 600, fontSize: 13 }}>{formData.jobTitle || "Not set"}</span></div>
+                                                {company?.name?.toUpperCase() === "SPARK CPD" ? (
+                                                    <>
+                                                        <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>PRC ID</span><span style={{ fontWeight: 600, fontSize: 13 }}>{formData.prcId || "Not set"}</span></div>
+                                                        <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>School</span><span style={{ fontWeight: 600, fontSize: 13 }}>{formData.schoolName || "Not set"}</span></div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Department</span><span style={{ fontWeight: 600, fontSize: 13 }}>{formData.department}</span></div>
+                                                        <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Job Title</span><span style={{ fontWeight: 600, fontSize: 13 }}>{formData.jobTitle || "Not set"}</span></div>
+                                                    </>
+                                                )}
                                                 <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Date Joined</span><span style={{ fontWeight: 600, fontSize: 13 }}>Auto</span></div>
                                             </div>
                                         </div>
