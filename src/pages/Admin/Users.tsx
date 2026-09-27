@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, User, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2 } from "lucide-react";
+import { Users, User, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2, Check, Archive, RefreshCw } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
@@ -62,6 +62,19 @@ const StatusTag = ({ color, label }: { color: string; label: string }) => (
 const PAGE_SIZE = 5;
 const PENDING_COLOR = "#CF591D";
 
+const SuccessModal = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", animation: "modal-fade-in 0.2s ease", backdropFilter: "blur(4px)" }}>
+    <div style={{ background: "var(--color-surface)", borderRadius: 16, padding: "36px 40px", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", animation: "modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)", border: "1px solid var(--color-border)" }}>
+      <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(34, 197, 94, 0.1)", border: "2px solid rgba(34, 197, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        <Check size={28} color="#22c55e" />
+      </div>
+      <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--color-text-header)", margin: "0 0 8px" }}>Success!</h3>
+      <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 24px", lineHeight: 1.6 }}>{message}</p>
+      <button onClick={onClose} style={{ background: "#FF6B00", color: "white", border: "none", borderRadius: 8, padding: "10px 32px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>Done</button>
+    </div>
+  </div>
+);
+
 const AdminUsers = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
@@ -75,25 +88,53 @@ const AdminUsers = () => {
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
+  const [showArchived, setShowArchived] = useState(false);
   const [dbUsers, setDbUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const { error } = await supabase.from('users').delete().eq('id', deleteTarget);
-      if (error) throw error;
-      setDbUsers(prev => prev.filter(u => u.id !== deleteTarget));
+      if (showArchived) {
+        // Permanent delete
+        const { error } = await supabase.from('users').delete().eq('id', deleteTarget);
+        if (error) throw error;
+        setDbUsers(prev => prev.filter(u => u.id !== deleteTarget));
+      } else {
+        // Archive
+        const { error } = await supabase.from('users').update({ 
+          is_archived: true, 
+          archived_at: new Date().toISOString()
+        }).eq('id', deleteTarget);
+        if (error) throw error;
+        setDbUsers(prev => prev.map(u => u.id === deleteTarget ? { ...u, isArchived: true } : u));
+      }
       setDeleteTarget(null);
+      setShowSuccessModal(true);
     } catch (err) {
       console.error("Failed to delete user:", err);
       alert("Failed to delete user.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const restoreUser = async (id: string) => {
+    try {
+      const { error } = await supabase.from('users').update({ 
+        is_archived: false, 
+        archived_at: null
+      }).eq('id', id);
+      if (error) throw error;
+      setDbUsers(prev => prev.map(u => u.id === id ? { ...u, isArchived: false } : u));
+    } catch (err) {
+      console.error("Failed to restore user:", err);
+      alert("Failed to restore user.");
     }
   };
 
@@ -133,7 +174,8 @@ const AdminUsers = () => {
             role: roleName.replace('_', ' ').toUpperCase(),
             roleColor: roleColor,
             originalRole: roleName,
-            avatar: u.avatar_url
+            avatar: u.avatar_url,
+            isArchived: u.is_archived || false
           };
         });
 
@@ -156,12 +198,13 @@ const AdminUsers = () => {
 
   const filteredUsers = useMemo(() => {
     return dbUsers.filter(u => {
+      if (u.isArchived !== showArchived) return false;
       const matchRole = roleFilter === "All Roles" || u.role.toLowerCase() === roleFilter.toLowerCase();
       const matchStatus = statusFilter === "All Status" || u.status.toLowerCase() === statusFilter.toLowerCase();
       const matchDept = deptFilter === "All Departments" || deptFilter === "All Schools" || u.dept.toLowerCase().includes(deptFilter.toLowerCase());
       return matchRole && matchStatus && matchDept;
     });
-  }, [dbUsers, roleFilter, statusFilter, deptFilter]);
+  }, [dbUsers, roleFilter, statusFilter, deptFilter, showArchived]);
 
   const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE) || 1;
   const paginatedUsers = useMemo(() => {
@@ -177,14 +220,19 @@ const AdminUsers = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+      {showSuccessModal && <SuccessModal message="User successfully deleted." onClose={() => setShowSuccessModal(false)} />}
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
           <div style={{ background: "var(--color-surface)", padding: 32, borderRadius: 16, width: "100%", maxWidth: 400, border: "1px solid var(--color-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-            <h3 style={{ margin: "0 0 16px", color: "var(--color-text-header)", fontSize: 18, fontWeight: 700 }}>Confirm Deletion</h3>
-            <p style={{ margin: "0 0 24px", color: "var(--color-text-muted)", fontSize: 14 }}>Are you sure you want to delete this user? This action cannot be undone.</p>
+            <h3 style={{ margin: "0 0 16px", color: "var(--color-text-header)", fontSize: 18, fontWeight: 700 }}>Confirm {showArchived ? "Deletion" : "Archive"}</h3>
+            <p style={{ margin: "0 0 24px", color: "var(--color-text-muted)", fontSize: 14 }}>
+              {showArchived 
+                ? "Are you sure you want to permanently delete this user? This action cannot be undone and will permanently remove all associated course progress." 
+                : "Are you sure you want to archive this user? They will no longer be able to access the platform."}
+            </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
               <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>Cancel</Button>
-              <Button variant="danger" onClick={confirmDelete} loading={isDeleting}>{isDeleting ? "Deleting..." : "Delete User"}</Button>
+              <Button variant="danger" onClick={confirmDelete} loading={isDeleting}>{isDeleting ? "Processing..." : (showArchived ? "Delete Permanently" : "Archive User")}</Button>
             </div>
           </div>
         </div>
@@ -243,6 +291,22 @@ const AdminUsers = () => {
                 >
                   {departments.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
+
+                <div style={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
+                  <button
+                    onClick={() => { setShowArchived(!showArchived); setCurrentPage(1); }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 8,
+                      background: showArchived ? "rgba(231, 76, 60, 0.1)" : "var(--color-surface)",
+                      border: `1px solid ${showArchived ? "rgba(231, 76, 60, 0.3)" : "var(--color-border)"}`,
+                      color: showArchived ? "#e74c3c" : "var(--color-text-muted)",
+                      fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s"
+                    }}
+                  >
+                    <Archive size={16} />
+                    {showArchived ? "Hide Archived Users" : "View Archived Users"}
+                  </button>
+                </div>
               </div>
 
               {/* Users Table Box */}
@@ -292,9 +356,18 @@ const AdminUsers = () => {
 
 
                       <div style={{ display: "flex", justifyContent: "flex-start", gap: 8 }}>
-                        <ActionButton icon={Eye} onClick={() => navigate(`/${slug}/users/${u.id}`)} />
-                        <ActionButton icon={Edit2} onClick={() => navigate(`/${slug}/users/${u.id}`)} disabled={u.role.toLowerCase() !== "user"} />
-                        <ActionButton icon={Trash2} variant="danger" onClick={() => setDeleteTarget(u.id)} disabled={u.role.toLowerCase() !== "user"} />
+                        {!showArchived ? (
+                          <>
+                            <ActionButton icon={Eye} onClick={() => navigate(`/${slug}/users/${u.id}`)} />
+                            <ActionButton icon={Edit2} onClick={() => navigate(`/${slug}/users/${u.id}`)} disabled={u.role.toLowerCase() !== "user"} />
+                            <ActionButton icon={Archive} variant="danger" onClick={() => setDeleteTarget(u.id)} disabled={u.role.toLowerCase() !== "user"} />
+                          </>
+                        ) : (
+                          <>
+                            <ActionButton icon={RefreshCw} onClick={() => restoreUser(u.id)} />
+                            <ActionButton icon={Trash2} variant="danger" onClick={() => setDeleteTarget(u.id)} />
+                          </>
+                        )}
                       </div>
 
                     </div>
