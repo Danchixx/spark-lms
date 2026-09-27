@@ -128,7 +128,7 @@ const AdminUsers = () => {
             id: u.id,
             name: `${u.firstname || ''} ${u.lastname || ''}`.trim() || 'Unknown User',
             status: capStatus,
-            dept: u.department || "N/A",
+            dept: (company?.name?.toUpperCase() === "SPARK CPD" ? u.cpd_school_name : u.department) || "N/A",
             joined: joinedDateExp,
             role: roleName.replace('_', ' ').toUpperCase(),
             roleColor: roleColor,
@@ -158,7 +158,7 @@ const AdminUsers = () => {
     return dbUsers.filter(u => {
       const matchRole = roleFilter === "All Roles" || u.role.toLowerCase() === roleFilter.toLowerCase();
       const matchStatus = statusFilter === "All Status" || u.status.toLowerCase() === statusFilter.toLowerCase();
-      const matchDept = deptFilter === "All Departments" || u.dept.toLowerCase().includes(deptFilter.toLowerCase());
+      const matchDept = deptFilter === "All Departments" || deptFilter === "All Schools" || u.dept.toLowerCase().includes(deptFilter.toLowerCase());
       return matchRole && matchStatus && matchDept;
     });
   }, [dbUsers, roleFilter, statusFilter, deptFilter]);
@@ -171,7 +171,8 @@ const AdminUsers = () => {
 
   const departments = useMemo(() => {
     const sets = new Set(dbUsers.map(u => u.dept).filter(Boolean));
-    return ["All Departments", ...Array.from(sets)];
+    const isCpd = company?.name?.toUpperCase() === "SPARK CPD";
+    return [isCpd ? "All Schools" : "All Departments", ...Array.from(sets)];
   }, [dbUsers]);
 
   return (
@@ -236,7 +237,7 @@ const AdminUsers = () => {
                 </select>
 
                 <select
-                  value={deptFilter}
+                  value={deptFilter === "All Departments" && company?.name?.toUpperCase() === "SPARK CPD" ? "All Schools" : deptFilter}
                   onChange={(e) => { setDeptFilter(e.target.value); setCurrentPage(1); }}
                   className="users-filter-select"
                 >
@@ -250,7 +251,7 @@ const AdminUsers = () => {
                 <div className="users-table-header">
                   <div>Name</div>
                   <div>Status</div>
-                  <div>Department</div>
+                  <div>{company?.name?.toUpperCase() === "SPARK CPD" ? "School" : "Department"}</div>
                   <div>Role</div>
                   <div>Joined</div>
                   <div>Actions</div>
