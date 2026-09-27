@@ -6,7 +6,7 @@ import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import ProfileCard from "../../components/common/ProfileCard/ProfileCard";
-import { ArrowLeft, ChevronRight, BookOpen, Clock, CheckCircle2, UserCircle, Briefcase, Info, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, BookOpen, Clock, CheckCircle2, UserCircle, Briefcase, Info, Loader2, Check } from "lucide-react";
 import PageTransition from "../../components/common/PageTransition";
 
 const SectionTitle = ({ icon: Icon, title }: { icon: any; title: string }) => (
@@ -15,6 +15,19 @@ const SectionTitle = ({ icon: Icon, title }: { icon: any; title: string }) => (
       <Icon size={13} color="#FF6B00" />
     </div>
     <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.12em" }}>{title}</span>
+  </div>
+);
+
+const SuccessModal = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", animation: "modal-fade-in 0.2s ease", backdropFilter: "blur(4px)" }}>
+    <div style={{ background: "var(--color-surface)", borderRadius: 16, padding: "36px 40px", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", animation: "modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)", border: "1px solid var(--color-border)" }}>
+      <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(34, 197, 94, 0.1)", border: "2px solid rgba(34, 197, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        <Check size={28} color="#22c55e" />
+      </div>
+      <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--color-text-header)", margin: "0 0 8px" }}>Success!</h3>
+      <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 24px", lineHeight: 1.6 }}>{message}</p>
+      <button onClick={onClose} style={{ background: "#FF6B00", color: "white", border: "none", borderRadius: 8, padding: "10px 32px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>Done</button>
+    </div>
   </div>
 );
 
@@ -27,6 +40,8 @@ const UserProfile = () => {
   const [targetUser, setTargetUser] = useState<any>(null);
   const [assignedCourses, setAssignedCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
@@ -137,8 +152,38 @@ const UserProfile = () => {
     isCpd: company?.name?.toUpperCase() === "SPARK CPD",
   };
 
+  const handleSaveDetails = async (updated: any) => {
+    try {
+      const updates: Record<string, any> = {};
+      
+      if (updated.firstName !== undefined) updates.firstname = updated.firstName;
+      if (updated.middleName !== undefined) updates.middlename = updated.middleName;
+      if (updated.lastName !== undefined) updates.lastname = updated.lastName;
+      if (updated.contactNumber !== undefined) updates.contact_no = updated.contactNumber;
+      if (updated.address !== undefined) updates.address = updated.address;
+      if (updated.employeeId !== undefined) updates.employee_id = updated.employeeId;
+      if (updated.jobTitle !== undefined) updates.job_title = updated.jobTitle;
+      if (updated.department !== undefined) updates.department = updated.department;
+      if (updated.dateHired !== undefined) updates.date_hired = updated.dateHired || null;
+      if (updated.prcId !== undefined) updates.cpd_prc_id = updated.prcId;
+      if (updated.position !== undefined) updates.cpd_position = updated.position;
+      if (updated.schoolName !== undefined) updates.cpd_school_name = updated.schoolName;
+
+      const { error } = await supabase.from('users').update(updates).eq('id', userId);
+      if (error) throw error;
+      
+      setTargetUser((prev: any) => ({ ...prev, ...updates }));
+      setSuccessMessage("User details updated successfully!");
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error("Failed to update user:", err);
+      alert("Failed to update user details.");
+    }
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+      {showSuccessModal && <SuccessModal message={successMessage} onClose={() => setShowSuccessModal(false)} />}
       <Sidebar isOpen={sidebarOpen} activePage="Users" onNavigate={onNavigate} user={currentUser} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -166,7 +211,7 @@ const UserProfile = () => {
             <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--color-text-header)", marginBottom: 24, textAlign: "center" }}>User Profile</h1>
 
             <div style={{ marginBottom: 24 }}>
-              <ProfileCard profileData={profileData} editable={false} />
+              <ProfileCard profileData={profileData} editable={true} onSave={handleSaveDetails} />
             </div>
 
             {/* Assigned Courses Section */}

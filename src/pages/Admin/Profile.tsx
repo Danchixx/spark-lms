@@ -106,7 +106,7 @@ const AdminProfile = () => {
       if (updated.employeeId !== undefined) updates.employee_id = updated.employeeId;
       if (updated.jobTitle !== undefined) updates.job_title = updated.jobTitle;
       if (updated.department !== undefined) updates.department = updated.department;
-      if (updated.dateHired !== undefined) updates.date_hired = updated.dateHired;
+      if (updated.dateHired !== undefined) updates.date_hired = updated.dateHired || null;
       if (updated.prcId !== undefined) updates.cpd_prc_id = updated.prcId;
       if (updated.position !== undefined) updates.cpd_position = updated.position;
       if (updated.schoolName !== undefined) updates.cpd_school_name = updated.schoolName;

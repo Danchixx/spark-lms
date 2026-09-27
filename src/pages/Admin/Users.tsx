@@ -77,6 +77,25 @@ const AdminUsers = () => {
 
   const [dbUsers, setDbUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('users').delete().eq('id', deleteTarget);
+      if (error) throw error;
+      setDbUsers(prev => prev.filter(u => u.id !== deleteTarget));
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      alert("Failed to delete user.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (!company?.id) return;
@@ -157,6 +176,18 @@ const AdminUsers = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+      {deleteTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "var(--color-surface)", padding: 32, borderRadius: 16, width: "100%", maxWidth: 400, border: "1px solid var(--color-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <h3 style={{ margin: "0 0 16px", color: "var(--color-text-header)", fontSize: 18, fontWeight: 700 }}>Confirm Deletion</h3>
+            <p style={{ margin: "0 0 24px", color: "var(--color-text-muted)", fontSize: 14 }}>Are you sure you want to delete this user? This action cannot be undone.</p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>Cancel</Button>
+              <Button variant="danger" onClick={confirmDelete} loading={isDeleting}>{isDeleting ? "Deleting..." : "Delete User"}</Button>
+            </div>
+          </div>
+        </div>
+      )}
       <Sidebar isOpen={sidebarOpen} activePage="Users" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -261,8 +292,8 @@ const AdminUsers = () => {
 
                       <div style={{ display: "flex", justifyContent: "flex-start", gap: 8 }}>
                         <ActionButton icon={Eye} onClick={() => navigate(`/${slug}/users/${u.id}`)} />
-                        <ActionButton icon={Edit2} disabled={u.role.toLowerCase() !== "user"} />
-                        <ActionButton icon={Trash2} variant="danger" disabled={u.role.toLowerCase() !== "user"} />
+                        <ActionButton icon={Edit2} onClick={() => navigate(`/${slug}/users/${u.id}`)} disabled={u.role.toLowerCase() !== "user"} />
+                        <ActionButton icon={Trash2} variant="danger" onClick={() => setDeleteTarget(u.id)} disabled={u.role.toLowerCase() !== "user"} />
                       </div>
 
                     </div>
