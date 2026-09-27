@@ -10,6 +10,9 @@ import PageTransition from "../../components/common/PageTransition";
 import Button from "../../components/ui/Button/Button";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import ProgressBar from "../../components/ui/ProgressBar/ProgressBar";
+import { useAdminCourseContext } from "../../context/AdminCourseContext";
+import { useEffect } from "react";
+import { supabase } from "../../lib/supabase";
 import "../User/Dashboard.css";
 
 import type { LucideIcon } from "lucide-react";
@@ -30,19 +33,58 @@ const AdminDashboard = () => {
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
 
+  const [dashboardStats, setDashboardStats] = useState({
+    totalUsers: 0,
+    activeCourses: 0,
+    completions: 0,
+    certificates: 0
+  });
+
+  const { adminCourses, fetchAdminCourses } = useAdminCourseContext();
+
+  useEffect(() => {
+    if (!company?.id) return;
+    const fetchStats = async () => {
+      const { count: users } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('company_id', company.id);
+      
+      const { count: completions } = await supabase.from('course_progress').select('*', { count: 'exact', head: true }).eq('progress_pct', 100);
+
+      setDashboardStats(prev => ({
+        ...prev,
+        totalUsers: users || 0,
+        completions: completions || 0,
+        certificates: completions || 0
+      }));
+    };
+    fetchStats();
+  }, [company?.id]);
+
+  useEffect(() => {
+    if (adminCourses.length > 0) {
+      setDashboardStats(prev => ({
+        ...prev,
+        activeCourses: adminCourses.filter(c => c.status === 'Active').length
+      }));
+    }
+  }, [adminCourses]);
+
   const stats: StatItem[] = [
-    { label: "Total Users", value: 32, icon: Users, sub: "↑ 8 this month", subColor: "#27ae60" },
-    { label: "Active Courses", value: 7, icon: BookOpen, sub: "2 pending", subColor: "#888" },
-    { label: "Completions", value: 45, icon: CheckCircle, sub: "↑ 12 this week", subColor: "#27ae60" },
-    { label: "Certificate Issued", value: 26, icon: Award, sub: "↑ 5 new", subColor: "#27ae60" },
+    { label: "Total Users", value: dashboardStats.totalUsers, icon: Users, sub: "From tenant", subColor: "#888" },
+    { label: "Active Courses", value: dashboardStats.activeCourses, icon: BookOpen, sub: "Available", subColor: "#888" },
+    { label: "Completions", value: dashboardStats.completions, icon: CheckCircle, sub: "Overall", subColor: "#27ae60" },
+    { label: "Certificate Issued", value: dashboardStats.certificates, icon: Award, sub: "Completed courses", subColor: "#27ae60" },
   ];
 
-  const overviewCourses = [
-    { title: "Sales Fundamentals", status: "Active", progress: 78, enrolled: 24 },
-    { title: "Customer Service Pro", status: "Pending", progress: null, enrolled: null },
-    { title: "Technical Onboarding", status: "Active", progress: 92, enrolled: 34 },
-    { title: "Digital Marketing", status: "Active", progress: 67, enrolled: 23 },
-  ];
+  useEffect(() => {
+    fetchAdminCourses();
+  }, [fetchAdminCourses]);
+
+  const overviewCourses = adminCourses.slice(0, 4).map(c => ({
+    title: c.name,
+    status: c.status,
+    progress: c.avgCompletion,
+    enrolled: c.enrolled === "--" ? null : parseInt(c.enrolled)
+  }));
 
   const pendingApprovals = [
     { name: "Althea Reyes", sub: "New Employee User" },

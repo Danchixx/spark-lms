@@ -64,18 +64,22 @@ const UserProfile = () => {
 
         if (uError) throw uError;
 
-        // Fetch Assigned Courses
+        // Fetch Assigned Courses with real lessons and progress
         const { data: assignments, error: caError } = await supabase
           .from("course_assignments")
           .select(`
             id,
             assigned_at,
             status,
+            course_progress ( progress_pct ),
             courses (
               id,
               title,
               thumbnail_url,
-              course_modules (id)
+              course_modules (
+                id,
+                course_lessons ( id )
+              )
             )
           `)
           .eq("user_id", userId);
@@ -90,15 +94,25 @@ const UserProfile = () => {
           memberSince: u.created_at ? new Date(u.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Unknown",
         });
 
-        const mappedCourses = (assignments || []).map((a: any) => ({
-          id: a.courses.id,
-          title: a.courses.title,
-          thumbnail: a.courses.thumbnail_url,
-          status: a.status,
-          assignedAt: new Date(a.assigned_at).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
-          modulesCount: a.courses.course_modules?.length || 0,
-          lessonsCount: (a.courses.course_modules?.length || 0) * 3
-        }));
+        const mappedCourses = (assignments || []).map((a: any) => {
+          const modules = a.courses?.course_modules || [];
+          const lessonsCount = modules.reduce((total: number, m: any) => total + (m.course_lessons?.length || 0), 0);
+          
+          let derivedStatus = a.status; // Default to assignment status
+          const progressPct = a.course_progress?.[0]?.progress_pct || 0;
+          if (progressPct === 100) derivedStatus = "COMPLETED";
+          else if (progressPct > 0) derivedStatus = "IN PROGRESS";
+
+          return {
+            id: a.courses.id,
+            title: a.courses.title,
+            thumbnail: a.courses.thumbnail_url,
+            status: derivedStatus,
+            assignedAt: new Date(a.assigned_at).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+            modulesCount: modules.length,
+            lessonsCount: lessonsCount
+          };
+        });
 
         setAssignedCourses(mappedCourses);
       } catch (err) {

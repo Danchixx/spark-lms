@@ -159,7 +159,7 @@ const AdminCourseDetails = () => {
 
   const avgCompletion = enrolledCount > 0 ? Math.round(totalProgress / enrolledCount) : 0;
   const modulesCount = course.course_modules?.length || 0;
-  const lessonsCount = modulesCount * 3; // Approx
+  const lessonsCount = (course.course_modules || []).reduce((total: number, m: any) => total + (m.course_lessons?.length || 0), 0);
   
   const creator = Array.isArray(course.users) ? course.users[0] : course.users;
   const companyData = Array.isArray(course.companies) ? course.companies[0] : course.companies;

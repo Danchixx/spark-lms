@@ -64,7 +64,10 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
             id,
             course_progress ( progress_pct )
           ),
-          course_modules ( id )
+          course_modules (
+            id,
+            course_lessons ( id )
+          )
         `)
         .in('company_id', companyIds);
 
@@ -80,7 +83,7 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
 
         const modules = c.course_modules || [];
         const modulesCount = modules.length;
-        const lessonsCount = modulesCount > 0 ? modulesCount * 3 : 0; 
+        const lessonsCount = modules.reduce((total: number, m: any) => total + (m.course_lessons?.length || 0), 0);
         
         const creatorData = Array.isArray(c.users) ? c.users[0] : c.users;
         const roleData = creatorData?.roles;
@@ -128,7 +131,10 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
           id, title, description, thumbnail_url, status, created_at, icon_emoji,
           companies ( name, logo_url ),
           users!courses_created_by_fkey ( firstname, lastname, company_id, roles(name) ),
-          course_modules ( id ),
+          course_modules ( 
+            id,
+            course_lessons ( id ) 
+          ),
           course_assignments (
             id,
             status,

@@ -101,7 +101,7 @@ const AdminCourseCard = ({ course, onViewDetails }: any) => {
             {course.name}
           </div>
           <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-            {course.enrolled} Enrolled • {course.modulesCount} Modules • {course.unitsCount} Units
+            {course.enrolled} Enrolled • {course.modulesCount} Modules • {course.lessonsCount} Lessons
           </div>
         </div>
 
