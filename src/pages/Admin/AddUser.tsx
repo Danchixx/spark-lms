@@ -208,6 +208,26 @@ const AdminAddUser = () => {
 
       if (insertError) throw new Error(`Database insert failed: ${insertError.message}`);
 
+      // 7. Assign selected courses
+      if (formData.selectedCourses && formData.selectedCourses.length > 0) {
+        const assignments = formData.selectedCourses.map(courseId => ({
+          user_id: newAuthUser.id,
+          course_id: courseId,
+          status: 'not_started',
+          assigned_by: user?.id
+        }));
+
+        const { error: assignError } = await supabase
+          .from('course_assignments')
+          .insert(assignments);
+
+        if (assignError) {
+          console.error("Course assignment failed:", assignError);
+          // We don't throw here to avoid preventing the success modal, 
+          // as the user was successfully created, but we could notify them.
+        }
+      }
+
       setShowSuccessModal(true);
     } catch (err: any) {
       console.error("Error creating user:", err);
