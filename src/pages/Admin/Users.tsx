@@ -102,7 +102,7 @@ const AdminUsers = () => {
     try {
       if (showArchived) {
         // Permanent delete
-        const { error } = await supabase.from('users').delete().eq('id', deleteTarget);
+        const { error } = await supabase.rpc('delete_user', { target_user_id: deleteTarget });
         if (error) throw error;
         setDbUsers(prev => prev.filter(u => u.id !== deleteTarget));
       } else {
