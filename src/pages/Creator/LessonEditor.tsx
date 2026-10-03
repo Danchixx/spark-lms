@@ -85,8 +85,15 @@ const LessonTypeIcon = ({ type, size = 16 }: { type: string; size?: number }) =>
   }
 };
 
-const convertYoutubeUrl = (url: string): string | null => {
+const convertVideoUrl = (url: string): string | null => {
   if (!url) return null;
+  
+  // Google Drive
+  const gdriveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (gdriveMatch?.[1]) {
+    return `https://drive.google.com/file/d/${gdriveMatch[1]}/preview`;
+  }
+  
   // Already an embed URL
   if (url.includes("/embed/")) return url;
   // Standard YouTube URL
@@ -333,7 +340,7 @@ const LessonEditor = () => {
     setQuestions([]);
   };
 
-  const embedUrl = convertYoutubeUrl(videoUrl);
+  const embedUrl = convertVideoUrl(videoUrl);
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>

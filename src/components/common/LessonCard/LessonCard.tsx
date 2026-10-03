@@ -12,8 +12,15 @@ interface LessonCardProps {
   onProceedAssessment?: () => void;
 }
 
-const convertYoutubeUrl = (url?: string | null): string | null => {
+const convertVideoUrl = (url?: string | null): string | null => {
   if (!url) return null;
+
+  // Google Drive
+  const gdriveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (gdriveMatch?.[1]) {
+    return `https://drive.google.com/file/d/${gdriveMatch[1]}/preview`;
+  }
+
   if (url.includes("/embed/")) return url;
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/);
   if (match?.[1]) return `https://www.youtube.com/embed/${match[1]}`;
@@ -24,7 +31,7 @@ const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProc
   if (!lesson) return null;
 
   const videoUrl = lesson.video_url;
-  const embedUrl = convertYoutubeUrl(videoUrl);
+  const embedUrl = convertVideoUrl(videoUrl);
   const isMp4 = videoUrl?.toLowerCase().endsWith('.mp4');
 
   return (
