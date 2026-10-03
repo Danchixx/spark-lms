@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { getCompanySlug } from "../../utils/slug";
 import type { Company } from "../../types";
 import SparkHeader from "../../components/layout/SparkHeader/SparkHeader";
 import LeftPanel from "../../components/layout/LeftPanel/LeftPanel";
@@ -20,8 +21,9 @@ const Landing = () => {
 
   // Auto-redirect if already logged in!
   useEffect(() => {
-    if (user && authCompany?.slug) {
-      navigate(`/${authCompany.slug}/dashboard`, { replace: true });
+    const slug = getCompanySlug(authCompany);
+    if (user && slug) {
+      navigate(`/${slug}/dashboard`, { replace: true });
     }
   }, [user, authCompany, navigate]);
 

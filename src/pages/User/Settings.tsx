@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { getCompanySlug } from "../../utils/slug";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import Button from "../../components/ui/Button/Button";
@@ -405,7 +406,7 @@ const Settings = () => {
   const location = useLocation();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
 
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   const defaultTab = location.state?.activeTab || "company";

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { getCompanySlug } from "../../utils/slug";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -19,7 +20,7 @@ const ModuleAttempts = () => {
   const location = useLocation();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
 
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   const { courseId, moduleId, newScore } = location.state || {};

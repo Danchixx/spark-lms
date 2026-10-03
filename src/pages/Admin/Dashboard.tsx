@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, BookOpen, CheckCircle, Award } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { getCompanySlug } from "../../utils/slug";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -29,7 +30,7 @@ const AdminDashboard = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
 

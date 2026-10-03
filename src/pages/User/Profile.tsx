@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { getCompanySlug } from "../../utils/slug";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -85,7 +86,7 @@ const Profile = () => {
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
   const [newPassword] = useState("");
 
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   const { courses } = useCourses();

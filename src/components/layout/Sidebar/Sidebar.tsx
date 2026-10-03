@@ -4,6 +4,7 @@ import SparkLogo from "../../common/SparkLogo/sparklogo.png";
 import LogoutModal from "../../common/Modal/LogoutModal";
 import { useAuth } from "../../../context/AuthContext";
 import { useTheme } from "../../../context/ThemeContext";
+import { getCompanySlug } from "../../../utils/slug";
 import {
   LayoutDashboard,
   UserCircle,
@@ -70,7 +71,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
   const [logoutHovered, setLogoutHovered] = useState(false);
   const navigate = useNavigate();
 
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
+  const slug = getCompanySlug(company);
 
   const [visible, setVisible] = useState(isOpen);
   const [animate, setAnimate] = useState(isOpen);
