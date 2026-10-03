@@ -120,21 +120,27 @@ export async function deleteCourse(courseId: number) {
         if (questions && questions.length > 0) {
           const questionIds = questions.map((q: any) => q.id);
           // 5. Delete choices
-          await supabase.from('assessment_choices').delete().in('question_id', questionIds);
+          const { error: cErr } = await supabase.from('assessment_choices').delete().in('question_id', questionIds);
+          if (cErr) throw cErr;
         }
 
         // 6. Delete questions
-        await supabase.from('assessment_questions').delete().in('assessment_id', assessmentIds);
+        const { error: qErr } = await supabase.from('assessment_questions').delete().in('assessment_id', assessmentIds);
+        if (qErr) throw qErr;
+        
         // 7. Delete assessments
-        await supabase.from('assessments').delete().in('lesson_id', lessonIds);
+        const { error: aErr } = await supabase.from('assessments').delete().in('lesson_id', lessonIds);
+        if (aErr) throw aErr;
       }
 
       // 8. Delete lessons
-      await supabase.from('course_lessons').delete().in('module_id', moduleIds);
+      const { error: lErr } = await supabase.from('course_lessons').delete().in('module_id', moduleIds);
+      if (lErr) throw lErr;
     }
 
     // 9. Delete modules
-    await supabase.from('course_modules').delete().eq('course_id', courseId);
+    const { error: mErr } = await supabase.from('course_modules').delete().eq('course_id', courseId);
+    if (mErr) throw mErr;
   }
 
   // 10. Delete the course itself
@@ -228,10 +234,12 @@ export async function updateModule(moduleId: number, data: Partial<ModulePayload
 /** Hard-delete a module and all its lessons (with their assessment data) */
 export async function deleteModule(moduleId: number, _userId?: string) {
   // 1. Get all lessons in this module
-  const { data: lessons } = await supabase
+  const { data: lessons, error: fetchErr } = await supabase
     .from('course_lessons')
     .select('id')
     .eq('module_id', moduleId);
+    
+  if (fetchErr) throw fetchErr;
 
   // 2. Delete each lesson's assessment data
   if (lessons && lessons.length > 0) {
@@ -254,16 +262,21 @@ export async function deleteModule(moduleId: number, _userId?: string) {
 
       if (questions && questions.length > 0) {
         const questionIds = questions.map((q: any) => q.id);
-        await supabase.from('assessment_choices').delete().in('question_id', questionIds);
+        const { error: cErr } = await supabase.from('assessment_choices').delete().in('question_id', questionIds);
+        if (cErr) throw cErr;
       }
 
-      await supabase.from('assessment_questions').delete().in('assessment_id', assessmentIds);
-      await supabase.from('assessments').delete().in('lesson_id', lessonIds);
-    }
+      const { error: qErr } = await supabase.from('assessment_questions').delete().in('assessment_id', assessmentIds);
+      if (qErr) throw qErr;
 
-    // 3. Delete lessons
-    await supabase.from('course_lessons').delete().eq('module_id', moduleId);
+      const { error: aErr } = await supabase.from('assessments').delete().in('lesson_id', lessonIds);
+      if (aErr) throw aErr;
+    }
   }
+
+  // 3. Delete lessons
+  const { error: lErr } = await supabase.from('course_lessons').delete().eq('module_id', moduleId);
+  if (lErr) throw lErr;
 
   // 4. Delete the module
   const { error } = await supabase
