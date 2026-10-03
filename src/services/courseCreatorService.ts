@@ -275,8 +275,26 @@ export async function deleteModule(moduleId: number, _userId?: string) {
   }
 
   // 3. Delete lessons
-  const { error: lErr } = await supabase.from('course_lessons').delete().eq('module_id', moduleId);
+  const { data: deletedLessons, error: lErr } = await supabase
+    .from('course_lessons')
+    .delete()
+    .eq('module_id', moduleId)
+    .select('id');
+    
   if (lErr) throw lErr;
+  
+  console.log(`Deleted lessons:`, deletedLessons);
+  
+  // Verify if any lessons are left
+  const { data: remainingLessons } = await supabase
+    .from('course_lessons')
+    .select('id')
+    .eq('module_id', moduleId);
+    
+  if (remainingLessons && remainingLessons.length > 0) {
+    console.error(`Failed to delete all lessons. Remaining:`, remainingLessons);
+    throw new Error(`Failed to delete all lessons for module ${moduleId}. Please check if you have permissions or if they are locked.`);
+  }
 
   // 4. Delete the module
   const { error } = await supabase
