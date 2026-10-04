@@ -260,28 +260,30 @@ const UserProfile = () => {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <PageTransition>
-            {/* Breadcrumb */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, fontSize: 13, fontWeight: 600 }}>
-              <button 
-                onClick={() => navigate(`/${slug}/users`)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "6px 12px", borderRadius: 20,
-                  border: "1px solid var(--color-border)", background: "var(--color-surface)",
-                  color: "#FF6B00", cursor: "pointer", fontFamily: "inherit"
-                }}
-              >
-                <ArrowLeft size={14} /> Users
-              </button>
-              <ChevronRight size={14} color="var(--color-text-muted)" />
-              <span style={{ color: "var(--color-text-header)" }}>User Profile</span>
-            </div>
+            <div className="dash-top">
+              <div className="dash-top-greeting" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <button 
+                  onClick={() => navigate(`/${slug}/users`)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: "6px 12px", borderRadius: 20,
+                    border: "1px solid var(--color-border)", background: "var(--color-surface)",
+                    color: "#FF6B00", cursor: "pointer", fontFamily: "inherit"
+                  }}
+                >
+                  <ArrowLeft size={14} /> Users
+                </button>
+                <ChevronRight size={14} color="var(--color-text-muted)" />
+                <span style={{ color: "var(--color-text-header)" }}>User Profile</span>
+              </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--color-text-header)", margin: 0 }}>User Profile</h1>
-              <Button variant="outline" leftIcon={<Key size={14} />} onClick={() => setShowResetConfirm(true)}>
-                Reset Password
-              </Button>
+              <h1 className="dash-top-title" style={{ color: "var(--color-text-header)" }}>User Profile</h1>
+              
+              <div className="dash-top-btn-wrap">
+                <Button variant="outline" leftIcon={<Key size={14} />} onClick={() => setShowResetConfirm(true)}>
+                  Reset Password
+                </Button>
+              </div>
             </div>
 
             <div style={{ marginBottom: 24 }}>
