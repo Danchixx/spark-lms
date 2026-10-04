@@ -162,7 +162,9 @@ const CourseModules = () => {
                     <span style={{ fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>Your Progress</span>
                     <ProgressBar value={courseData.progress} size="lg" showLabel />
                     {isCompleted ? (
-                      <Button size="sm" rounded="pill" variant="ghost" onClick={() => setShowCertificate(true)}>View Certificate</Button>
+                      slug !== 'spark' && (
+                        <Button size="sm" rounded="pill" variant="ghost" onClick={() => setShowCertificate(true)}>View Certificate</Button>
+                      )
                     ) : (
                       <Button size="sm" rounded="pill">Continue</Button>
                     )}

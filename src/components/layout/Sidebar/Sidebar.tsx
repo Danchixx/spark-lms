@@ -108,7 +108,14 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
     if (window.innerWidth <= BREAKPOINT) onClose?.();
   };
 
-  const roleNav = user?.role === "admin" ? ADMIN_NAV : user?.role === "course creator" ? CREATOR_NAV : USER_NAV;
+  let roleNav = user?.role === "admin" ? ADMIN_NAV : user?.role === "course creator" ? CREATOR_NAV : USER_NAV;
+
+  if (slug === "spark") {
+    roleNav = roleNav.map(group => ({
+      ...group,
+      items: group.items.filter(item => item !== "Certificates")
+    }));
+  }
 
   const filteredNav = search.trim()
     ? roleNav.map((group) => ({
