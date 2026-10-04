@@ -1,20 +1,28 @@
-// src/pages/SuperAdmin/Courses/components/AssignUsersModal.jsx
+// src/pages/SuperAdmin/Courses/components/AssignUsersModal.tsx
 
 import { useState, useMemo, useEffect } from "react";
-import { MOCK_ALL_ASSIGNABLE_USERS, MOCK_COMPANIES_COURSES } from "../../../../data/mockCourses";
+import { MOCK_ALL_ASSIGNABLE_USERS, MOCK_COMPANIES_COURSES } from "../../../../data/mockSACourses";
+import type { MockCourse, AssignableUser } from "../../../../data/mockSACourses";
 
-// ── SUPABASE INTEGRATION (uncomment when ready):
-// import { assignUsersToCourse } from '../../../../data/mockCourses';
-// const handleAssign = async () => {
-//   await assignUsersToCourse(course.id, selected);
-//   onAssigned(selected.length);
-//   onClose();
-// };
 
-const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned }) => {
+// ── Props ──────────────────────────────────────────────────────
+interface AssignUsersModalProps {
+  course: MockCourse;
+  enrolledUserIds?: number[];
+  onClose: () => void;
+  onAssigned: (ids: number[]) => void;
+}
+
+// ── AssignUsersModal ──────────────────────────────────────────
+const AssignUsersModal = ({
+  course,
+  enrolledUserIds = [],
+  onClose,
+  onAssigned,
+}: AssignUsersModalProps) => {
   const [search, setSearch]         = useState("");
   const [companyId, setCompanyId]   = useState("");
-  const [selected, setSelected]     = useState([]);
+  const [selected, setSelected]     = useState<number[]>([]);
   const [dropdownOpen, setDropdown] = useState(false);
 
   // Lock body scroll
@@ -24,7 +32,7 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
   }, []);
 
   // Filter users — exclude already enrolled
-  const filtered = useMemo(() => {
+  const filtered = useMemo<AssignableUser[]>(() => {
     let users = MOCK_ALL_ASSIGNABLE_USERS.filter(u => !enrolledUserIds.includes(u.id));
     if (companyId) users = users.filter(u => u.companyId === Number(companyId));
     if (search.trim()) {
@@ -38,7 +46,7 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
     return users;
   }, [search, companyId, enrolledUserIds]);
 
-  const toggleUser = (id) =>
+  const toggleUser = (id: number) =>
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   const toggleAll = () =>
@@ -47,7 +55,6 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
   const selectedCompany = MOCK_COMPANIES_COURSES.find(c => c.id === Number(companyId));
 
   const handleAssign = () => {
-    // SUPABASE: await assignUsersToCourse(course.id, selected);
     onAssigned(selected);
     onClose();
   };
@@ -76,8 +83,8 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
         }}>
           <div>
             <div style={{
-              fontSize: 18, fontWeight: 800, color: "#222",
-              fontFamily: "'Barlow Condensed', sans-serif",
+              fontSize: 22, fontWeight: 700, color: "#222",
+              fontFamily: "'Inter', sans-serif",
               letterSpacing: ".02em",
             }}>
               Assign Users to Course
@@ -94,8 +101,8 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
             padding: "7px 14px", gap: 8, background: "#fafafa",
             width: 260, transition: "border-color .2s",
           }}
-            onFocusCapture={e => e.currentTarget.style.borderColor = "#FF6B00"}
-            onBlurCapture={e => e.currentTarget.style.borderColor = "#e0e0e0"}
+            onFocusCapture={e => (e.currentTarget as HTMLDivElement).style.borderColor = "#FF6B00"}
+            onBlurCapture={e => (e.currentTarget as HTMLDivElement).style.borderColor = "#e0e0e0"}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
               stroke="#bbb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -108,7 +115,7 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
               onChange={e => setSearch(e.target.value)}
               style={{
                 border: "none", outline: "none", flex: 1,
-                fontSize: 12, fontFamily: "'Barlow', sans-serif",
+                fontSize: 12, fontFamily: "'Inter', sans-serif",
                 color: "#333", background: "transparent",
               }}
             />
@@ -128,8 +135,8 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
             fontSize: 18, color: "#666", marginLeft: 12, flexShrink: 0,
             transition: "background .15s",
           }}
-            onMouseEnter={e => e.currentTarget.style.background = "#ffe8d6"}
-            onMouseLeave={e => e.currentTarget.style.background = "#f5f5f5"}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#ffe8d6"}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#f5f5f5"}
           >
             ×
           </button>
@@ -153,7 +160,7 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
                 borderRadius: 8, cursor: "pointer",
                 fontSize: 13, fontWeight: companyId ? 700 : 400,
                 color: companyId ? "#FF6B00" : "#888",
-                fontFamily: "'Barlow', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 transition: "all .15s",
               }}
             >
@@ -185,8 +192,8 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
                     borderBottom: "1px solid #f5f5f5",
                     transition: "background .15s",
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#f9f9f9"}
+                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "transparent"}
                 >
                   All companies
                 </div>
@@ -203,10 +210,10 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
                       transition: "background .15s",
                     }}
                     onMouseEnter={e => {
-                      if (companyId !== String(c.id)) e.currentTarget.style.background = "#f9f9f9";
+                      if (companyId !== String(c.id)) (e.currentTarget as HTMLDivElement).style.background = "#f9f9f9";
                     }}
                     onMouseLeave={e => {
-                      if (companyId !== String(c.id)) e.currentTarget.style.background = "transparent";
+                      if (companyId !== String(c.id)) (e.currentTarget as HTMLDivElement).style.background = "transparent";
                     }}
                   >
                     {c.name}
@@ -275,10 +282,10 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
                     transition: "background .15s",
                   }}
                   onMouseEnter={e => {
-                    if (!isSelected) e.currentTarget.style.background = "#fafafa";
+                    if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = "#fafafa";
                   }}
                   onMouseLeave={e => {
-                    if (!isSelected) e.currentTarget.style.background = "transparent";
+                    if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = "transparent";
                   }}
                 >
                   {/* Checkbox */}
@@ -356,11 +363,11 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
               padding: "9px 22px", background: "#f0f0f0",
               color: "#555", border: "none", borderRadius: 8,
               fontWeight: 600, fontSize: 13, cursor: "pointer",
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               transition: "background .15s",
             }}
-              onMouseEnter={e => e.currentTarget.style.background = "#e0e0e0"}
-              onMouseLeave={e => e.currentTarget.style.background = "#f0f0f0"}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#e0e0e0"}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#f0f0f0"}
             >
               Cancel
             </button>
@@ -373,11 +380,11 @@ const AssignUsersModal = ({ course, enrolledUserIds = [], onClose, onAssigned })
                 color: "#fff", border: "none", borderRadius: 8,
                 fontWeight: 700, fontSize: 13,
                 cursor: selected.length > 0 ? "pointer" : "not-allowed",
-                fontFamily: "'Barlow', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 transition: "opacity .15s",
               }}
-              onMouseEnter={e => { if (selected.length > 0) e.currentTarget.style.opacity = ".88"; }}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              onMouseEnter={e => { if (selected.length > 0) (e.currentTarget as HTMLButtonElement).style.opacity = ".88"; }}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}
             >
               Assign Selected
             </button>

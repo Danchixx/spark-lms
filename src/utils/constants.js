@@ -8,7 +8,8 @@ export const ROLES = {
 };
 
 export const COURSE_STATUS = {
-  PUBLISHED: 'published',
+  ACTIVE: 'active',
+  PENDING: 'pending',
   DRAFT: 'draft',
   ARCHIVED: 'archived',
 };

@@ -1,8 +1,17 @@
-// src/pages/SuperAdmin/Courses/components/CourseCard.jsx
+// src/pages/SuperAdmin/Courses/components/CourseCard.tsx
 
 import { useState } from "react";
+import type { MockCourse } from "../../../../data/mockSACourses";
 
-const ProgressBar = ({ value, color = "#FF6B00" }) => (
+
+// ── Props ──────────────────────────────────────────────────────
+interface CourseCardProps {
+  course: MockCourse;
+  onClick: (course: MockCourse) => void;
+}
+
+// ── Progress bar ──────────────────────────────────────────────
+const ProgressBar = ({ value, color = "#FF6B00" }: { value: number; color?: string }) => (
   <div style={{ height: 6, background: "#e8e8e8", borderRadius: 99, overflow: "hidden" }}>
     <div style={{
       height: "100%", borderRadius: 99,
@@ -13,7 +22,8 @@ const ProgressBar = ({ value, color = "#FF6B00" }) => (
   </div>
 );
 
-const CourseCard = ({ course, onClick }) => {
+// ── CourseCard ────────────────────────────────────────────────
+const CourseCard = ({ course, onClick }: CourseCardProps) => {
   const [hovered, setHovered] = useState(false);
   const isPending = course.status === "pending";
 
@@ -32,26 +42,25 @@ const CourseCard = ({ course, onClick }) => {
         cursor: "pointer",
         transition: "box-shadow .2s ease, transform .2s ease",
         transform: hovered ? "translateY(-3px)" : "translateY(0)",
-        // Gray overlay filter for pending courses
         filter: isPending ? "grayscale(0.3)" : "none",
         opacity: isPending ? 0.85 : 1,
       }}
     >
-      {/* Thumbnail with orange gradient overlay */}
+      {/* Thumbnail */}
       <div style={{
         position: "relative",
         height: 140,
         background: course.thumbColor || "#e8c9a0",
         overflow: "hidden",
       }}>
-        {/* Orange gradient overlay on top of image */}
+        {/* Orange gradient overlay */}
         <div style={{
           position: "absolute", inset: 0,
           background: "linear-gradient(180deg, rgba(255,107,0,0.18) 0%, rgba(255,107,0,0.42) 100%)",
           zIndex: 1,
         }} />
 
-        {/* Gray overlay for pending */}
+        {/* Pending gray overlay */}
         {isPending && (
           <div style={{
             position: "absolute", inset: 0,
@@ -60,10 +69,9 @@ const CourseCard = ({ course, onClick }) => {
           }} />
         )}
 
-        {/* Placeholder person SVG */}
+        {/* Placeholder SVG */}
         <svg viewBox="0 0 300 140" width="100%" height="140" style={{ display: "block" }}>
           <rect width="300" height="140" fill={course.thumbColor || "#e8c9a0"} />
-          {/* Stylized silhouette */}
           <circle cx="150" cy="48" r="22" fill="rgba(255,255,255,0.25)" />
           <ellipse cx="150" cy="108" rx="40" ry="28" fill="rgba(255,255,255,0.18)" />
         </svg>
@@ -140,11 +148,11 @@ const CourseCard = ({ course, onClick }) => {
               border: "none", borderRadius: 20,
               padding: "6px 14px", fontSize: 12,
               fontWeight: 700, cursor: "pointer",
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               transition: "opacity .15s",
             }}
-            onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
-            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".85"}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}
           >
             view details
           </button>

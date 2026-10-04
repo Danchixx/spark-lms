@@ -1,24 +1,30 @@
-// src/pages/SuperAdmin/Courses/SparkCourses.jsx
+// src/pages/SuperAdmin/Courses/SparkCourses.tsx
 
 import { useState, useMemo } from "react";
-import { MOCK_COURSES, MOCK_COMPANIES_COURSES } from "../../../data/mockCourses";
+import { MOCK_COURSES, MOCK_COMPANIES_COURSES } from "../../../data/mockSACourses";
+import type { MockCourse, MockCompanyCourse } from "../../../data/mockSACourses";
+
 import CourseCard from "./components/CourseCard";
 import CourseDetail from "./components/CourseDetail";
+import PageTransition from "../../../components/common/PageTransition/PageTransition";
 
-// ── SUPABASE INTEGRATION (uncomment when ready):
-// import { fetchCourses } from '../../../data/mockCourses';
-// useEffect(() => { fetchCourses().then(setCourses); }, []);
+type TabKey = "all" | "active" | "pending";
+
+interface TabItem {
+  key: TabKey;
+  label: string;
+}
 
 const SparkCourses = () => {
-  const [courses]         = useState(MOCK_COURSES);
-  const [view, setView]   = useState("list");   // "list" | "detail"
-  const [selected, setSelected] = useState(null);
-  const [companyId, setCompanyId]   = useState(0);    // 0 = SPARK
-  const [tab, setTab]     = useState("all");    // "all" | "active" | "pending"
-  const [dropdown, setDropdown] = useState(false);
+  const [courses]                = useState<MockCourse[]>(MOCK_COURSES);
+  const [view, setView]          = useState<"list" | "detail">("list");
+  const [selected, setSelected]  = useState<MockCourse | null>(null);
+  const [companyId, setCompanyId]   = useState(0);   // 0 = SPARK (all)
+  const [tab, setTab]            = useState<TabKey>("all");
+  const [dropdown, setDropdown]  = useState(false);
 
   // Filter courses
-  const filtered = useMemo(() => {
+  const filtered = useMemo<MockCourse[]>(() => {
     let r = courses;
     if (companyId !== 0) r = r.filter(c => c.companyId === companyId);
     if (tab === "active")  r = r.filter(c => c.status === "active");
@@ -29,33 +35,42 @@ const SparkCourses = () => {
   const activeCnt  = courses.filter(c => (companyId === 0 || c.companyId === companyId) && c.status === "active").length;
   const pendingCnt = courses.filter(c => (companyId === 0 || c.companyId === companyId) && c.status === "pending").length;
 
-  const selectedCompany = MOCK_COMPANIES_COURSES.find(c => c.id === companyId);
+  const selectedCompany: MockCompanyCourse | undefined = MOCK_COMPANIES_COURSES.find(c => c.id === companyId);
 
-  const handleViewDetail = (course) => {
+  const handleViewDetail = (course: MockCourse) => {
     setSelected(course);
     setView("detail");
   };
 
   if (view === "detail" && selected) {
     return (
+      <PageTransition style={{ display: "flex", flexDirection: "column", flex: 1, height: "100%" }}>
       <CourseDetail
         course={selected}
         onBack={() => { setView("list"); setSelected(null); }}
       />
+      </PageTransition>
     );
   }
 
+  const tabs: TabItem[] = [
+    { key: "all",     label: "ALL" },
+    { key: "active",  label: `ACTIVE (${activeCnt})` },
+    { key: "pending", label: `PENDING (${pendingCnt})` },
+  ];
+
   return (
+    <PageTransition style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: "100%" }}>
     <div style={{
-      padding: 24, minHeight: "100%",
+      padding: 24, minHeight: "100%", flex: 1,
       background: "#f4f4f4",
-      fontFamily: "'Barlow', sans-serif",
+      fontFamily: "'Inter', sans-serif",
     }}>
 
       {/* ── Page title ── */}
       <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontWeight: 900, fontSize: 28, color: "#222",
+        fontFamily: "'Inter', sans-serif",
+        fontWeight: 700, fontSize: 32, color: "#222",
         textTransform: "uppercase", letterSpacing: ".05em",
         marginBottom: 20,
       }}>
@@ -79,13 +94,13 @@ const SparkCourses = () => {
               border: "1.5px solid #e0e0e0",
               borderRadius: 8, cursor: "pointer",
               fontSize: 13, fontWeight: 600, color: "#333",
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               transition: "border-color .2s",
               boxShadow: "0 1px 4px rgba(0,0,0,.05)",
               minWidth: 130,
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = "#FF6B00"}
-            onMouseLeave={e => { if (!dropdown) e.currentTarget.style.borderColor = "#e0e0e0"; }}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = "#FF6B00"}
+            onMouseLeave={e => { if (!dropdown) (e.currentTarget as HTMLButtonElement).style.borderColor = "#e0e0e0"; }}
           >
             <span>{selectedCompany?.name || "SPARK"}</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -112,7 +127,7 @@ const SparkCourses = () => {
                     key={c.id}
                     onClick={() => { setCompanyId(c.id); setDropdown(false); setTab("all"); }}
                     style={{
-                      padding: "10px 16px", fontSize: 13, cursor: "pointer",
+                      padding: "10px 16px", fontSize: c.id === 0 ? 14 : 12, cursor: "pointer",
                       fontWeight: companyId === c.id ? 700 : 400,
                       color: companyId === c.id ? "#FF6B00" : "#333",
                       background: companyId === c.id ? "#FFF0E6" : "transparent",
@@ -120,10 +135,9 @@ const SparkCourses = () => {
                       transition: "background .15s",
                       textTransform: c.id === 0 ? "none" : "uppercase",
                       letterSpacing: c.id === 0 ? 0 : ".04em",
-                      fontSize: c.id === 0 ? 14 : 12,
                     }}
-                    onMouseEnter={e => { if (companyId !== c.id) e.currentTarget.style.background = "#f9f9f9"; }}
-                    onMouseLeave={e => { if (companyId !== c.id) e.currentTarget.style.background = "transparent"; }}
+                    onMouseEnter={e => { if (companyId !== c.id) (e.currentTarget as HTMLDivElement).style.background = "#f9f9f9"; }}
+                    onMouseLeave={e => { if (companyId !== c.id) (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
                   >
                     {c.name}
                   </div>
@@ -134,11 +148,7 @@ const SparkCourses = () => {
         </div>
 
         {/* Filter tabs */}
-        {[
-          { key: "all",     label: "ALL" },
-          { key: "active",  label: `ACTIVE (${activeCnt})` },
-          { key: "pending", label: `PENDING (${pendingCnt})` },
-        ].map(t => (
+        {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -149,7 +159,7 @@ const SparkCourses = () => {
               border: `1.5px solid ${tab === t.key ? "#FF6B00" : "#ddd"}`,
               borderRadius: 8, cursor: "pointer",
               fontSize: 12, fontWeight: 700,
-              fontFamily: "'Barlow', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               letterSpacing: ".04em",
               transition: "all .15s",
               boxShadow: tab === t.key
@@ -158,14 +168,14 @@ const SparkCourses = () => {
             }}
             onMouseEnter={e => {
               if (tab !== t.key) {
-                e.currentTarget.style.borderColor = "#FF6B00";
-                e.currentTarget.style.color = "#FF6B00";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "#FF6B00";
+                (e.currentTarget as HTMLButtonElement).style.color = "#FF6B00";
               }
             }}
             onMouseLeave={e => {
               if (tab !== t.key) {
-                e.currentTarget.style.borderColor = "#ddd";
-                e.currentTarget.style.color = "#555";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "#ddd";
+                (e.currentTarget as HTMLButtonElement).style.color = "#555";
               }
             }}
           >
@@ -200,6 +210,7 @@ const SparkCourses = () => {
         </div>
       )}
     </div>
+    </PageTransition>
   );
 };
 

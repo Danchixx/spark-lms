@@ -1,17 +1,21 @@
-// src/pages/SuperAdmin/Courses/components/CourseDetail.jsx
+// src/pages/SuperAdmin/Courses/components/CourseDetail.tsx
 
 import { useState, useMemo, useEffect } from "react";
-import { MOCK_ENROLLED_USERS } from "../../../../data/mockCourses";
-import AssignUsersModal from "./AssignUsersModal";
+import { MOCK_ENROLLED_USERS } from "../../../../data/mockSACourses";
+import type { MockCourse, EnrolledUser } from "../../../../data/mockSACourses";
 
-// ── SUPABASE INTEGRATION (uncomment when ready):
-// import { fetchCourseDetail, removeUserFromCourse } from '../../../../data/mockCourses';
-// useEffect(() => { fetchCourseDetail(course.id).then(setDetail); }, [course.id]);
+import AssignUsersModal from "./AssignUsersModal";
 
 const ITEMS_PER_PAGE = 5;
 
+// ── Props ──────────────────────────────────────────────────────
+interface CourseDetailProps {
+  course: MockCourse;
+  onBack: () => void;
+}
+
 // ── Progress bar ──────────────────────────────────────────────
-const ProgressBar = ({ value }) => {
+const ProgressBar = ({ value }: { value: number }) => {
   const color = value === 100 ? "#27ae60" : value >= 50 ? "#FF6B00" : value > 0 ? "#e67e22" : "#e0e0e0";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 140 }}>
@@ -28,8 +32,14 @@ const ProgressBar = ({ value }) => {
   );
 };
 
-// ── Remove confirm dialog ─────────────────────────────────────
-const RemoveConfirmModal = ({ user, onClose, onConfirm }) => {
+// ── Remove confirm modal ──────────────────────────────────────
+interface RemoveConfirmModalProps {
+  user: EnrolledUser;
+  onClose: () => void;
+  onConfirm: (user: EnrolledUser) => void;
+}
+
+const RemoveConfirmModal = ({ user, onClose, onConfirm }: RemoveConfirmModalProps) => {
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
@@ -71,11 +81,11 @@ const RemoveConfirmModal = ({ user, onClose, onConfirm }) => {
             background: "#e8e8e8", color: "#555",
             border: "none", borderRadius: 10,
             fontWeight: 700, fontSize: 14, cursor: "pointer",
-            fontFamily: "'Barlow', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             transition: "background .15s",
           }}
-            onMouseEnter={e => e.currentTarget.style.background = "#d8d8d8"}
-            onMouseLeave={e => e.currentTarget.style.background = "#e8e8e8"}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#d8d8d8"}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#e8e8e8"}
           >
             Cancel
           </button>
@@ -84,11 +94,11 @@ const RemoveConfirmModal = ({ user, onClose, onConfirm }) => {
             background: "#e74c3c", color: "#fff",
             border: "none", borderRadius: 10,
             fontWeight: 700, fontSize: 14, cursor: "pointer",
-            fontFamily: "'Barlow', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             transition: "opacity .15s",
           }}
-            onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
-            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".85"}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}
           >
             Remove
           </button>
@@ -98,8 +108,13 @@ const RemoveConfirmModal = ({ user, onClose, onConfirm }) => {
   );
 };
 
-// ── Success toast ─────────────────────────────────────────────
-const Toast = ({ message, onDone }) => {
+// ── Toast ─────────────────────────────────────────────────────
+interface ToastProps {
+  message: string;
+  onDone: () => void;
+}
+
+const Toast = ({ message, onDone }: ToastProps) => {
   useEffect(() => {
     const t = setTimeout(onDone, 3000);
     return () => clearTimeout(t);
@@ -134,18 +149,18 @@ const Toast = ({ message, onDone }) => {
 };
 
 // ── Main CourseDetail ─────────────────────────────────────────
-const CourseDetail = ({ course, onBack }) => {
-  const [enrolledUsers, setEnrolledUsers] = useState(
-    MOCK_ENROLLED_USERS[course.id] || []
+const CourseDetail = ({ course, onBack }: CourseDetailProps) => {
+  const [enrolledUsers, setEnrolledUsers] = useState<EnrolledUser[]>(
+    MOCK_ENROLLED_USERS[course.id] ?? []
   );
   const [search, setSearch]           = useState("");
   const [page, setPage]               = useState(1);
   const [showAssign, setShowAssign]   = useState(false);
-  const [removeUser, setRemoveUser]   = useState(null);
-  const [toast, setToast]             = useState(null);
-  const [sortDir, setSortDir]         = useState("asc");
+  const [removeUser, setRemoveUser]   = useState<EnrolledUser | null>(null);
+  const [toast, setToast]             = useState<string | null>(null);
+  const [sortDir, setSortDir]         = useState<"asc" | "desc">("asc");
 
-  const filtered = useMemo(() => {
+  const filtered = useMemo<EnrolledUser[]>(() => {
     let r = enrolledUsers;
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -167,38 +182,35 @@ const CourseDetail = ({ course, onBack }) => {
 
   const completedCount = enrolledUsers.filter(u => u.progress === 100).length;
 
-  const handleRemoveConfirm = (user) => {
-    // SUPABASE: await removeUserFromCourse(course.id, user.id);
+  const handleRemoveConfirm = (user: EnrolledUser) => {
     setEnrolledUsers(prev => prev.filter(u => u.id !== user.id));
     setRemoveUser(null);
     setToast(`${user.name} has been removed from "${course.title}"`);
   };
 
-  const handleAssigned = (newUserIds) => {
-    // In production, refetch enrolled users from Supabase
-    // For now, just show a toast
+  const handleAssigned = (newUserIds: number[]) => {
     setToast(`${newUserIds.length} user${newUserIds.length > 1 ? "s" : ""} successfully assigned to "${course.title}"`);
   };
 
-  const getPages = () => {
+  const getPages = (): (number | string)[] => {
     if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    if (safePage <= 3) return [1, 2, 3, "...", totalPages];
+    if (safePage <= 3)   return [1, 2, 3, "...", totalPages];
     if (safePage >= totalPages - 2) return [1, "...", totalPages - 2, totalPages - 1, totalPages];
     return [1, "...", safePage - 1, safePage, safePage + 1, "...", totalPages];
   };
 
-  const pgBtn = (disabled) => ({
+  const pgBtn = (disabled: boolean): React.CSSProperties => ({
     minWidth: 32, height: 30, padding: "0 10px",
     border: "1px solid #ddd", background: "#fff",
     borderRadius: 6, cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 12, fontWeight: 500,
     color: disabled ? "#ccc" : "#555",
-    opacity: disabled ? .5 : 1,
-    fontFamily: "'Barlow', sans-serif",
+    opacity: disabled ? 0.5 : 1,
+    fontFamily: "'Inter', sans-serif",
   });
 
   return (
-    <div style={{ padding: 24, fontFamily: "'Barlow', sans-serif" }}>
+    <div style={{ padding: 24, fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Breadcrumb ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
@@ -207,13 +219,13 @@ const CourseDetail = ({ course, onBack }) => {
           background: "#FFF0E6", color: "#FF6B00",
           border: "1.5px solid #FF6B00", borderRadius: 20,
           padding: "7px 16px", fontWeight: 700, fontSize: 12,
-          cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+          cursor: "pointer", fontFamily: "'Inter', sans-serif",
         }}>
           ← COURSES
         </button>
         <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900, fontSize: 24, color: "#222",
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 800, fontSize: 24, color: "#222",
           textTransform: "uppercase", letterSpacing: ".04em",
         }}>
           Course Detail
@@ -266,7 +278,7 @@ const CourseDetail = ({ course, onBack }) => {
               { label: `${course.modules} Modules` },
               { label: `${course.units} Units` },
               { label: `Published ${course.publishedAt}` },
-            ].map((item, i, arr) => (
+            ].map((item, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center" }}>
                 <span style={{
                   fontSize: 13, fontWeight: item.bold ? 700 : 500,
@@ -361,8 +373,8 @@ const CourseDetail = ({ course, onBack }) => {
               border: "1.5px solid #e0e0e0", borderRadius: 24,
               padding: "7px 14px", gap: 8, transition: "border-color .2s",
             }}
-              onFocusCapture={e => e.currentTarget.style.borderColor = "#FF6B00"}
-              onBlurCapture={e => e.currentTarget.style.borderColor = "#e0e0e0"}
+              onFocusCapture={e => (e.currentTarget as HTMLDivElement).style.borderColor = "#FF6B00"}
+              onBlurCapture={e => (e.currentTarget as HTMLDivElement).style.borderColor = "#e0e0e0"}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                 stroke="#bbb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -375,7 +387,7 @@ const CourseDetail = ({ course, onBack }) => {
                 onChange={e => { setSearch(e.target.value); setPage(1); }}
                 style={{
                   border: "none", outline: "none", width: 200,
-                  fontSize: 13, fontFamily: "'Barlow', sans-serif",
+                  fontSize: 13, fontFamily: "'Inter', sans-serif",
                   color: "#333", background: "transparent",
                 }}
               />
@@ -431,8 +443,8 @@ const CourseDetail = ({ course, onBack }) => {
             ) : paged.map((user, i) => (
               <tr key={user.id}
                 style={{ borderBottom: i < paged.length - 1 ? "1px solid #f8f8f8" : "none" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = "#fafafa"}
+                onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = "transparent"}
               >
                 <td style={{ padding: "13px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -469,12 +481,12 @@ const CourseDetail = ({ course, onBack }) => {
                       transition: "all .15s",
                     }}
                     onMouseEnter={e => {
-                      e.currentTarget.style.background = "#fde8e8";
-                      e.currentTarget.style.borderColor = "#e74c3c";
+                      (e.currentTarget as HTMLButtonElement).style.background = "#fde8e8";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = "#e74c3c";
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.background = "#f5f5f5";
-                      e.currentTarget.style.borderColor = "#eee";
+                      (e.currentTarget as HTMLButtonElement).style.background = "#f5f5f5";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = "#eee";
                     }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -506,7 +518,7 @@ const CourseDetail = ({ course, onBack }) => {
               p === "..." ? (
                 <span key={`d${i}`} style={{ color: "#aaa", fontSize: 13, padding: "0 4px" }}>...</span>
               ) : (
-                <button key={p} onClick={() => setPage(p)} style={{
+                <button key={p} onClick={() => setPage(p as number)} style={{
                   ...pgBtn(false), minWidth: 32,
                   background: safePage === p ? "#FF6B00" : "#fff",
                   color: safePage === p ? "#fff" : "#555",
@@ -529,11 +541,11 @@ const CourseDetail = ({ course, onBack }) => {
               background: "#FF6B00", color: "#fff",
               border: "none", borderRadius: 20,
               padding: "9px 20px", fontWeight: 700, fontSize: 13,
-              cursor: "pointer", fontFamily: "'Barlow', sans-serif",
+              cursor: "pointer", fontFamily: "'Inter', sans-serif",
               transition: "opacity .15s",
             }}
-            onMouseEnter={e => e.currentTarget.style.opacity = ".88"}
-            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = ".88"}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

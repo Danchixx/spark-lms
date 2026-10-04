@@ -1,20 +1,32 @@
 import { useState, useRef } from "react";
+import type { AddTenantForm } from "../SparkTenants";
 
-const AddTenantStep1 = ({ form, setForm, onNext }) => {
-  const [companyId, setCompanyId] = useState(null);
-  const profileRef = useRef();
-  const bgRef      = useRef();
+interface AddTenantStep1Props {
+  form: AddTenantForm;
+  setForm: React.Dispatch<React.SetStateAction<AddTenantForm>>;
+  onNext: () => void;
+}
 
-  const handleImg = (key, e) => {
-    const file = e.target.files[0];
+const AddTenantStep1 = ({ form, setForm, onNext }: AddTenantStep1Props) => {
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const profileRef = useRef<HTMLInputElement>(null);
+  const bgRef      = useRef<HTMLInputElement>(null);
+
+  const handleImg = (key: "profileImg" | "bgImg", e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setForm((f) => ({ ...f, [key]: ev.target.result }));
+    reader.onload = (ev) => setForm((f) => ({ ...f, [key]: ev.target?.result as string }));
     reader.readAsDataURL(file);
   };
 
   const generateId = () =>
     setCompanyId(String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0"));
+
+  const imgRefs: Record<"profileImg" | "bgImg", React.RefObject<HTMLInputElement | null>> = {
+    profileImg: profileRef,
+    bgImg: bgRef,
+  };
 
   return (
     <div style={s.card}>
@@ -52,14 +64,11 @@ const AddTenantStep1 = ({ form, setForm, onNext }) => {
           <div style={{ marginTop: 20 }}>
             <div style={s.sectionTitle}>Profile and Background</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              {[
-                { key: "profileImg", ref: profileRef },
-                { key: "bgImg",      ref: bgRef },
-              ].map(({ key, ref }) => (
+              {(["profileImg", "bgImg"] as const).map((key) => (
                 <div key={key}>
-                  <div style={s.imgUpload} onClick={() => ref.current.click()}>
+                  <div style={s.imgUpload} onClick={() => imgRefs[key].current?.click()}>
                     {form[key] ? (
-                      <img src={form[key]} alt="upload"
+                      <img src={form[key] as string} alt="upload"
                         style={{ maxWidth: "100%", maxHeight: 70, borderRadius: 4 }} />
                     ) : (
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
@@ -70,7 +79,7 @@ const AddTenantStep1 = ({ form, setForm, onNext }) => {
                         <polyline points="21 15 16 10 5 21" />
                       </svg>
                     )}
-                    <input type="file" ref={ref} accept="image/*"
+                    <input type="file" ref={imgRefs[key]} accept="image/*"
                       style={{ display: "none" }}
                       onChange={(e) => handleImg(key, e)} />
                   </div>
@@ -87,11 +96,11 @@ const AddTenantStep1 = ({ form, setForm, onNext }) => {
             Contact and Socials
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {[
-              { key: "phone",    icon: "📱", bg: "#25D366", placeholder: "+63",               type: "tel"   },
-              { key: "email",    icon: "✉️", bg: "#EA4335", placeholder: "company@gmail.com", type: "email" },
-              { key: "facebook", icon: "📘", bg: "#1877F2", placeholder: "facebook",           type: "text"  },
-            ].map(({ key, icon, bg, placeholder, type }) => (
+            {([
+              { key: "phone"    as const, icon: "📱", bg: "#25D366", placeholder: "+63",               type: "tel"   },
+              { key: "email"    as const, icon: "✉️", bg: "#EA4335", placeholder: "company@gmail.com", type: "email" },
+              { key: "facebook" as const, icon: "📘", bg: "#1877F2", placeholder: "facebook",           type: "text"  },
+            ]).map(({ key, icon, bg, placeholder, type }) => (
               <div key={key} style={s.socialRow}>
                 <div style={{ ...s.socialIcon, background: bg }}>{icon}</div>
                 <input
@@ -115,18 +124,18 @@ const AddTenantStep1 = ({ form, setForm, onNext }) => {
   );
 };
 
-const s = {
+const s: Record<string, React.CSSProperties> = {
   card: { background: "#fff", borderRadius: 10, border: "1px solid #eee",
     padding: 24, margin: "16px 0" },
   grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 },
   sectionTitle: { fontWeight: 700, fontSize: 15, color: "#333", marginBottom: 14 },
   input: { width: "100%", padding: "10px 14px", border: "1.5px solid #FF6B00",
-    borderRadius: 8, fontSize: 13, fontFamily: "'Barlow', sans-serif",
+    borderRadius: 8, fontSize: 13, fontFamily: "'Inter', sans-serif",
     outline: "none", background: "#fff", color: "#333", boxSizing: "border-box" },
   charCount: { fontSize: 11, color: "#aaa", textAlign: "right", marginTop: 4 },
   genBtn: { width: "100%", background: "#FF6B00", color: "#fff", border: "none",
     borderRadius: 8, padding: "10px 16px", fontWeight: 700, fontSize: 12,
-    cursor: "pointer", fontFamily: "'Barlow', sans-serif", letterSpacing: ".05em" },
+    cursor: "pointer", fontFamily: "'Inter', sans-serif", letterSpacing: ".05em" },
   genIdBox: { background: "#fff", border: "2px solid #FF6B00", borderRadius: 8,
     padding: 10, textAlign: "center", fontWeight: 900, fontSize: 20,
     color: "#333", letterSpacing: 2, marginTop: 4 },
@@ -140,13 +149,13 @@ const s = {
   socialIcon: { width: 42, height: 42, display: "flex", alignItems: "center",
     justifyContent: "center", fontSize: 18, flexShrink: 0 },
   socialInput: { border: "none", padding: "10px 10px", flex: 1, minWidth: 0,
-    fontFamily: "'Barlow', sans-serif", fontSize: 13, outline: "none",
+    fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none",
     background: "#fff", color: "#333" },
   formNav: { display: "flex", justifyContent: "space-between",
     alignItems: "center", marginTop: 20 },
   btnNext: { background: "#FF6B00", color: "#fff", border: "none", borderRadius: 8,
     padding: "10px 28px", fontWeight: 700, fontSize: 14, cursor: "pointer",
-    fontFamily: "'Barlow', sans-serif" },
+    fontFamily: "'Inter', sans-serif" },
 };
 
 export default AddTenantStep1;

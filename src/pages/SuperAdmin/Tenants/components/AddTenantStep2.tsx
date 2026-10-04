@@ -1,4 +1,14 @@
-const PLANS = [
+interface Plan {
+  key: string;
+  name: string;
+  desc: string;
+  headerBg: string;
+  headerColor: string;
+  footerBg: string;
+  footerColor: string;
+}
+
+const PLANS: Plan[] = [
   {
     key: "personal", name: "PERSONAL",
     desc: "lorem ipsum dolor\nlorem ipsum dolor\nlorem ipsum dolor\nlorem ipsum dolor\nlorem ipsum dolor",
@@ -16,7 +26,13 @@ const PLANS = [
   },
 ];
 
-const AddTenantStep2 = ({ selectedPlan, onSelect, onBack }) => (
+interface AddTenantStep2Props {
+  selectedPlan: string | null;
+  onSelect: (planKey: string) => void;
+  onBack: () => void;
+}
+
+const AddTenantStep2 = ({ selectedPlan, onSelect, onBack }: AddTenantStep2Props) => (
   <div style={s.card}>
     <div style={s.title}>CHOOSE PLAN</div>
     <hr style={s.divider} />
@@ -35,8 +51,8 @@ const AddTenantStep2 = ({ selectedPlan, onSelect, onBack }) => (
           }}
         >
           <div style={{ ...s.planHeader, background: plan.headerBg }}>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 900, fontSize: 20, color: plan.headerColor }}>
+            <div style={{ fontFamily: "'Inter', sans-serif",
+              fontWeight: 700, fontSize: 24, color: plan.headerColor }}>
               {plan.name}
             </div>
           </div>
@@ -62,11 +78,11 @@ const AddTenantStep2 = ({ selectedPlan, onSelect, onBack }) => (
   </div>
 );
 
-const s = {
+const s: Record<string, React.CSSProperties> = {
   card: { background: "#fff", borderRadius: 10, border: "1px solid #eee",
     padding: 24, margin: "16px 0" },
-  title: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
-    fontSize: 22, color: "#333", marginBottom: 8 },
+  title: { fontFamily: "'Inter', sans-serif", fontWeight: 700,
+    fontSize: 26, color: "#333", marginBottom: 8 },
   divider: { border: "none", borderTop: "1px solid #eee", margin: "12px 0 20px" },
   grid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 },
   planCard: { borderRadius: 14, overflow: "hidden", cursor: "pointer",
