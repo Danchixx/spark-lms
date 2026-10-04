@@ -7,7 +7,8 @@ import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import ProfileCard from "../../components/common/ProfileCard/ProfileCard";
-import { ArrowLeft, ChevronRight, BookOpen, Clock, CheckCircle2, UserCircle, Briefcase, Info, Loader2, Check } from "lucide-react";
+import Button from "../../components/ui/Button/Button";
+import { ArrowLeft, ChevronRight, BookOpen, Clock, CheckCircle2, UserCircle, Briefcase, Info, Loader2, Check, Key } from "lucide-react";
 import PageTransition from "../../components/common/PageTransition";
 
 const SectionTitle = ({ icon: Icon, title }: { icon: any; title: string }) => (
@@ -43,6 +44,8 @@ const UserProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
@@ -196,9 +199,60 @@ const UserProfile = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!targetUser?.password) {
+      alert("Default password not found for this user.");
+      return;
+    }
+    
+    setIsResetting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-admin-user', {
+        body: { 
+          action: 'reset_password', 
+          userId: targetUser.id,
+          newPassword: targetUser.password 
+        }
+      });
+
+      if (error) throw new Error(error.message || 'Failed to reset password');
+      if (data?.error) throw new Error(data.error);
+
+      setSuccessMessage("Password has been reset to the user's default password.");
+      setShowSuccessModal(true);
+      setShowResetConfirm(false);
+    } catch (err: any) {
+      console.error("Error resetting password:", err);
+      alert(err.message || "Failed to reset password.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       {showSuccessModal && <SuccessModal message={successMessage} onClose={() => setShowSuccessModal(false)} />}
+      
+      {showResetConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "var(--color-surface)", padding: 32, borderRadius: 16, width: "100%", maxWidth: 400, border: "1px solid var(--color-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(231, 76, 60, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Key size={20} color="#e74c3c" />
+              </div>
+              <h3 style={{ margin: 0, color: "var(--color-text-header)", fontSize: 18, fontWeight: 700 }}>Reset Password?</h3>
+            </div>
+            <p style={{ margin: "0 0 24px", color: "var(--color-text-muted)", fontSize: 14, lineHeight: 1.5 }}>
+              This will reset the user's login password back to their original default password. Are you sure you want to proceed?
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <Button variant="ghost" onClick={() => setShowResetConfirm(false)} disabled={isResetting}>Cancel</Button>
+              <Button variant="danger" onClick={handleResetPassword} loading={isResetting}>{isResetting ? "Resetting..." : "Yes, Reset Password"}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Sidebar isOpen={sidebarOpen} activePage="Users" onNavigate={onNavigate} user={currentUser} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -206,24 +260,31 @@ const UserProfile = () => {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <PageTransition>
-            {/* Breadcrumb */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, fontSize: 13, fontWeight: 600 }}>
-              <button 
-                onClick={() => navigate(`/${slug}/users`)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "6px 12px", borderRadius: 20,
-                  border: "1px solid var(--color-border)", background: "var(--color-surface)",
-                  color: "#FF6B00", cursor: "pointer", fontFamily: "inherit"
-                }}
-              >
-                <ArrowLeft size={14} /> Users
-              </button>
-              <ChevronRight size={14} color="var(--color-text-muted)" />
-              <span style={{ color: "var(--color-text-header)" }}>User Profile</span>
-            </div>
+            <div className="dash-top">
+              <div className="dash-top-greeting" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <button 
+                  onClick={() => navigate(`/${slug}/users`)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: "6px 12px", borderRadius: 20,
+                    border: "1px solid var(--color-border)", background: "var(--color-surface)",
+                    color: "#FF6B00", cursor: "pointer", fontFamily: "inherit"
+                  }}
+                >
+                  <ArrowLeft size={14} /> Users
+                </button>
+                <ChevronRight size={14} color="var(--color-text-muted)" />
+                <span style={{ color: "var(--color-text-header)" }}>User Profile</span>
+              </div>
 
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--color-text-header)", marginBottom: 24, textAlign: "center" }}>User Profile</h1>
+              <h1 className="dash-top-title" style={{ color: "var(--color-text-header)" }}>User Profile</h1>
+              
+              <div className="dash-top-btn-wrap">
+                <Button variant="outline" leftIcon={<Key size={14} />} onClick={() => setShowResetConfirm(true)}>
+                  Reset Password
+                </Button>
+              </div>
+            </div>
 
             <div style={{ marginBottom: 24 }}>
               <ProfileCard profileData={profileData} editable={true} onSave={handleSaveDetails} />

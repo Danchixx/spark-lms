@@ -107,7 +107,7 @@ const AdminUsers = () => {
         if (error) throw error;
         setDbUsers(prev => prev.filter(u => u.id !== deleteTarget));
       } else {
-        // Archive
+        // Archive (soft delete) — no auth changes needed
         const { error } = await supabase.from('users').update({ 
           is_archived: true, 
           archived_at: new Date().toISOString()
@@ -117,9 +117,9 @@ const AdminUsers = () => {
       }
       setDeleteTarget(null);
       setShowSuccessModal(true);
-    } catch (err) {
-      console.error("Failed to delete user:", err);
-      alert("Failed to delete user.");
+    } catch (err: any) {
+      console.error("Failed to process user:", err);
+      alert(err?.message || "Failed to process user. Please try again.");
     } finally {
       setIsDeleting(false);
     }

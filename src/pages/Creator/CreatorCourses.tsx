@@ -160,12 +160,12 @@ const CreatorCourses = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch courses created by this user
+  // Fetch courses within this company
   useEffect(() => {
     const loadCourses = async () => {
-      if (!user?.id) return;
+      if (!company?.id) return;
       try {
-        const data = await courseService.fetchCreatorCourses(user.id as string);
+        const data = await courseService.fetchCreatorCourses(company.id);
         setCourses(data);
       } catch (err) {
         console.error("Failed to load creator courses:", err);
@@ -174,7 +174,7 @@ const CreatorCourses = () => {
       }
     };
     loadCourses();
-  }, [user]);
+  }, [company?.id]);
 
   const filtered = activeFilter === "All"
     ? courses

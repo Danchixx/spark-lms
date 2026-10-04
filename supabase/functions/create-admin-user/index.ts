@@ -26,6 +26,88 @@ Deno.serve(async (req: Request) => {
 
     // Get request body
     const body = await req.json();
+    const { action } = body;
+
+    // ─── DELETE USER ───────────────────────────────────────────────
+    if (action === "delete") {
+      const { userId } = body;
+
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: "Missing userId for deletion" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+
+      // Step 1: Verify the user exists in auth before attempting deletion
+      const { data: authUser, error: fetchError } = await supabaseClient.auth.admin.getUserById(userId);
+      
+      if (fetchError || !authUser?.user) {
+        // Auth user doesn't exist — still allow LMS table cleanup
+        // Delete from public.users directly (in case the auth record was already removed)
+        const { error: dbDeleteError } = await supabaseClient
+          .from("users")
+          .delete()
+          .eq("id", userId);
+
+        if (dbDeleteError) {
+          return new Response(
+            JSON.stringify({ error: `Database cleanup failed: ${dbDeleteError.message}` }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: "User deleted from database (auth user was already missing)" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
+      // Step 2: Delete from auth.users — CASCADE will clean public.users and all related tables
+      const { error: authDeleteError } = await supabaseClient.auth.admin.deleteUser(userId);
+
+      if (authDeleteError) {
+        return new Response(
+          JSON.stringify({ error: `Auth deletion failed: ${authDeleteError.message}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "User permanently deleted from Auth and database" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // ─── RESET PASSWORD ────────────────────────────────────────────
+    if (action === "reset_password") {
+      const { userId, newPassword } = body;
+
+      if (!userId || !newPassword) {
+        return new Response(
+          JSON.stringify({ error: "Missing userId or newPassword for reset" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+
+      const { error } = await supabaseClient.auth.admin.updateUserById(userId, {
+        password: newPassword
+      });
+
+      if (error) {
+        return new Response(
+          JSON.stringify({ error: `Failed to reset password: ${error.message}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Password reset successfully" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // ─── CREATE USER (existing logic) ──────────────────────────────
     const { email, password, sendEmail, name } = body;
 
     // Use `email` as `to` if `to` is not provided, since existing workflow uses `email`
@@ -85,7 +167,16 @@ Deno.serve(async (req: Request) => {
       if (!resendResponse.ok) {
         const resendData = await resendResponse.json().catch(() => ({}));
         console.error("Resend API error:", resendData);
-        throw new Error(`Failed to send email via Resend: ${resendResponse.statusText}`);
+        // Do not throw here, otherwise the Auth user is orphaned.
+        // We gracefully fail the email but succeed the user creation.
+        return new Response(JSON.stringify({ 
+          user: user.user, 
+          emailStatus: "failed", 
+          emailError: `Failed to send email via Resend: ${resendResponse.statusText}` 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
       }
     }
 

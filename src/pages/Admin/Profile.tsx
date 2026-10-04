@@ -6,7 +6,8 @@ import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import ProfileCard from "../../components/common/ProfileCard/ProfileCard";
-import { Lock, IdCard, ShieldCheck, Check, type LucideIcon } from "lucide-react";
+import Button from "../../components/ui/Button/Button";
+import { Lock, IdCard, ShieldCheck, Check, Key, type LucideIcon } from "lucide-react";
 import { useCourses } from "../../hooks/useCourses";
 import PageTransition from "../../components/common/PageTransition";
 
@@ -62,6 +63,8 @@ const AdminProfile = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
@@ -133,6 +136,36 @@ const AdminProfile = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!user?.password) {
+      alert("Default password not found for your account.");
+      return;
+    }
+    
+    setIsResetting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-admin-user', {
+        body: { 
+          action: 'reset_password', 
+          userId: user.id,
+          newPassword: user.password 
+        }
+      });
+
+      if (error) throw new Error(error.message || 'Failed to reset password');
+      if (data?.error) throw new Error(data.error);
+
+      setSuccessMessage("Your password has been reset to the default password.");
+      setShowSuccessModal(true);
+      setShowResetConfirm(false);
+    } catch (err: any) {
+      console.error("Error resetting password:", err);
+      alert(err.message || "Failed to reset password.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <style>{`
@@ -146,6 +179,26 @@ const AdminProfile = () => {
 
       {showSuccessModal && <SuccessModal message={successMessage} onClose={() => setShowSuccessModal(false)} />}
 
+      {showResetConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "var(--color-surface)", padding: 32, borderRadius: 16, width: "100%", maxWidth: 400, border: "1px solid var(--color-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(231, 76, 60, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Key size={20} color="#e74c3c" />
+              </div>
+              <h3 style={{ margin: 0, color: "var(--color-text-header)", fontSize: 18, fontWeight: 700 }}>Reset Password?</h3>
+            </div>
+            <p style={{ margin: "0 0 24px", color: "var(--color-text-muted)", fontSize: 14, lineHeight: 1.5 }}>
+              This will reset your login password back to your original default password. Are you sure you want to proceed?
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <Button variant="ghost" onClick={() => setShowResetConfirm(false)} disabled={isResetting}>Cancel</Button>
+              <Button variant="danger" onClick={handleResetPassword} loading={isResetting}>{isResetting ? "Resetting..." : "Yes, Reset Password"}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Sidebar isOpen={sidebarOpen} activePage="Profile" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -157,7 +210,11 @@ const AdminProfile = () => {
             <div className="dash-top">
                 <div className="dash-top-greeting"></div>
                 <h1 className="dash-top-title" style={{ color: "var(--color-text-header)" }}>Profile</h1>
-                <div className="dash-top-btn-wrap"></div>
+                <div className="dash-top-btn-wrap">
+                  <Button variant="outline" leftIcon={<Key size={14} />} onClick={() => setShowResetConfirm(true)}>
+                    Reset Password
+                  </Button>
+                </div>
             </div>
             
             <div style={{ marginBottom: 16 }}>
