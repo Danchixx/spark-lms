@@ -451,6 +451,12 @@ const CourseBuilder = () => {
         await courseService.updateModule(m.id, { title: m.title, description: m.description, status: m.status });
       }
 
+      // 4. Reorder lessons
+      const allLessons = modules.flatMap(m => m.lessons.map(l => ({ id: l.id, position: l.position })));
+      if (allLessons.length > 0) {
+        await courseService.reorderLessons(allLessons);
+      }
+
       showToast("Course saved successfully!");
     } catch (err: any) {
       console.error("Failed to save course:", err);

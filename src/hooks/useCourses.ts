@@ -44,6 +44,7 @@ export type CourseItem = {
   lastModule: string | null;
   modules: ModuleItem[];
   assignmentId: number;
+  completedAt?: string;
 };
 
 import { useCourseContext } from '../context/CourseContext';

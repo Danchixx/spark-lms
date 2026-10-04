@@ -96,6 +96,25 @@ const ModuleLessons = () => {
     }
   };
 
+  const hasNextModule = (courseData?.modules?.length ?? 0) > moduleIndex + 1;
+
+  const handleNextModule = async () => {
+    if (currentLesson && currentLesson.status !== 'completed') {
+      await markLessonComplete(currentLesson.id);
+    }
+    const nextMod = courseData?.modules?.[moduleIndex + 1];
+    if (nextMod) {
+      navigate(`/${slug}/courses/lessons`, { state: { courseId, moduleId: nextMod.id, lessonId: nextMod.lessons[0]?.id } });
+    }
+  };
+
+  const handleDone = async () => {
+    if (currentLesson && currentLesson.status !== 'completed') {
+      await markLessonComplete(currentLesson.id);
+    }
+    navigate(`/${slug}/courses`);
+  };
+
   const isReady = !loading && courseData && moduleData;
 
   return (
@@ -141,6 +160,9 @@ const ModuleLessons = () => {
                 lesson={currentLesson}
                 onBack={handleBack}
                 onNext={handleNext}
+                onNextModule={handleNextModule}
+                onDone={handleDone}
+                hasNextModule={hasNextModule}
                 currentIndex={currentIndex + 1}
                 totalLessons={lessons.length}
                 onProceedAssessment={() => navigate(`/${slug}/courses/assessment`, {

@@ -196,6 +196,16 @@ export async function reorderModules(modules: { id: number; order: number }[]) {
 
 // ─── Lesson CRUD ────────────────────────────────────────────
 
+/** Batch reorder lessons */
+export async function reorderLessons(lessons: { id: number; position: number }[]) {
+  const promises = lessons.map((l) =>
+    supabase.from('course_lessons').update({ position: l.position }).eq('id', l.id)
+  );
+  const results = await Promise.all(promises);
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+}
+
 /** Create a new lesson under a module */
 export async function createLesson(moduleId: number, data: LessonPayload) {
   const { data: lesson, error } = await supabase

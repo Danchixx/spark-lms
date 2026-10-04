@@ -15,6 +15,24 @@ import "./CourseModules.css";
 import PageTransition from "../../components/common/PageTransition";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
+const getOrdinalSuffix = (d: number) => {
+  if (d > 3 && d < 21) return 'th';
+  switch (d % 10) {
+    case 1:  return "st";
+    case 2:  return "nd";
+    case 3:  return "rd";
+    default: return "th";
+  }
+};
+
+const formatCertDate = (dateString?: string) => {
+  const date = dateString ? new Date(dateString) : new Date();
+  const d = date.getDate();
+  const month = date.toLocaleDateString('en-US', { month: 'long' });
+  const year = date.getFullYear();
+  return `${d}${getOrdinalSuffix(d)} of ${month}, ${year}`;
+};
+
 const CourseModules = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
@@ -236,7 +254,6 @@ const CourseModules = () => {
                             </div>
 
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              {unit.status === "completed" && <Check size={20} color="#FF6B00" strokeWidth={3} />}
                               {unit.status === "open" && (
                                 <Button
                                   size="sm"
@@ -266,6 +283,7 @@ const CourseModules = () => {
                                   View Attempts
                                 </Button>
                               )}
+                              {unit.status === "completed" && <Check size={20} color="#FF6B00" strokeWidth={3} />}
                               {unit.status === "locked" && <Lock size={16} color="#666" />}
                             </div>
                           </div>
@@ -288,7 +306,7 @@ const CourseModules = () => {
         onClose={() => setShowCertificate(false)}
         userName={user?.name || ""}
         courseName={courseData?.name || ""}
-        date="27th of February, 2026"
+        date={formatCertDate(courseData?.completedAt)}
         companyLogo={company?.logo_url}
       />
     </>

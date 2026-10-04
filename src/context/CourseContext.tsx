@@ -58,18 +58,25 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       const assignmentIds = assignments.map(a => a.id);
       const { data: progressRows, error: progErr } = await supabase
         .from('lessons_progress')
-        .select('assignment_id, lesson_id, is_completed')
+        .select('assignment_id, lesson_id, is_completed, completed_at')
         .in('assignment_id', assignmentIds)
         .eq('is_completed', true);
 
       if (progErr) throw progErr;
 
       const completedMap = new Map<number, Set<number>>();
+      const lastCompletedDateMap = new Map<number, string>();
       (progressRows || []).forEach(row => {
         if (!completedMap.has(row.assignment_id)) {
           completedMap.set(row.assignment_id, new Set());
         }
         completedMap.get(row.assignment_id)!.add(row.lesson_id);
+        if (row.completed_at) {
+          const existingDate = lastCompletedDateMap.get(row.assignment_id);
+          if (!existingDate || new Date(row.completed_at) > new Date(existingDate)) {
+            lastCompletedDateMap.set(row.assignment_id, row.completed_at);
+          }
+        }
       });
 
       // 3. Fetch assessment details and user attempt counts
@@ -99,6 +106,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       const result: CourseItem[] = assignments.map(assignment => {
         const course = assignment.courses as any;
         const completedLessonIds = completedMap.get(assignment.id) || new Set();
+        const lastCompletedAt = lastCompletedDateMap.get(assignment.id);
         const assigner = assignment.assigner as any;
         const assignerName = assigner
           ? `${assigner.firstname} ${assigner.lastname}`
@@ -210,6 +218,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           lastModule: lastCompletedModuleLesson,
           modules,
           assignmentId: assignment.id,
+          completedAt: lastCompletedAt,
         };
       });
 
