@@ -254,9 +254,10 @@ const CourseModules = () => {
                             </div>
 
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              {unit.status === "open" && (
+                              {(unit.status === "open" || (unit.status === "completed" && unit.type !== "assessment")) && (
                                 <Button
                                   size="sm"
+                                  variant={unit.status === "completed" ? "outline" : "primary"}
                                   rounded="pill"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -265,7 +266,7 @@ const CourseModules = () => {
                                     });
                                   }}
                                 >
-                                  Open
+                                  {unit.status === "completed" ? "Review" : "Open"}
                                 </Button>
                               )}
                               {unit.type === "assessment" && (unit.status === "completed" || unit.status === "open") && (unit.attemptsCount ?? 0) > 0 && (
