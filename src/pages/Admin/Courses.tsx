@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { getCompanySlug } from "../../utils/slug";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -167,7 +168,7 @@ const AdminCourses = () => {
   
   const { adminCourses: dbCourses, loadingList: loading, fetchAdminCourses } = useAdminCourseContext();
 
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   useEffect(() => {

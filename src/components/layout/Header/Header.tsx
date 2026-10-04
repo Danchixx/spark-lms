@@ -4,6 +4,7 @@ import { Squash as Hamburger } from "hamburger-react";
 import { Bell, User, X } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { useTheme } from "../../../context/ThemeContext";
+import { getCompanySlug } from "../../../utils/slug";
 
 const BREAKPOINT = 1024;
 
@@ -37,7 +38,7 @@ const Header = ({
   const notifRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
+  const slug = getCompanySlug(company);
   const goToProfile = () => navigate(`/${slug}/profile`);
 
   const unreadCount = notifications.filter(n => !n.read).length;

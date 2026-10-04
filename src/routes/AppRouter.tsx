@@ -1,7 +1,10 @@
+import { useEffect, type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import useInactivityTimeout from "../hooks/useInactivityTimeout";
 import SessionExpiredModal from "../components/common/Modal/SessionExpiredModal";
+import { Loader2 } from "lucide-react";
+import { getCompanySlug } from "../utils/slug";
 
 import Landing from "../pages/Landing/Landing";
 import Login from "../pages/Auth/Login";
@@ -40,7 +43,6 @@ import CreatorDashboard from "../pages/Creator/CreatorDashboard";
 
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 
-import type { ReactNode } from "react";
 import type { RoleName } from "../types";
 
 // ── Role → Dashboard map ─────────────────────────────────────
@@ -101,7 +103,14 @@ type ProtectedRouteProps = {
 };
 
 const ProtectedRoute = ({ children, role }: ProtectedRouteProps) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
+        <Loader2 className="animate-spin" size={48} color="#FF6B00" />
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/" replace />;
   if (role && user.role !== role) return <Navigate to="/" replace />;
   return <>{children}</>;
@@ -112,7 +121,20 @@ const AppRoutes = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") ?? "";
+  const slug = getCompanySlug(company);
+
+  // Auto-normalize legacy/mismatched slug in URL (e.g. /spark-cpd/dashboard -> /spark/dashboard)
+  useEffect(() => {
+    if (user && company && company.slug) {
+      const pathParts = location.pathname.split("/").filter(Boolean);
+      const firstSegment = pathParts[0];
+      const legacySlug = company.name?.toLowerCase().replace(/\s+/g, "-");
+      if (firstSegment && firstSegment === legacySlug && firstSegment !== company.slug) {
+        const newPath = "/" + [company.slug, ...pathParts.slice(1)].join("/");
+        navigate(newPath + location.search + location.hash, { replace: true });
+      }
+    }
+  }, [user, company, location.pathname, location.search, location.hash, navigate]);
 
   // Inactivity timeout — only active when user is logged in
   const sessionExpired = useInactivityTimeout(!!user);

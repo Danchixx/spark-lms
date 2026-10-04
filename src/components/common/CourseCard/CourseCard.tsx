@@ -2,6 +2,7 @@ import { Pin, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../../../context/AuthContext";
+import { getCompanySlug } from "../../../utils/slug";
 import Button from "../../ui/Button/Button";
 import StatusBadge from "../../ui/StatusBadge/StatusBadge";
 
@@ -42,7 +43,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
 
   const navigate = useNavigate();
   const { company } = useAuth();
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-") || "";
+  const slug = getCompanySlug(company);
 
   const handleActionClick = () => {
     navigate(`/${slug}/courses/modules`, { state: { courseId: course.id } });

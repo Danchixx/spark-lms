@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Briefcase, Mail, CheckCircle2, ChevronRight, Check, Loader2, Search, BookOpen } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { getCompanySlug } from "../../utils/slug";
 import { useAdminCourseContext } from "../../context/AdminCourseContext";
 import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
@@ -40,7 +41,7 @@ const AdminAddUser = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const slug = getCompanySlug(company);
   
   const { adminCourses, fetchAdminCourses } = useAdminCourseContext();
   

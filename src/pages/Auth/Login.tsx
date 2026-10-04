@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Navigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { getCompanySlug } from "../../utils/slug";
+import type { Company } from "../../types";
 import SparkHeader from "../../components/layout/SparkHeader/SparkHeader";
 import LeftPanel from "../../components/layout/LeftPanel/LeftPanel";
 import PageTransition from "../../components/common/PageTransition";
@@ -30,23 +32,37 @@ const Login = () => {
       if (!companySlug) return;
 
       // If we already have the right company, don't fetch
-      if (company && company.slug === companySlug) {
+      const currentCanonical = getCompanySlug(company);
+      const currentLegacy = company?.name?.toLowerCase().replace(/\s+/g, "-");
+      if (company && (company.slug === companySlug || currentCanonical === companySlug || currentLegacy === companySlug)) {
         setIsFetchingCompany(false);
         return;
       }
 
       setIsFetchingCompany(true);
       try {
+        let comp: Company | null = null;
         const { data, error } = await supabase
           .from('companies')
           .select('*')
           .eq('slug', companySlug)
           .eq('is_archived', false)
-          .single();
+          .maybeSingle();
 
         if (data) {
-          setCompany(data);
-          selectCompany(data);
+          comp = data;
+        } else {
+          // Fallback: check if slugified company name matches companySlug (e.g. spark-cpd)
+          const { data: allCompanies } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('is_archived', false);
+          comp = allCompanies?.find((c: Company) => c.name?.toLowerCase().replace(/\s+/g, "-") === companySlug) || null;
+        }
+
+        if (comp) {
+          setCompany(comp);
+          selectCompany(comp);
         } else {
           // Company not found
           navigate("/", { replace: true });
@@ -65,8 +81,12 @@ const Login = () => {
   // Auto-redirect if already logged in to THIS company
   const { user } = useAuth();
   useEffect(() => {
-    if (user && company && company.slug === companySlug) {
-      navigate(`/${company.slug}/dashboard`, { replace: true });
+    if (user && company) {
+      const canonicalSlug = getCompanySlug(company);
+      const legacySlug = company.name?.toLowerCase().replace(/\s+/g, "-");
+      if (company.slug === companySlug || legacySlug === companySlug) {
+        navigate(`/${canonicalSlug}/dashboard`, { replace: true });
+      }
     }
   }, [user, company, companySlug, navigate]);
 
@@ -88,7 +108,8 @@ const Login = () => {
 
     try {
       await login(username, password);
-      navigate(`/${company.slug}/dashboard`);
+      const canonicalSlug = getCompanySlug(company);
+      navigate(`/${canonicalSlug}/dashboard`);
     } catch (err) {
       setError("wrong_credentials");
     } finally {

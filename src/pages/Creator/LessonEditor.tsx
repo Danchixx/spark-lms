@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { getCompanySlug } from "../../utils/slug";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -84,8 +85,15 @@ const LessonTypeIcon = ({ type, size = 16 }: { type: string; size?: number }) =>
   }
 };
 
-const convertYoutubeUrl = (url: string): string | null => {
+const convertVideoUrl = (url: string): string | null => {
   if (!url) return null;
+  
+  // Google Drive
+  const gdriveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (gdriveMatch?.[1]) {
+    return `https://drive.google.com/file/d/${gdriveMatch[1]}/preview`;
+  }
+  
   // Already an embed URL
   if (url.includes("/embed/")) return url;
   // Standard YouTube URL
@@ -101,7 +109,7 @@ const LessonEditor = () => {
   const location = useLocation();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
 
-  const slug = company?.name?.toLowerCase().replace(/\s+/g, "-");
+  const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   // ─── Data from navigation state ────────────────────────────
@@ -332,7 +340,7 @@ const LessonEditor = () => {
     setQuestions([]);
   };
 
-  const embedUrl = convertYoutubeUrl(videoUrl);
+  const embedUrl = convertVideoUrl(videoUrl);
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
