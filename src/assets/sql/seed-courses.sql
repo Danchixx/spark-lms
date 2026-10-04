@@ -12,10 +12,10 @@ BEGIN;
 -- 1. COURSES  (company_id=1, created_by=2)
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO courses (id, company_id, title, description, icon_emoji, status, created_by) VALUES
-  (1, 1, 'Sales Fundamentals',   'Master the art of modern selling — from buyer psychology to closing deals.', '💼', 'published', 2),
-  (2, 1, 'Customer Service Pro',  'Learn how to deliver exceptional customer experiences.', '👤', 'published', 2),
-  (3, 1, 'Digital Marketing',     'From SEO to social media — become a full-stack digital marketer.', '📢', 'published', 2),
-  (4, 1, 'Technical Onboarding',  'Get up to speed with the tools, systems, and workflows used across the organization.', '⚙️', 'published', 2);
+  (1, 1, 'Sales Fundamentals',   'Master the art of modern selling — from buyer psychology to closing deals.', '💼', 'active', 2),
+  (2, 1, 'Customer Service Pro',  'Learn how to deliver exceptional customer experiences.', '👤', 'active', 2),
+  (3, 1, 'Digital Marketing',     'From SEO to social media — become a full-stack digital marketer.', '📢', 'active', 2),
+  (4, 1, 'Technical Onboarding',  'Get up to speed with the tools, systems, and workflows used across the organization.', '⚙️', 'active', 2);
 
 SELECT setval('courses_id_seq', (SELECT MAX(id) FROM courses));
 

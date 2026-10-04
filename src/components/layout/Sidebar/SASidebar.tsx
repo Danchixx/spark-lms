@@ -1,12 +1,61 @@
-// src/components/layout/SASidebar/SASidebar.jsx
+// src/components/layout/Sidebar/SASidebar.tsx
 // - Desktop: fixed sidebar toggled by the topbar burger
 // - Mobile (≤768px): topbar burger opens an animated slide-down dropdown
 
 import { useState, useEffect, useRef } from "react";
+import type React from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../../context/ThemeContext";
+import type { AppUser } from "../../../types";
+import LogoutModal from "../../common/Modal/LogoutModal";
 
-const NAV = {
+// ── Types ─────────────────────────────────────────────────────
+type NavKey = "dashboard" | "tenants" | "approvals" | "users" | "courses" | "settings" | "register" | "announcement" | "export" | "support" | "logs";
+
+interface NavItem {
+  key: NavKey;
+  label: string;
+}
+
+interface NavSection {
+  [section: string]: NavItem[];
+}
+
+interface SASidebarProps {
+  open: boolean;
+  activePage: string;
+  onNavigate?: (key: string) => void;
+  user?: AppUser | null;
+  onLogout: () => void;
+}
+
+interface NavItemProps {
+  item: NavItem;
+  isActive: boolean;
+  onClick?: () => void;
+  showSidebarIcons: boolean;
+}
+
+interface MobileDropdownProps {
+  open: boolean;
+  activePage: string;
+  onClose: () => void;
+  user?: AppUser | null;
+  onLogout: () => void;
+}
+
+interface NavContentProps {
+  activePage: string;
+  showSidebarIcons: boolean;
+  onItemClick?: (key: string) => void;
+}
+
+interface UserChipProps {
+  user?: AppUser | null;
+}
+
+// ── Constants ─────────────────────────────────────────────────
+const NAV: NavSection = {
   overview: [
     { key: "dashboard", label: "Dashboard" },
   ],
@@ -16,12 +65,19 @@ const NAV = {
     { key: "users", label: "Users" },
     { key: "courses", label: "Courses" },
   ],
+  actions: [
+    { key: "register" as any, label: "Register Tenant" },
+    { key: "announcement" as any, label: "Announcement" },
+    { key: "export" as any, label: "Data Export" },
+    { key: "support" as any, label: "Support" },
+  ],
   system: [
     { key: "settings", label: "Settings" },
+    { key: "logs", label: "System Logs" },
   ],
 };
 
-const icons = {
+const icons: Record<NavKey, React.ReactElement> = {
   dashboard: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -68,20 +124,66 @@ const icons = {
       <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
     </svg>
   ),
+  register: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="8.5" cy="7" r="4" />
+      <line x1="20" y1="8" x2="20" y2="14" />
+      <line x1="23" y1="11" x2="17" y2="11" />
+    </svg>
+  ),
+  announcement: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
+  export: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+  support: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
+  logs: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  ),
 };
 
 export const SIDEBAR_WIDTH = 220;
 export const TOPBAR_HEIGHT = 70;
 
+import SparkLogo from "../../../components/common/SparkLogo/sparklogo.png";
+
 // ── Nav item — smooth active transition ───────────────────────
-const NavItem = ({ item, isActive, onClick, showSidebarIcons }) => {
+const NavItemComponent = ({ item, isActive, onClick, showSidebarIcons }: NavItemProps) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   return (
     <div
       onClick={() => {
         if (onClick) onClick();
-        navigate("/superadmin/" + item.key);
+        if (item.key === "register") {
+          navigate("/superadmin/addtenant");
+        } else {
+          navigate("/superadmin/" + item.key);
+        }
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -91,8 +193,9 @@ const NavItem = ({ item, isActive, onClick, showSidebarIcons }) => {
         gap: showSidebarIcons ? 10 : 0,
         padding: "11px 20px",
         cursor: "pointer",
-        fontSize: 15,
-        fontWeight: 500,
+        fontSize: 17,
+        fontWeight: isActive ? 600 : 100,
+        fontFamily: "'Inter', sans-serif",
         color: isActive ? "#FF6B00" : hovered ? "#FF6B00" : "#444",
         background: isActive ? "#FFF0E6" : hovered ? "#FFF8F3" : "transparent",
         transition: "background 0.25s cubic-bezier(.4,0,.2,1), color 0.25s cubic-bezier(.4,0,.2,1)",
@@ -121,7 +224,7 @@ const NavItem = ({ item, isActive, onClick, showSidebarIcons }) => {
 };
 
 // ── Section label ─────────────────────────────────────────────
-const SectionLabel = ({ label }) => (
+const SectionLabel = ({ label }: { label: string }) => (
   <div style={{
     fontSize: 10,
     fontWeight: 700,
@@ -130,50 +233,69 @@ const SectionLabel = ({ label }) => (
     textTransform: "uppercase",
     padding: "10px 20px 4px",
     whiteSpace: "nowrap",
+    fontFamily: "'Inter', sans-serif",
   }}>
     {label}
   </div>
 );
 
-// ── User chip ─────────────────────────────────────────────────
-const UserChip = ({ user }) => (
+// ── Logout Footer ─────────────────────────────────────────────
+const LogoutFooter = ({ onLogoutClick }: { onLogoutClick: () => void }) => (
   <div style={{
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    padding: "14px 20px",
-    background: "#FFF0E6",
+    gap: 12,
+    padding: "16px 20px",
+    background: "#fff",
   }}>
     <div style={{
-      width: 32, height: 32, borderRadius: "50%",
-      background: "linear-gradient(135deg, #FF8C00, #c0392b)",
+      width: 40, height: 40, borderRadius: 12,
+      background: "#FFF0E6",
       display: "flex", alignItems: "center",
-      justifyContent: "center", fontSize: 16, flexShrink: 0,
+      justifyContent: "center", flexShrink: 0,
+      border: "1.5px solid #FFE0CC",
     }}>
-      🔥
+      <img src={SparkLogo} alt="Spark" style={{ width: 22, height: "auto" }} />
     </div>
-    <div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: "#333", whiteSpace: "nowrap" }}>
-        {user?.name || "Ian Palabrica"}
-      </div>
-      <div style={{
-        fontSize: 10, color: "#FF6B00", fontWeight: 700,
-        letterSpacing: ".1em", textTransform: "uppercase"
-      }}>
-        Super Admin
-      </div>
-    </div>
+    <button
+      onClick={onLogoutClick}
+      style={{
+        flex: 1,
+        background: "linear-gradient(135deg, #FF3D00, #FF6B00)",
+        color: "#fff",
+        border: "none",
+        borderRadius: 10,
+        padding: "10px 0",
+        fontSize: 12,
+        fontWeight: 800,
+        cursor: "pointer",
+        letterSpacing: ".08em",
+        fontFamily: "'Inter', sans-serif",
+        boxShadow: "0 4px 12px rgba(255,61,0,0.2)",
+        transition: "transform 0.2s, box-shadow 0.2s",
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 16px rgba(255,61,0,0.3)";
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLButtonElement).style.transform = "none";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 12px rgba(255,61,0,0.2)";
+      }}
+    >
+      LOGOUT
+    </button>
   </div>
 );
 
 // ── Nav content (shared between desktop + mobile) ─────────────
-const NavContent = ({ activePage, showSidebarIcons, onItemClick }) => (
+const NavContent = ({ activePage, showSidebarIcons, onItemClick }: NavContentProps) => (
   <>
     {Object.entries(NAV).map(([section, items]) => (
       <div key={section} style={{ marginBottom: 4 }}>
         <SectionLabel label={section} />
         {items.map((item) => (
-          <NavItem
+          <NavItemComponent
             key={item.key}
             item={item}
             isActive={activePage === item.key}
@@ -187,31 +309,30 @@ const NavContent = ({ activePage, showSidebarIcons, onItemClick }) => (
 );
 
 // ── Animated mobile dropdown ──────────────────────────────────
-// Uses a CSS keyframe for slide-down + fade-in on open,
-// and manages its own closing animation before unmounting.
-const MobileDropdown = ({ open, activePage, onClose, user }) => {
+const MobileDropdown = ({ open, activePage, onClose, user, onLogout }: MobileDropdownProps) => {
   const { showSidebarIcons } = useTheme();
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
-  const closeTimer = useRef(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (open) {
       setVisible(true);
       setAnimating(true);
     } else if (visible) {
-      // Trigger slide-up animation, then unmount
       setAnimating(false);
       closeTimer.current = setTimeout(() => setVisible(false), 320);
     }
-    return () => clearTimeout(closeTimer.current);
+    return () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
   }, [open]);
 
   if (!visible) return null;
 
   return (
     <>
-      {/* Backdrop — fades in/out */}
+      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -223,7 +344,7 @@ const MobileDropdown = ({ open, activePage, onClose, user }) => {
         }}
       />
 
-      {/* Dropdown panel — slides down */}
+      {/* Dropdown panel */}
       <div style={{
         position: "fixed",
         top: TOPBAR_HEIGHT,
@@ -234,13 +355,11 @@ const MobileDropdown = ({ open, activePage, onClose, user }) => {
         boxShadow: "0 8px 32px rgba(0,0,0,.15)",
         overflowY: "auto",
         maxHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
-        // Slide-down on open, slide-up on close
         transform: animating ? "translateY(0)" : "translateY(-12px)",
         opacity: animating ? 1 : 0,
         transition: "transform 0.32s cubic-bezier(.4,0,.2,1), opacity 0.32s cubic-bezier(.4,0,.2,1)",
       }}>
-
-        {/* Header row with × close button */}
+        {/* Header row */}
         <div style={{
           display: "flex",
           alignItems: "center",
@@ -269,30 +388,28 @@ const MobileDropdown = ({ open, activePage, onClose, user }) => {
               transition: "background 0.2s, border-color 0.2s",
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = "#FFF0E6";
-              e.currentTarget.style.borderColor = "#FF6B00";
-              e.currentTarget.style.color = "#FF6B00";
+              (e.currentTarget as HTMLButtonElement).style.background = "#FFF0E6";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "#FF6B00";
+              (e.currentTarget as HTMLButtonElement).style.color = "#FF6B00";
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background = "none";
-              e.currentTarget.style.borderColor = "#ddd";
-              e.currentTarget.style.color = "#888";
+              (e.currentTarget as HTMLButtonElement).style.background = "none";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "#ddd";
+              (e.currentTarget as HTMLButtonElement).style.color = "#888";
             }}
           >
             ×
           </button>
         </div>
 
-        {/* Nav items */}
         <NavContent
           activePage={activePage}
           onItemClick={onClose}
           showSidebarIcons={showSidebarIcons}
         />
 
-        {/* User chip */}
         <div style={{ borderTop: "1px solid #eee" }}>
-          <UserChip user={user} />
+          <LogoutFooter onLogoutClick={() => window.dispatchEvent(new CustomEvent("sa-logout-open"))} />
         </div>
       </div>
     </>
@@ -300,8 +417,15 @@ const MobileDropdown = ({ open, activePage, onClose, user }) => {
 };
 
 // ── Main SASidebar ────────────────────────────────────────────
-const SASidebar = ({ open, activePage, onNavigate, user }) => {
+const SASidebar = ({ open, activePage, onNavigate, user, onLogout }: SASidebarProps) => {
   const { showSidebarIcons } = useTheme();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setShowLogoutModal(true);
+    window.addEventListener("sa-logout-open", handler);
+    return () => window.removeEventListener("sa-logout-open", handler);
+  }, []);
   return (
     <>
       <style>{`
@@ -329,24 +453,30 @@ const SASidebar = ({ open, activePage, onNavigate, user }) => {
         }
       `}</style>
 
-      {/* ── DESKTOP: fixed sidebar with smooth width transition ── */}
+      {/* ── DESKTOP: fixed sidebar ── */}
       <aside
         className="sa-sidebar-desktop-aside"
         style={{
           position: "fixed",
-          top: TOPBAR_HEIGHT,
+          top: 0,
           left: 0,
           bottom: 0,
           width: open ? SIDEBAR_WIDTH : 0,
           background: "#fff",
-          borderRight: "1px solid #eee",
+          borderRight: "1px solid #e0e0e0",
+          boxShadow: open ? "4px 0 24px rgba(0,0,0,0.06)" : "none",
           overflow: "hidden",
-          // Smooth cubic-bezier for the expand/collapse
-          transition: `width 0.3s cubic-bezier(.4,0,.2,1),
-                       border-color 0.3s ease`,
-          zIndex: 100,
+          transition: `width 0.3s cubic-bezier(.4,0,.2,1), border-color 0.3s ease`,
+          zIndex: 120,
         }}
       >
+        <div style={{ height: TOPBAR_HEIGHT, boxSizing: "border-box", display: "flex", alignItems: "center", padding: "5px 18px 0 18px", borderBottom: "1px solid #d4d4d4ff", minWidth: SIDEBAR_WIDTH, opacity: open ? 1 : 0, transition: "opacity 0.2s ease" }}>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center", marginRight: 0 }}>
+            <span style={{ color: "#222", fontWeight: 750, fontSize: 34, letterSpacing: 2, fontFamily: "'Sora', sans-serif" }}>SPARK</span>
+            <span style={{ color: "#888", fontFamily: "'Open Sans', sans-serif", fontSize: 7, textTransform: "uppercase", whiteSpace: "nowrap", marginTop: 1 }}>YES TO LEARNING & DEVELOPMENT</span>
+          </div>
+          <img src={SparkLogo} alt="Spark Logo" style={{ height: 70, width: "auto", paddingBottom: 12 }} />
+        </div>
         <nav style={{
           flex: 1,
           paddingTop: 8,
@@ -364,11 +494,20 @@ const SASidebar = ({ open, activePage, onNavigate, user }) => {
           opacity: open ? 1 : 0,
           transition: "opacity 0.2s ease",
         }}>
-          <UserChip user={user} />
+          <LogoutFooter onLogoutClick={() => setShowLogoutModal(true)} />
         </div>
       </aside>
 
-      {/* Spacer — smoothly shifts content area */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          onLogout();
+        }}
+      />
+
+      {/* Spacer */}
       <div
         className="sa-sidebar-spacer"
         style={{
@@ -383,9 +522,9 @@ const SASidebar = ({ open, activePage, onNavigate, user }) => {
         <MobileDropdown
           open={open}
           activePage={activePage}
-          onNavigate={onNavigate}
           onClose={() => window.dispatchEvent(new CustomEvent("sa-mobile-nav-close"))}
           user={user}
+          onLogout={onLogout}
         />
       </div>
     </>

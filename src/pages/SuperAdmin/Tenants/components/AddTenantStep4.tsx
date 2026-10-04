@@ -1,20 +1,41 @@
 import { useState } from "react";
 
-const ROLES = [
+type RoleKey = "admin" | "creator" | "approver";
+
+interface Role {
+  key: RoleKey;
+  title: string;
+  desc: string;
+}
+
+interface RoleCredentials {
+  username: string;
+  password: string;
+}
+
+type RoleData = Record<RoleKey, RoleCredentials>;
+type SelectedRoles = Partial<Record<RoleKey, boolean>>;
+
+interface AddTenantStep4Props {
+  onBack: () => void;
+  onFinish: (selectedRoles: SelectedRoles, roleData: RoleData) => void;
+}
+
+const ROLES: Role[] = [
   { key: "admin",    title: "Admin",          desc: "Manages users, facilitates learning lorem ipsum" },
   { key: "creator",  title: "Course Creator", desc: "Creates courses for the company lorem ipsum" },
   { key: "approver", title: "Approver",       desc: "Approves Courses and gets notified for company updates" },
 ];
 
-const AddTenantStep4 = ({ onBack, onFinish }) => {
-  const [selectedRoles, setSelectedRoles] = useState({});
-  const [roleData, setRoleData] = useState({
+const AddTenantStep4 = ({ onBack, onFinish }: AddTenantStep4Props) => {
+  const [selectedRoles, setSelectedRoles] = useState<SelectedRoles>({});
+  const [roleData, setRoleData] = useState<RoleData>({
     admin:    { username: "", password: "" },
     creator:  { username: "", password: "" },
     approver: { username: "", password: "" },
   });
 
-  const toggleRole = (key) =>
+  const toggleRole = (key: RoleKey) =>
     setSelectedRoles((prev) => {
       if (prev[key]) {
         const next = { ...prev };
@@ -24,7 +45,7 @@ const AddTenantStep4 = ({ onBack, onFinish }) => {
       return { ...prev, [key]: true };
     });
 
-  const updateField = (role, field, value) =>
+  const updateField = (role: RoleKey, field: keyof RoleCredentials, value: string) =>
     setRoleData((prev) => ({
       ...prev,
       [role]: { ...prev[role], [field]: value },
@@ -106,24 +127,24 @@ const AddTenantStep4 = ({ onBack, onFinish }) => {
   );
 };
 
-const s = {
+const s: Record<string, React.CSSProperties> = {
   card: { background: "#fff", borderRadius: 10, border: "1px solid #eee",
     padding: 24, margin: "16px 0" },
-  title: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
-    fontSize: 22, color: "#333", marginBottom: 16 },
+  title: { fontFamily: "'Inter', sans-serif", fontWeight: 700,
+    fontSize: 26, color: "#333", marginBottom: 16 },
   grid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 },
   roleCard: { border: "1.5px solid #e0e0e0", borderRadius: 12, padding: 16,
     cursor: "pointer", transition: "border-color .2s, box-shadow .2s" },
   roleHeader: { display: "flex", alignItems: "flex-start",
     justifyContent: "space-between", marginBottom: 10 },
-  roleTitle: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
-    fontSize: 20, color: "#FF6B00" },
+  roleTitle: { fontFamily: "'Inter', sans-serif", fontWeight: 700,
+    fontSize: 24, color: "#FF6B00" },
   roleCheck: { width: 22, height: 22, borderRadius: "50%", border: "2px solid #ccc",
     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   roleDesc: { fontSize: 12, color: "#888", lineHeight: 1.7 },
   roleFields: { display: "flex", flexDirection: "column", gap: 8, marginTop: 4 },
   roleInput: { width: "100%", border: "none", background: "#e8e8e8", borderRadius: 6,
-    padding: "8px 10px", fontSize: 12, fontFamily: "'Barlow',sans-serif",
+    padding: "8px 10px", fontSize: 12, fontFamily: "'Inter',sans-serif",
     color: "#555", outline: "none", boxSizing: "border-box" },
   formNav: { display: "flex", justifyContent: "space-between",
     alignItems: "center", marginTop: 20 },
@@ -131,7 +152,7 @@ const s = {
     fontSize: 26, cursor: "pointer", padding: "4px 8px" },
   finishBtn: { background: "#FF6B00", color: "#fff", border: "none",
     borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 13,
-    cursor: "pointer", fontFamily: "'Barlow',sans-serif",
+    cursor: "pointer", fontFamily: "'Inter',sans-serif",
     display: "flex", alignItems: "center", gap: 6 },
 };
 
