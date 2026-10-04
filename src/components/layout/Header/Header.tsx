@@ -5,15 +5,21 @@ import { Bell, User, X } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { useTheme } from "../../../context/ThemeContext";
 import { getCompanySlug } from "../../../utils/slug";
+import { supabase } from "../../../lib/supabase";
 
 const BREAKPOINT = 1024;
 
-const SAMPLE_NOTIFICATIONS = [
-  { id: 1, title: "New course available", message: "React Advanced Patterns has been added to your courses.", time: "2 min ago", read: false },
-  { id: 2, title: "Assessment due", message: "Your Module 3 assessment is due tomorrow.", time: "1 hr ago", read: false },
-  { id: 3, title: "Certificate earned", message: "You've completed Introduction to JavaScript!", time: "3 hrs ago", read: true },
-  { id: 4, title: "New message", message: "Your admin has sent you a message.", time: "Yesterday", read: true },
-];
+const getRelativeTime = (dateString: string) => {
+  const diff = Date.now() - new Date(dateString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'Yesterday';
+  return `${days} days ago`;
+};
 
 type HeaderProps = {
   user: { name?: string; avatar_url?: string | null } | null;
@@ -34,12 +40,36 @@ const Header = ({
   const { theme, sidebarTheme } = useTheme();
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const slug = getCompanySlug(company);
   const goToProfile = () => navigate(`/${slug}/profile`);
+
+  useEffect(() => {
+    if (!company) return;
+    const fetchNotifications = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setNotifications(data.map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          time: getRelativeTime(n.created_at),
+          read: n.read
+        })));
+      }
+    };
+    fetchNotifications();
+  }, [company]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -54,16 +84,28 @@ const Header = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const markAllRead = () => {
+  const markAllRead = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return;
+    await supabase.from('notifications').update({ read: true }).eq('user_id', session.user.id).eq('read', false);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
-  const markRead = (id: number) => {
+  const markRead = async (id: string) => {
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
-  const dismiss = (id: number) => {
+  const dismiss = async (id: string) => {
+    await supabase.from('notifications').delete().eq('id', id);
     setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const clearAll = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return;
+    await supabase.from('notifications').delete().eq('user_id', session.user.id);
+    setNotifications([]);
   };
 
   return (
@@ -240,7 +282,7 @@ const Header = ({
                 {/* Footer */}
                 {notifications.length > 0 && (
                   <div style={{ padding: "10px 16px", borderTop: "1px solid var(--color-border)", textAlign: "center" }}>
-                    <button onClick={() => setNotifications([])} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--color-text-muted)", fontFamily: "inherit" }}>
+                    <button onClick={clearAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--color-text-muted)", fontFamily: "inherit" }}>
                       Clear all
                     </button>
                   </div>
