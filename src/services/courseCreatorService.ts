@@ -23,6 +23,7 @@ export type ModulePayload = {
   title: string;
   description?: string | null;
   order: number;
+  status?: 'draft' | 'published';
 };
 
 export type LessonPayload = {
@@ -150,6 +151,7 @@ export async function createModule(courseId: number, data: ModulePayload) {
       title: data.title,
       description: data.description || null,
       order: data.order,
+      status: data.status || 'published',
     })
     .select()
     .single();
@@ -193,6 +195,16 @@ export async function reorderModules(modules: { id: number; order: number }[]) {
 }
 
 // ─── Lesson CRUD ────────────────────────────────────────────
+
+/** Batch reorder lessons */
+export async function reorderLessons(lessons: { id: number; position: number }[]) {
+  const promises = lessons.map((l) =>
+    supabase.from('course_lessons').update({ position: l.position }).eq('id', l.id)
+  );
+  const results = await Promise.all(promises);
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+}
 
 /** Create a new lesson under a module */
 export async function createLesson(moduleId: number, data: LessonPayload) {

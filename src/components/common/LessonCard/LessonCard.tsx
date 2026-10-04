@@ -7,6 +7,9 @@ interface LessonCardProps {
   lesson: any;
   onBack: () => void;
   onNext: () => void;
+  onNextModule?: () => void;
+  onDone?: () => void;
+  hasNextModule?: boolean;
   currentIndex: number;
   totalLessons: number;
   onProceedAssessment?: () => void;
@@ -27,7 +30,7 @@ const convertVideoUrl = (url?: string | null): string | null => {
   return url;
 };
 
-const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProceedAssessment }: LessonCardProps) => {
+const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModule, currentIndex, totalLessons, onProceedAssessment }: LessonCardProps) => {
   if (!lesson) return null;
 
   const videoUrl = lesson.video_url;
@@ -127,6 +130,24 @@ const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProc
             style={{ width: 100, justifyContent: "center" }}
           >
             Next
+          </Button>
+        ) : hasNextModule ? (
+          <Button 
+            variant="primary" 
+            rounded="pill" 
+            onClick={onNextModule}
+            style={{ minWidth: 100, justifyContent: "center" }}
+          >
+            Next Module
+          </Button>
+        ) : lesson.type !== 'assessment' ? (
+          <Button 
+            variant="primary" 
+            rounded="pill" 
+            onClick={onDone}
+            style={{ minWidth: 100, justifyContent: "center" }}
+          >
+            Done
           </Button>
         ) : (
           <div style={{ width: 100 }}></div>
