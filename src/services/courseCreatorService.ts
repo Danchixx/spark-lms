@@ -420,8 +420,8 @@ export async function uploadThumbnail(file: File, companyId: number, courseId: n
 
 // ─── Creator Courses List ───────────────────────────────────
 
-/** Fetch all courses created by a specific user (for CreatorCourses page) */
-export async function fetchCreatorCourses(userId: string) {
+/** Fetch all courses created within a specific company (for CreatorCourses page) */
+export async function fetchCreatorCourses(companyId: number) {
   const { data: courses, error } = await supabase
     .from('courses')
     .select(`
@@ -440,7 +440,7 @@ export async function fetchCreatorCourses(userId: string) {
         )
       )
     `)
-    .eq('created_by', userId)
+    .eq('company_id', companyId)
     .eq('is_archived', false)
     .order('created_at', { ascending: false });
 

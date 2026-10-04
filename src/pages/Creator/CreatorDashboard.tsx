@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, FileText, PenTool, Plus, ArrowRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
+import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -27,18 +29,95 @@ const CreatorDashboard = () => {
   const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
-  // Mock stats — replace with real Supabase queries
-  const stats: StatItem[] = [
-    { label: "My Courses", value: 3, icon: BookOpen, sub: "1 draft", subColor: "#f59e0b" },
-    { label: "Total Lessons", value: 28, icon: FileText, sub: "↑ 4 this week", subColor: "#27ae60" },
-    { label: "Assessments", value: 6, icon: PenTool, sub: "All published", subColor: "#27ae60" },
-  ];
+  const [stats, setStats] = useState<StatItem[]>([]);
+  const [recentCourses, setRecentCourses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const recentCourses = [
-    { title: "Sales Fundamentals", status: "Published", modules: 3, lessons: 9, updated: "2 days ago" },
-    { title: "Customer Service Pro", status: "Draft", modules: 2, lessons: 4, updated: "5 hrs ago" },
-    { title: "Technical Onboarding", status: "Published", modules: 5, lessons: 15, updated: "1 week ago" },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!company?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('courses')
+          .select(`
+            id, title, status, created_at,
+            course_modules (
+              id, created_at,
+              course_lessons ( id, created_at )
+            )
+          `)
+          .eq('company_id', company.id)
+          .eq('is_archived', false)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const now = new Date();
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        let totalCourses = 0;
+        let draftCourses = 0;
+        let totalModules = 0;
+        let modulesThisWeek = 0;
+        let totalContents = 0;
+        let contentsThisWeek = 0;
+
+        data?.forEach((course: any) => {
+          totalCourses++;
+          if (course.status === 'draft') draftCourses++;
+          
+          course.course_modules?.forEach((mod: any) => {
+            totalModules++;
+            if (new Date(mod.created_at) > oneWeekAgo) modulesThisWeek++;
+            
+            mod.course_lessons?.forEach((lesson: any) => {
+              totalContents++;
+              if (new Date(lesson.created_at) > oneWeekAgo) contentsThisWeek++;
+            });
+          });
+        });
+
+        setStats([
+          { label: "Courses", value: totalCourses, icon: BookOpen, sub: `${draftCourses} draft${draftCourses !== 1 ? 's' : ''}`, subColor: "#f59e0b" },
+          { label: "Modules", value: totalModules, icon: FileText, sub: `↑ ${modulesThisWeek} this week`, subColor: "#27ae60" },
+          { label: "Contents", value: totalContents, icon: PenTool, sub: `↑ ${contentsThisWeek} this week`, subColor: "#27ae60" },
+        ]);
+
+        const mappedRecent = (data || []).slice(0, 5).map((c: any) => {
+          const mCount = c.course_modules?.length || 0;
+          const lCount = c.course_modules?.reduce((acc: number, m: any) => acc + (m.course_lessons?.length || 0), 0) || 0;
+          
+          const date = new Date(c.created_at);
+          const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+          let updated = "";
+          if (diffDays === 0) updated = "Today";
+          else if (diffDays === 1) updated = "1 day ago";
+          else if (diffDays < 7) updated = `${diffDays} days ago`;
+          else if (diffDays < 14) updated = "1 week ago";
+          else updated = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+          return {
+            title: c.title,
+            status: c.status === 'published' ? 'Published' : 'Draft',
+            modules: mCount,
+            lessons: lCount,
+            updated: updated
+          };
+        });
+
+        setRecentCourses(mappedRecent);
+      } catch (err) {
+        console.error("Error fetching creator dashboard data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [company?.id]);
+
+
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
@@ -73,7 +152,7 @@ const CreatorDashboard = () => {
               {/* Recent Courses */}
               <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px 24px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)", display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: "var(--color-text-header)" }}>My Courses</div>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: "var(--color-text-header)" }}>Courses</div>
                   <Button variant="outline" size="sm" rounded="pill" rightIcon={<ArrowRight size={14} />} onClick={() => navigate(`/${slug}/courses`)}>
                     View All
                   </Button>
