@@ -102,12 +102,20 @@ const AdminUsers = () => {
     setIsDeleting(true);
     try {
       if (showArchived) {
-        // Permanent delete
-        const { error } = await supabase.from('users').delete().eq('id', deleteTarget);
-        if (error) throw error;
+        // Permanent delete — calls Edge Function which uses service_role
+        // to delete from auth.users (cascades to public.users and all related tables)
+        const { data, error } = await supabase.functions.invoke('create-admin-user', {
+          body: { action: 'delete', userId: deleteTarget }
+        });
+
+        if (error) throw new Error(error.message || 'Edge Function invocation failed');
+        
+        // The Edge Function returns { error: "..." } with status 400/500 on failure
+        if (data?.error) throw new Error(data.error);
+
         setDbUsers(prev => prev.filter(u => u.id !== deleteTarget));
       } else {
-        // Archive
+        // Archive (soft delete) — no auth changes needed
         const { error } = await supabase.from('users').update({ 
           is_archived: true, 
           archived_at: new Date().toISOString()
@@ -117,9 +125,9 @@ const AdminUsers = () => {
       }
       setDeleteTarget(null);
       setShowSuccessModal(true);
-    } catch (err) {
-      console.error("Failed to delete user:", err);
-      alert("Failed to delete user.");
+    } catch (err: any) {
+      console.error("Failed to process user:", err);
+      alert(err?.message || "Failed to process user. Please try again.");
     } finally {
       setIsDeleting(false);
     }
