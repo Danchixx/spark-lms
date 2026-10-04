@@ -14,8 +14,8 @@ interface ProfileData {
   lastName: string;
   contactNumber: string;
   address: string;
-  dateOfBirth: string;
-  gender: string;
+  dateOfBirth: string | null;
+  gender: string | null;
   email: string;
   employeeId: string;
   jobTitle: string;
@@ -148,6 +148,7 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
   const [lastName, setLastName] = useState(profileData.lastName);
   const [contact, setContact] = useState(profileData.contactNumber);
   const [address, setAddress] = useState(profileData.address);
+  const [dateOfBirth, setDateOfBirth] = useState(profileData.dateOfBirth || "");
   
   const [employeeId, setEmployeeId] = useState(profileData.employeeId);
   const [department, setDepartment] = useState(profileData.department);
@@ -170,6 +171,7 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
       lastName,
       contactNumber: contact,
       address,
+      dateOfBirth,
       employeeId,
       department,
       jobTitle,
@@ -187,6 +189,7 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
     setLastName(profileData.lastName);
     setContact(profileData.contactNumber);
     setAddress(profileData.address);
+    setDateOfBirth(profileData.dateOfBirth || "");
     setEmployeeId(profileData.employeeId);
     setDepartment(profileData.department);
     setJobTitle(profileData.jobTitle);
@@ -333,8 +336,8 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
                     right={{ label: "Last Name", value: lastName, locked: !isStaff, onChange: setLastName }}
                   />
                   <EditableFieldPair
-                    left={{ label: "Date of Birth", value: profileData.dateOfBirth, locked: true }}
-                    right={{ label: "Gender", value: profileData.gender, locked: true }}
+                    left={{ label: "Date of Birth", value: dateOfBirth, locked: false, onChange: setDateOfBirth }}
+                    right={{ label: "Gender", value: profileData.gender || "", locked: true }}
                   />
                   <EditableFieldPair
                     left={{ label: "Email Address", value: profileData.email, locked: true }}
@@ -345,7 +348,7 @@ const ProfileCard = ({ profileData, editable = true, onSave, onAvatarChange, isU
               ) : (
                 <>
                   <FieldRow label="Full Name" value={fullName} />
-                  <FieldPair left={{ label: "Date of Birth", value: profileData.dateOfBirth }} right={{ label: "Gender", value: profileData.gender }} />
+                  <FieldPair left={{ label: "Date of Birth", value: dateOfBirth }} right={{ label: "Gender", value: profileData.gender || "" }} />
                   <FieldPair left={{ label: "Email Address", value: profileData.email }} right={{ label: "Contact No.", value: contact }} />
                   <FieldRow label="Address" value={address} />
                 </>
