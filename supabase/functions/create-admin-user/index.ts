@@ -79,6 +79,34 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // ─── RESET PASSWORD ────────────────────────────────────────────
+    if (action === "reset_password") {
+      const { userId, newPassword } = body;
+
+      if (!userId || !newPassword) {
+        return new Response(
+          JSON.stringify({ error: "Missing userId or newPassword for reset" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+
+      const { error } = await supabaseClient.auth.admin.updateUserById(userId, {
+        password: newPassword
+      });
+
+      if (error) {
+        return new Response(
+          JSON.stringify({ error: `Failed to reset password: ${error.message}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Password reset successfully" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     // ─── CREATE USER (existing logic) ──────────────────────────────
     const { email, password, sendEmail, name } = body;
 

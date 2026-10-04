@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
+import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import Button from "../../components/ui/Button/Button";
@@ -248,6 +249,48 @@ const SecurityPanel = () => {
   const { checks, strength } = getStrength(newPw);
   const canSave = currentPw && Object.values(checks).every(Boolean) && newPw === confirmPw;
 
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { user } = useAuth();
+  
+  const handleUpdatePassword = async () => {
+    if (!canSave || !user?.email) return;
+    
+    setIsUpdating(true);
+    try {
+      // 1. Verify current password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPw
+      });
+      
+      if (signInError) {
+        throw new Error("Current password is incorrect.");
+      }
+      
+      // 2. Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPw
+      });
+      
+      if (updateError) {
+        throw new Error(`Failed to update password: ${updateError.message}`);
+      }
+      
+      alert("Password updated successfully!");
+      setCurrentPw("");
+      setNewPw("");
+      setConfirmPw("");
+      setShowCurrent(false);
+      setShowNew(false);
+      setShowConfirm(false);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "An error occurred while updating the password.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="section-card">
       <h2 className="settings-panel-title">Security</h2>
@@ -297,7 +340,9 @@ const SecurityPanel = () => {
         {confirmPw && newPw === confirmPw && <p style={{ margin: "-8px 20px 8px", fontSize: 11, color: "#22c55e" }}>Passwords match ✓</p>}
 
         <div className="settings-save-bar">
-          <Button disabled={!canSave}>Update Password</Button>
+          <Button disabled={!canSave || isUpdating} onClick={handleUpdatePassword} loading={isUpdating}>
+            {isUpdating ? "Updating..." : "Update Password"}
+          </Button>
         </div>
       </div>
     </div>
