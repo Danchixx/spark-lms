@@ -57,14 +57,14 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.setAttribute('data-theme', theme);
-    
+
     // Also sync sidebar theme attribute for global targeting if needed
     root.setAttribute('data-sidebar-theme', theme === 'dark' ? 'dark' : sidebarTheme);
   }, [theme, sidebarTheme]);
 
   return (
-    <ThemeContext.Provider value={{ 
-      theme, setTheme, toggleTheme, 
+    <ThemeContext.Provider value={{
+      theme, setTheme, toggleTheme,
       sidebarTheme, setSidebarTheme,
       showSidebarIcons, setShowSidebarIcons
     }}>

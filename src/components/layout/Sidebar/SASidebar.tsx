@@ -179,7 +179,11 @@ const NavItemComponent = ({ item, isActive, onClick, showSidebarIcons }: NavItem
     <div
       onClick={() => {
         if (onClick) onClick();
-        navigate("/superadmin/" + item.key);
+        if (item.key === "register") {
+          navigate("/superadmin/addtenant");
+        } else {
+          navigate("/superadmin/" + item.key);
+        }
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

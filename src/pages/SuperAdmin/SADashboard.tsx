@@ -1,10 +1,11 @@
 // src/pages/SuperAdmin/SADashboard.tsx
 // Layout wrapper and entry point for the global SuperAdmin dashboard.
-// Manages sidebar state, WelcomeScreen splash, and provides Outlet for nested routes.
+// Manages sidebar state and provides Outlet for nested routes.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import PageTransition from "../../components/common/PageTransition/PageTransition";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
 import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
@@ -60,10 +61,6 @@ interface TopBarProps {
   activePage: string;
 }
 
-interface WelcomeScreenProps {
-  name: string;
-  onDone: () => void;
-}
 
 interface NotifyModalProps {
   target: NotifyTarget;
@@ -363,54 +360,6 @@ const TopBar = ({ onBurger, sidebarOpen, user, activePage }: TopBarProps) => {
   );
 };
 
-// ── Welcome Screen ────────────────────────────────────────────
-const WelcomeScreen = ({ name, onDone }: WelcomeScreenProps) => {
-  useEffect(() => {
-    const timer = setTimeout(onDone, 2200);
-    return () => clearTimeout(timer);
-  }, [onDone]);
-
-  return (
-    <div style={{
-      position: "fixed", inset: 0, background: "#fff",
-      zIndex: 300, display: "flex", flexDirection: "column"
-    }}>
-      <div style={{
-        height: TOPBAR_HEIGHT, borderBottom: "2px solid #FF6B00",
-        display: "flex", alignItems: "center", padding: "0 24px"
-      }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center" }}>
-            <span style={t.logoText}>SPARK</span>
-            <span style={{
-              color: "#9e9e9e", fontFamily: "'Open Sans', sans-serif",
-              fontSize: 6.4, textTransform: "uppercase",
-              whiteSpace: "nowrap", marginTop: 2, letterSpacing: ".12em",
-            }}>
-              Yes to Learning and Development
-            </span>
-          </div>
-          <img src={SparkLogo} alt="Spark Logo" style={{ height: 44, width: "auto" }} />
-        </div>
-      </div>
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{
-          fontFamily: "'Inter', sans-serif", fontWeight: 800, fontSize: 52,
-          animation: "slideUp .7s .3s cubic-bezier(.22,1,.36,1) both",
-        }}>
-          <span style={{ color: "#222" }}>WELCOME </span>
-          <span style={{ color: "#FF6B00" }}>{(name || "ADMIN").toUpperCase()}</span>
-        </div>
-      </div>
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(40px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-    </div>
-  );
-};
 
 // ── Notify Modal ──────────────────────────────────────────────
 const NotifyModal = ({ target, onClose }: NotifyModalProps) => {
@@ -1372,13 +1321,17 @@ export const ComingSoon = ({ label }: { label: string }) => (
 const SADashboard = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [showWelcome, setShowWelcome] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const pathParts = location.pathname.split("/");
   const activePage = pathParts[pathParts.length - 1] || "dashboard";
 
-  const handleWelcomeDone = useCallback(() => setShowWelcome(false), []);
+  const { setTheme, setSidebarTheme } = useTheme();
+
+  useEffect(() => {
+    setTheme("light");
+    setSidebarTheme("light");
+  }, [setTheme, setSidebarTheme]);
 
   useEffect(() => {
     const handler = () => setSidebarOpen(false);
@@ -1386,9 +1339,6 @@ const SADashboard = () => {
     return () => window.removeEventListener("sa-mobile-nav-close", handler);
   }, []);
 
-  if (showWelcome) {
-    return <WelcomeScreen name={user?.name?.split(" ")[0] || "Admin"} onDone={handleWelcomeDone} />;
-  }
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: "#f4f4f4", minHeight: "100vh" }}>

@@ -66,7 +66,7 @@ const SparkApprovals = () => {
         name: c.name,
         logo_url: c.logo_url,
         abbr: getAbbr(c.name),
-        color: getColor(c.id),
+        color: getColor(c.id) ?? "#FF6B00",
         totalUsers: Number(c.total_users),
         pendingCount: Number(c.pending_count),
       }));

@@ -19,9 +19,14 @@ import UserSettings from "../pages/User/Settings";
 import UserContact from "../pages/User/Contact";
 import SADashboard, { DashboardHome, ComingSoon } from "../pages/SuperAdmin/SADashboard";
 import SparkTenants from "../pages/SuperAdmin/Tenants/SparkTenants";
+import AddTenantPage from "../pages/SuperAdmin/Tenants/AddTenantPage";
 import SparkApprovals from "../pages/SuperAdmin/Approvals/SparkApprovals";
 import SparkUsers from "../pages/SuperAdmin/Users/SparkUsers";
 import SparkCourses from "../pages/SuperAdmin/Courses/SparkCourses";
+import DataExport from "../pages/SuperAdmin/DataExport/DataExport";
+import Support from "../pages/SuperAdmin/Support/Support";
+import SASettings from "../pages/SuperAdmin/Settings/SASettings";
+import SystemLogs from "../pages/SuperAdmin/SystemLogs/SystemLogs";
 import AdminDashboard from "../pages/Admin/Dashboard";
 import AdminProfile from "../pages/Admin/Profile";
 import AdminUsers from "../pages/Admin/Users";
@@ -113,10 +118,14 @@ const AppRoutes = () => {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardHome />} />
           <Route path="tenants" element={<SparkTenants />} />
+          <Route path="addtenant" element={<AddTenantPage />} />
           <Route path="approvals" element={<SparkApprovals />} />
           <Route path="users" element={<SparkUsers />} />
           <Route path="courses" element={<SparkCourses />} />
-          <Route path="settings" element={<ComingSoon label="settings" />} />
+          <Route path="export" element={<DataExport />} />
+          <Route path="support" element={<Support />} />
+          <Route path="settings" element={<SASettings />} />
+          <Route path="logs" element={<SystemLogs />} />
         </Route>
 
         {/* Protected — same URL, different component per role */}
@@ -134,6 +143,7 @@ const AppRoutes = () => {
         <Route path="/:company/certificates" element={<ProtectedRoute><UserCertificates /></ProtectedRoute>} />
         <Route path="/:company/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
         <Route path="/:company/contact" element={<ProtectedRoute><UserContact /></ProtectedRoute>} />
+
 
 
         {/* Catch-all */}

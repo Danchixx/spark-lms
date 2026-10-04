@@ -93,7 +93,6 @@ const ArchiveModal = ({ tenant, onConfirm, onClose }: { tenant: Tenant; onConfir
 // ── Main Component ────────────────────────────────────────────
 const TenantList = ({ tenants, onAdd, onView, onEdit, onArchive }: TenantListProps) => {
   const [selected, setSelected] = useState<number[]>([]);
-  const [clickTimers, setClickTimers] = useState<Record<number, ReturnType<typeof setTimeout>>>({});
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
   const [editTenantId, setEditTenantId] = useState<number | null>(null);
@@ -102,47 +101,26 @@ const TenantList = ({ tenants, onAdd, onView, onEdit, onArchive }: TenantListPro
   // Filters
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("All");
-  const [statusFilter, setStatusFilter] = useState("ActiveOnly"); // Default mapping
+  const [statusFilter, setStatusFilter] = useState("ActiveOnly");
   const [dateSearch, setDateSearch] = useState("");
 
   const filteredTenants = useMemo(() => {
     return tenants.filter(t => {
-      // Exclude archived unless explicitly asked for
       if (statusFilter === "ActiveOnly" && t.status === "Archived") return false;
       if (statusFilter !== "All" && statusFilter !== "ActiveOnly" && t.status !== statusFilter) return false;
-
-      // Plan filter
       if (planFilter !== "All" && t.plan !== planFilter) return false;
-
       if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
-
       if (dateSearch) {
         const [yyyy, mm] = dateSearch.split("-");
         const tenantDate = new Date(t.joined);
-        if (tenantDate.getMonth() + 1 !== parseInt(mm || "0", 10) || tenantDate.getFullYear() !== parseInt(yyyy || "0", 10)) {
-          return false;
-        }
+        if (tenantDate.getMonth() + 1 !== parseInt(mm || "0", 10) || tenantDate.getFullYear() !== parseInt(yyyy || "0", 10)) return false;
       }
-      
       return true;
     });
   }, [tenants, search, planFilter, statusFilter, dateSearch]);
 
   const toggleSelect = (id: number) =>
     setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-
-  const handleNameClick = (tenant: Tenant) => {
-    if (clickTimers[tenant.id]) {
-      clearTimeout(clickTimers[tenant.id]);
-      setClickTimers((prev) => { const n = { ...prev }; delete n[tenant.id]; return n; });
-      onView(tenant);
-    } else {
-      const timer = setTimeout(() => {
-        setClickTimers((prev) => { const n = { ...prev }; delete n[tenant.id]; return n; });
-      }, 350);
-      setClickTimers((prev) => ({ ...prev, [tenant.id]: timer }));
-    }
-  };
 
   // derived stats
   const expiringCount = tenants.filter(t => t.status !== "Archived" && new Date(t.end) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)).length;
@@ -272,7 +250,7 @@ const TenantList = ({ tenants, onAdd, onView, onEdit, onArchive }: TenantListPro
                       <div style={{ width: 36, height: 36, borderRadius: 6, background: t.color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: t.color, flexShrink: 0 }}>
                         {t.abbr.slice(0, 5)}
                       </div>
-                      <span onClick={() => handleNameClick(t)} onMouseEnter={() => setHoveredId(t.id)} onMouseLeave={() => setHoveredId(null)} title="Double-click to view" style={{ color: hoveredId === t.id || selected.includes(t.id) ? "#FF6B00" : "#222", fontWeight: 600, fontSize: 13, cursor: "pointer", userSelect: "none", transition: "color .15s", textDecoration: t.status === "Archived" ? "line-through" : "none" }}>
+                      <span onMouseEnter={() => setHoveredId(t.id)} onMouseLeave={() => setHoveredId(null)} style={{ color: hoveredId === t.id ? "#FF6B00" : "#222", fontWeight: 600, fontSize: 13, transition: "color .15s", textDecoration: t.status === "Archived" ? "line-through" : "none" }}>
                         {t.name}
                       </span>
                     </div>
@@ -286,6 +264,11 @@ const TenantList = ({ tenants, onAdd, onView, onEdit, onArchive }: TenantListPro
                   <td style={{ ...s.td, fontSize: 13, color: "#555" }}>{t.joined}</td>
                   <td style={{ ...s.td, fontSize: 13, color: "#555" }}>{t.end}</td>
                   <td style={s.td}>
+                    <button style={{ ...s.actionBtn, marginRight: 4, borderColor: "#FF6B00" }} title="View" onClick={() => onView(t)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    </button>
                     <button style={s.actionBtn} title="Edit" onClick={() => setEditTenantId(t.id)}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
