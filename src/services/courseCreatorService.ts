@@ -23,6 +23,7 @@ export type ModulePayload = {
   title: string;
   description?: string | null;
   order: number;
+  status?: 'draft' | 'published';
 };
 
 export type LessonPayload = {
@@ -150,6 +151,7 @@ export async function createModule(courseId: number, data: ModulePayload) {
       title: data.title,
       description: data.description || null,
       order: data.order,
+      status: data.status || 'published',
     })
     .select()
     .single();

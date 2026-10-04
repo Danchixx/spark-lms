@@ -33,10 +33,10 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           id,
           status,
           assigned_by,
-          courses (
+          courses!inner (
             id, title, description, thumbnail_url, icon_emoji, status,
             course_modules (
-              id, title, "order", description,
+              id, title, "order", description, status,
               course_lessons (
                 id, title, type, content, video_url, position
               )
@@ -45,7 +45,8 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           assigner:users!course_assignments_assigned_by_fkey ( firstname, lastname )
         `)
         .eq('user_id', user.id)
-        .eq('is_archived', false);
+        .eq('is_archived', false)
+        .eq('courses.status', 'published');
 
       if (assignErr) throw assignErr;
       if (!assignments || assignments.length === 0) {
@@ -103,7 +104,9 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           ? `${assigner.firstname} ${assigner.lastname}`
           : 'Admin';
 
-        const rawModules = (course.course_modules || []).sort((a: any, b: any) => a.order - b.order);
+        const rawModules = (course.course_modules || [])
+          .filter((m: any) => m.status === 'published')
+          .sort((a: any, b: any) => a.order - b.order);
 
         let totalLessons = 0;
         let totalCompletedLessons = 0;
