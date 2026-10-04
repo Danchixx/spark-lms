@@ -31,7 +31,57 @@ const ModuleLessons = () => {
 
   const [currentLessonId, setCurrentLessonId] = useState<number>(Number(lessonId));
   const [quickNotes, setQuickNotes] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [savedNoteStatus, setSavedNoteStatus] = useState<"idle"|"saved"|"error">("idle");
   const [saving, setSaving] = useState(false);
+
+  // Fetch quick notes for current lesson
+  useEffect(() => {
+    if (!user?.id || !currentLessonId) return;
+    const fetchNote = async () => {
+      const { data, error } = await supabase
+        .from('quick_notes')
+        .select('content')
+        .eq('user_id', user.id)
+        .eq('lesson_id', currentLessonId)
+        .maybeSingle();
+      
+      if (data) {
+        setQuickNotes(data.content || "");
+      } else {
+        setQuickNotes("");
+      }
+      setSavedNoteStatus("idle");
+    };
+    fetchNote();
+  }, [user?.id, currentLessonId]);
+
+  const handleSaveNote = async () => {
+    if (!user?.id || !currentLessonId) return;
+    setSavingNote(true);
+    setSavedNoteStatus("idle");
+    try {
+      const { error } = await supabase
+        .from('quick_notes')
+        .upsert(
+          {
+            user_id: user.id,
+            lesson_id: currentLessonId,
+            content: quickNotes,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'user_id,lesson_id' }
+        );
+      if (error) throw error;
+      setSavedNoteStatus("saved");
+      setTimeout(() => setSavedNoteStatus("idle"), 3000);
+    } catch (err) {
+      console.error('Error saving note:', err);
+      setSavedNoteStatus("error");
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   // Update currentLessonId if the initial lessonId is not valid
   useEffect(() => {
@@ -226,18 +276,36 @@ const ModuleLessons = () => {
 
                 {/* Quick Notes */}
                 <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
-                  <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", marginBottom: 16, letterSpacing: 0.5 }}>QUICK NOTES</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", letterSpacing: 0.5 }}>QUICK NOTES</div>
+                    {savedNoteStatus === "saved" && <span style={{ fontSize: 11, color: "#27ae60", fontWeight: 700 }}>Saved!</span>}
+                    {savedNoteStatus === "error" && <span style={{ fontSize: 11, color: "#e74c3c", fontWeight: 700 }}>Error saving</span>}
+                  </div>
                   <textarea
                     value={quickNotes}
-                    onChange={(e) => setQuickNotes(e.target.value)}
+                    onChange={(e) => {
+                      setQuickNotes(e.target.value);
+                      if (savedNoteStatus !== "idle") setSavedNoteStatus("idle");
+                    }}
                     placeholder="Type your notes here..."
                     style={{
                       width: "100%", height: 120, resize: "none",
                       background: "var(--color-bg-muted)", border: "1px solid var(--color-border)", borderRadius: 8,
                       padding: "12px", fontSize: 13, color: "var(--color-text)", fontFamily: "inherit",
-                      outline: "none"
+                      outline: "none", marginBottom: 12
                     }}
                   />
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      rounded="pill" 
+                      onClick={handleSaveNote}
+                      disabled={savingNote}
+                    >
+                      {savingNote ? "Saving..." : "Save Note"}
+                    </Button>
+                  </div>
                 </div>
 
               </div>
