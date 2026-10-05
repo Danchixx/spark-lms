@@ -15,7 +15,7 @@ import PageTransition from "../../components/common/PageTransition";
 import { useTheme } from "../../context/ThemeContext";
 import {
   Building2, Bell, ShieldCheck, Palette,
-  Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar, Copy, Check
+  Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar, Copy, Check, X
 } from "lucide-react";
 import { color } from "framer-motion";
 
@@ -26,6 +26,31 @@ const USER_TABS = [
   { key: "security", label: "Security", icon: ShieldCheck },
   { key: "appearance", label: "Appearance", icon: Palette },
 ];
+
+const MessageModal = ({ title, message, type = "success", onConfirm, confirmText = "Done" }: { title: string, message: string, type?: "success" | "error" | "info", onConfirm: () => void, confirmText?: string }) => (
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", animation: "modal-fade-in 0.2s ease", backdropFilter: "blur(4px)" }}>
+    <div style={{ background: "var(--color-surface)", borderRadius: 16, padding: "36px 40px", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", animation: "modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)", border: "1px solid var(--color-border)" }}>
+      {type === "success" && (
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(34, 197, 94, 0.1)", border: "2px solid rgba(34, 197, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <Check size={28} color="#22c55e" />
+        </div>
+      )}
+      {type === "error" && (
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(239, 68, 68, 0.1)", border: "2px solid rgba(239, 68, 68, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <X size={28} color="#ef4444" />
+        </div>
+      )}
+      {type === "info" && (
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(59, 130, 246, 0.1)", border: "2px solid rgba(59, 130, 246, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <Lock size={28} color="#3b82f6" />
+        </div>
+      )}
+      <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--color-text-header)", margin: "0 0 8px" }}>{title}</h3>
+      <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 24px", lineHeight: 1.6 }}>{message}</p>
+      <button onClick={onConfirm} style={{ background: "#FF6B00", color: "white", border: "none", borderRadius: 8, padding: "10px 32px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>{confirmText}</button>
+    </div>
+  </div>
+);
 
 /* ── Panels ── */
 
@@ -250,7 +275,9 @@ const SecurityPanel = () => {
   const canSave = currentPw && Object.values(checks).every(Boolean) && newPw === confirmPw;
 
   const [isUpdating, setIsUpdating] = useState(false);
-  const { user } = useAuth();
+  const { user, logout, company } = useAuth();
+  const navigate = useNavigate();
+  const [modalConfig, setModalConfig] = useState<{show: boolean, title: string, message: string, type: "success" | "error" | "info", onConfirm?: () => void} | null>(null);
   
   const handleUpdatePassword = async () => {
     if (!canSave || !user?.email) return;
@@ -276,23 +303,44 @@ const SecurityPanel = () => {
         throw new Error(`Failed to update password: ${updateError.message}`);
       }
       
-      alert("Password updated successfully!");
-      setCurrentPw("");
-      setNewPw("");
-      setConfirmPw("");
-      setShowCurrent(false);
-      setShowNew(false);
-      setShowConfirm(false);
+      setModalConfig({
+        show: true,
+        type: "success",
+        title: "Password Updated",
+        message: "Your password has been changed successfully. You will now be logged out.",
+        onConfirm: async () => {
+          const currentSlug = company?.slug || getCompanySlug(company);
+          setModalConfig(null);
+          await logout();
+          navigate(`/${currentSlug}`);
+        }
+      });
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "An error occurred while updating the password.");
+      setModalConfig({
+        show: true,
+        type: "error",
+        title: "Update Failed",
+        message: err.message || "An error occurred while updating the password.",
+        onConfirm: () => setModalConfig(null)
+      });
     } finally {
       setIsUpdating(false);
     }
   };
 
   return (
-    <div className="section-card">
+    <>
+      {modalConfig?.show && (
+        <MessageModal 
+          title={modalConfig.title} 
+          message={modalConfig.message} 
+          type={modalConfig.type} 
+          onConfirm={modalConfig.onConfirm || (() => setModalConfig(null))}
+          confirmText={modalConfig.type === "success" ? "Log out" : "Try Again"}
+        />
+      )}
+      <div className="section-card">
       <h2 className="settings-panel-title">Security</h2>
       <p className="settings-panel-subtitle">Manage your password and session settings.</p>
       <div className="settings-divider" />
@@ -346,6 +394,7 @@ const SecurityPanel = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
