@@ -134,11 +134,7 @@ const CreatorDashboard = () => {
                 <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>Here's your course creation overview</div>
               </div>
               <h1 className="dash-top-title" style={{ color: "var(--color-text-header)" }}>Creator Dashboard</h1>
-              <div className="dash-top-btn-wrap">
-                <Button variant="primary" rounded="pill" onClick={() => navigate(`/${slug}/courses/create`)}>
-                  <Plus size={16} style={{ marginRight: 6 }} /> Create Course
-                </Button>
-              </div>
+              <div className="dash-top-btn-wrap"></div>
             </div>
 
             {/* Stat Cards */}

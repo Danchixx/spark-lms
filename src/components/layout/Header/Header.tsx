@@ -36,7 +36,7 @@ const Header = ({
   searchPlaceholder = "Search ...",
   role = "User",
 }: HeaderProps) => {
-  const { company } = useAuth();
+  const { company, user: authUser } = useAuth();
   const { theme, sidebarTheme } = useTheme();
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
   const [notifOpen, setNotifOpen] = useState(false);
@@ -328,7 +328,9 @@ const Header = ({
           {/* Role badge — desktop */}
           {!isMobile && (
             <span style={{ background: "#FF6B00", color: "white", padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
-              {role}
+              {authUser?.role 
+                ? (authUser.role === 'course creator' ? 'Creator' : authUser.role.charAt(0).toUpperCase() + authUser.role.slice(1)) 
+                : role}
             </span>
           )}
         </div>

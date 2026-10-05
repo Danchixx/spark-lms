@@ -121,9 +121,10 @@ const Profile = () => {
       
       if (updated.contactNumber !== undefined) updates.contact_no = updated.contactNumber;
       if (updated.address !== undefined) updates.address = updated.address;
+      if (updated.dateOfBirth !== undefined) updates.date_of_birth = updated.dateOfBirth;
 
       await updateProfile(updates);
-      setSuccessMessage("Your contact details have been updated successfully.");
+      setSuccessMessage("Your profile details have been updated successfully.");
       setShowSuccessModal(true);
     } catch (err) {
       console.error("Failed to update profile:", err);
