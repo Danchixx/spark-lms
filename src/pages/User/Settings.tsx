@@ -312,7 +312,7 @@ const SecurityPanel = () => {
           const currentSlug = company?.slug || getCompanySlug(company);
           setModalConfig(null);
           await logout();
-          navigate(`/${currentSlug}`);
+          window.location.href = `/${currentSlug}`;
         }
       });
     } catch (err: any) {
