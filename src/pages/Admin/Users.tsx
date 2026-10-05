@@ -162,30 +162,34 @@ const AdminUsers = () => {
 
         if (error) throw error;
         
-        const mappedUsers = data.map(u => {
-          const roleName = Array.isArray(u.roles) ? u.roles[0]?.name : (u.roles?.name || 'user');
-          let roleColor = "#FF6B00";
-          if (roleName === "admin") roleColor = "#673ab7";
-          if (roleName === "approver") roleColor = "#e81e63";
-          if (roleName === "creator" || roleName === "course creator") roleColor = "#27ae60";
-          if (roleName === "spark_admin") roleColor = "#000000";
+        const mappedUsers = data
+          .filter(u => {
+            const rName = Array.isArray(u.roles) ? u.roles[0]?.name : (u.roles?.name || 'user');
+            return rName !== 'spark_admin' && rName !== 'superadmin';
+          })
+          .map(u => {
+            const roleName = Array.isArray(u.roles) ? u.roles[0]?.name : (u.roles?.name || 'user');
+            let roleColor = "#FF6B00";
+            if (roleName === "admin") roleColor = "#673ab7";
+            if (roleName === "approver") roleColor = "#e81e63";
+            if (roleName === "creator" || roleName === "course creator") roleColor = "#27ae60";
 
-          const joinedDateExp = u.created_at ? new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : "Unknown";
-          const capStatus = u.status ? u.status.charAt(0).toUpperCase() + u.status.slice(1) : "Pending";
+            const joinedDateExp = u.created_at ? new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : "Unknown";
+            const capStatus = u.status ? u.status.charAt(0).toUpperCase() + u.status.slice(1) : "Pending";
 
-          return {
-            id: u.id,
-            name: `${u.firstname || ''} ${u.lastname || ''}`.trim() || 'Unknown User',
-            status: capStatus,
-            dept: (company?.name?.toUpperCase() === "SPARK CPD" ? u.cpd_school_name : u.department) || "N/A",
-            joined: joinedDateExp,
-            role: roleName.replace('_', ' ').toUpperCase(),
-            roleColor: roleColor,
-            originalRole: roleName,
-            avatar: u.avatar_url,
-            isArchived: u.is_archived || false
-          };
-        });
+            return {
+              id: u.id,
+              name: `${u.firstname || ''} ${u.lastname || ''}`.trim() || 'Unknown User',
+              status: capStatus,
+              dept: (company?.name?.toUpperCase() === "SPARK CPD" ? u.cpd_school_name : u.department) || "N/A",
+              joined: joinedDateExp,
+              role: roleName.replace('_', ' ').toUpperCase(),
+              roleColor: roleColor,
+              originalRole: roleName,
+              avatar: u.avatar_url,
+              isArchived: u.is_archived || false
+            };
+          });
 
         setDbUsers(mappedUsers);
       } catch (err) {

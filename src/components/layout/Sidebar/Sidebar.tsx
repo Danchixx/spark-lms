@@ -110,7 +110,7 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
 
   let roleNav = user?.role === "admin" ? ADMIN_NAV : user?.role === "course creator" ? CREATOR_NAV : USER_NAV;
 
-  if (slug === "spark") {
+  if (slug === "spark-cpd") {
     roleNav = roleNav.map(group => ({
       ...group,
       items: group.items.filter(item => item !== "Certificates")

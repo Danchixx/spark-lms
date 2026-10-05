@@ -55,10 +55,12 @@ const Dashboard = () => {
   const certificates = completed;
 
   const stats: StatItem[] = [
-    { label: "Enrolled Courses", value: enrolled, icon: BookOpen, sub: `${notStarted} not started`, subColor: "#888" },
+    { label: "Enrolled Courses", value: enrolled, icon: BookOpen, sub: "", subColor: "transparent" },
     { label: "Ongoing Courses", value: ongoing, icon: BookMarked, sub: "In progress", subColor: "#FF6B00" },
     { label: "Completed Courses", value: completed, icon: CheckCircle, sub: "All lessons done", subColor: "#27ae60" },
-    { label: "Certificate Earned", value: certificates, icon: Award, sub: completed > 0 ? "View certificates" : "Complete a course", subColor: completed > 0 ? "#27ae60" : "#888" },
+    company?.name?.toUpperCase() === "SPARK CPD" 
+      ? { label: "Not Started", value: notStarted, icon: ClipboardList, sub: "Awaiting start", subColor: "#888" }
+      : { label: "Certificate Earned", value: certificates, icon: Award, sub: completed > 0 ? "View certificates" : "Complete a course", subColor: completed > 0 ? "#27ae60" : "#888" },
   ];
 
   // Derive recent courses from the hook data

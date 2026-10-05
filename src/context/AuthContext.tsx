@@ -87,7 +87,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: (rolesData?.name as RoleName) || 'user',
         name: `${(restUser as { firstname: string }).firstname} ${(restUser as { lastname: string }).lastname}`
       });
-      setCompany(companiesData ?? null);
+      if (companiesData) {
+        setCompany(companiesData);
+        localStorage.setItem("spark_last_slug", companiesData.slug || "");
+      } else {
+        setCompany(null);
+      }
     } catch (error) {
       console.error("Error fetching user profile:", error);
       // If fetching the public user profile fails (e.g. no match), force sign out
@@ -97,8 +102,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Safe shim for the selectCompany that existed previously (not heavily used in new schema)
-  const selectCompany = (c: Company | null) => setCompany(c);
+  const selectCompany = (c: Company | null) => {
+    setCompany(c);
+    if (c?.slug) localStorage.setItem("spark_last_slug", c.slug);
+  };
 
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
