@@ -60,7 +60,7 @@ const CompanyPanel = () => {
 
   if (!company) return null;
 
-  const fullUrl = `spark-ph-lms.com/${company.slug}`;
+  const fullUrl = `sparkph-lms.vercel.app/${company.slug}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullUrl);
@@ -130,7 +130,7 @@ const CompanyPanel = () => {
             <label>Workspace URL</label>
             <div className="workspace-url-input-container">
               <div className="workspace-url-input">
-                <span className="prefix">spark-ph-lms.com/</span>
+                <span className="prefix">sparkph-lms.vercel.app/</span>
                 <input value={company.slug || ""} readOnly />
                 <button
                   className={`copy-url-btn ${copied ? 'copied' : ''}`}
