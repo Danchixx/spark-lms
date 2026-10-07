@@ -196,12 +196,12 @@ const AdminUsers = () => {
           password: generatedPassword, 
           contact_no: u.contact !== "N/A" ? u.contact : null,
           address: address,
-          employee_id: u.prcId !== "N/A" ? u.prcId : null,
-          department: u.school !== "N/A" ? u.school : null,
-          job_title: u.position !== "N/A" ? u.position : null,
-          cpd_prc_id: u.prcId !== "N/A" ? u.prcId : null,
-          cpd_position: u.position !== "N/A" ? u.position : null,
-          cpd_school_name: u.school !== "N/A" ? u.school : null,
+          employee_id: !isSparkCpd && u.prcId !== "N/A" ? u.prcId : null,
+          department: !isSparkCpd && u.school !== "N/A" ? u.school : null,
+          job_title: !isSparkCpd && u.position !== "N/A" ? u.position : null,
+          cpd_prc_id: isSparkCpd && u.prcId !== "N/A" ? u.prcId : null,
+          cpd_position: isSparkCpd && u.position !== "N/A" ? u.position : null,
+          cpd_school_name: isSparkCpd && u.school !== "N/A" ? u.school : null,
           created_by: user?.id
         };
 
