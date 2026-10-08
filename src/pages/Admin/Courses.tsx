@@ -98,7 +98,7 @@ const AdminCourseCard = ({ course, onViewDetails }: any) => {
       {/* Card Content Area */}
       <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: "var(--color-text-header)", lineHeight: 1.3, marginBottom: 4 }}>
+          <div title={course.name} style={{ fontWeight: 800, fontSize: 16, color: "var(--color-text-header)", lineHeight: 1.3, marginBottom: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {course.name}
           </div>
           <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
