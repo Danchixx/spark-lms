@@ -304,6 +304,46 @@ const LessonEditor = () => {
         });
       }
 
+      // 3. Update local state so navigation doesn't revert changes
+      const updatedModules = allModulesList.map((mod: any) => {
+        if (mod.id === currentModule.id) {
+          return {
+            ...mod,
+            lessons: mod.lessons.map((l: any) => {
+              if (l.id === Number(lessonId)) {
+                return {
+                  ...l,
+                  title: lessonTitle,
+                  type: lessonType,
+                  content: lessonType === "reading" ? readingContent : null,
+                  video_url: lessonType === "video" ? videoUrl : null,
+                };
+              }
+              return l;
+            })
+          };
+        }
+        return mod;
+      });
+
+      const updatedCurrentModule = updatedModules.find((m: any) => m.id === currentModule.id) || currentModule;
+
+      navigate(location.pathname, {
+        state: {
+          ...location.state,
+          moduleData: updatedCurrentModule,
+          allModules: updatedModules,
+          lessonData: {
+            ...lessonData,
+            title: lessonTitle,
+            type: lessonType,
+            content: lessonType === "reading" ? readingContent : null,
+            video_url: lessonType === "video" ? videoUrl : null,
+          }
+        },
+        replace: true
+      });
+
       showToast("Lesson saved successfully!");
     } catch (err: any) {
       console.error("Failed to save lesson:", err);
