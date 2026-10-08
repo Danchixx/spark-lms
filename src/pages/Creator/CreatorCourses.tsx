@@ -136,10 +136,22 @@ const CreatorCourseCard = ({ course, onEdit }: { course: any; onEdit: (id: strin
       {/* Content */}
       <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: "var(--color-text-header)", lineHeight: 1.3, marginBottom: 4 }}>
+          <div 
+            title={course.title}
+            style={{ 
+              fontWeight: 800, fontSize: 16, color: "var(--color-text-header)", lineHeight: 1.3, marginBottom: 4,
+              display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" 
+            }}
+          >
             {course.title}
           </div>
-          <div style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.4 }}>
+          <div 
+            title={course.description}
+            style={{ 
+              fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.4,
+              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" 
+            }}
+          >
             {course.description}
           </div>
         </div>

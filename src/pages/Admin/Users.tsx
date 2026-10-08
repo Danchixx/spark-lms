@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, User, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2, Check, Archive, RefreshCw } from "lucide-react";
+import { Users, User, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2, Check, Archive, RefreshCw, Upload, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
 import { supabase } from "../../lib/supabase";
@@ -96,6 +96,129 @@ const AdminUsers = () => {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Batch Upload States
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [batchUsers, setBatchUsers] = useState<any[]>([]);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [isUploadingBatch, setIsUploadingBatch] = useState(false);
+  const [batchProgress, setBatchProgress] = useState(0);
+  const [batchResultMsg, setBatchResultMsg] = useStlyte("");
+
+  const handleBatchFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const rows = text.split('\n').filter(r => r.trim() !== '');
+    
+    const parseRow = (line: string) => {
+      const vals = [];
+      let cur = '';
+      let inQuote = false;
+      for(let i=0; i<line.length; i++) {
+        if(line[i] === '"') inQuote = !inQuote;
+        else if(line[i] === ',' && !inQuote) { vals.push(cur.trim()); cur = ''; }
+        else cur += line[i];
+      }
+      vals.push(cur.trim());
+      return vals;
+    };
+    
+    const parsedUsers = [];
+    for (let i = 1; i < rows.length; i++) {
+       const vals = parseRow(rows[i]).map(v => v.replace(/^"|"$/g, ''));
+       parsedUsers.push({
+         firstName: vals[0] || "",
+         lastName: vals[1] || "",
+         email: vals[2] || "",
+         contact: vals[3] || "N/A",
+         position: vals[4] || "N/A",
+         school: vals[5] || "N/A",
+         region: vals[6] || "N/A",
+         division: vals[7] || "N/A",
+         prcId: vals[8] || "N/A"
+       });
+    }
+    
+    setBatchUsers(parsedUsers.filter(u => u.email && u.firstName));
+    setShowBatchModal(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const confirmBatchUpload = async () => {
+    if (!company) return;
+    setIsUploadingBatch(true);
+    setBatchProgress(0);
+    setBatchResultMsg("");
+    let successCount = 0;
+
+    const isSparkCpd = company?.name?.toUpperCase() === "SPARK CPD";
+
+    const { data: roleData } = await supabase.from('roles').select('id').eq('name', 'user').single();
+    const roleId = roleData?.id;
+
+    for (let i = 0; i < batchUsers.length; i++) {
+      const u = batchUsers[i];
+      try {
+        const sanitizedCompany = company.name.replace(/\s+/g, '');
+        const random4 = Math.floor(1000 + Math.random() * 9000);
+        const generatedPassword = `Spark-${sanitizedCompany}-${random4}`;
+
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('create-admin-user', {
+          body: { 
+            email: u.email, 
+            password: generatedPassword,
+            name: `${u.firstName} ${u.lastName}`.trim(),
+            sendEmail: isSparkCpd
+          }
+        });
+
+        if (fnError || fnData?.error) {
+           console.error("Error creating auth user:", u.email, fnError || fnData?.error);
+           continue; 
+        }
+
+        const newAuthUser = fnData.user;
+        const addressParts = [];
+        if (u.region !== "N/A") addressParts.push(u.region);
+        if (u.division !== "N/A") addressParts.push(u.division);
+        const address = addressParts.length > 0 ? addressParts.join(", ") : null;
+        
+        const payload = {
+          id: newAuthUser.id,
+          company_id: company.id,
+          role_id: roleId,
+          firstname: u.firstName,
+          lastname: u.lastName,
+          email: u.email,
+          password: generatedPassword, 
+          contact_no: u.contact !== "N/A" ? u.contact : null,
+          address: address,
+          employee_id: !isSparkCpd && u.prcId !== "N/A" ? u.prcId : null,
+          department: !isSparkCpd && u.school !== "N/A" ? u.school : null,
+          job_title: !isSparkCpd && u.position !== "N/A" ? u.position : null,
+          cpd_prc_id: isSparkCpd && u.prcId !== "N/A" ? u.prcId : null,
+          cpd_position: isSparkCpd && u.position !== "N/A" ? u.position : null,
+          cpd_school_name: isSparkCpd && u.school !== "N/A" ? u.school : null,
+          created_by: user?.id
+        };
+
+        const { error: insertError } = await supabase.from('users').insert(payload);
+        if (!insertError) successCount++;
+      } catch (err) {
+        console.error(err);
+      }
+      setBatchProgress(Math.round(((i + 1) / batchUsers.length) * 100));
+    }
+
+    setIsUploadingBatch(false);
+    setShowBatchModal(false);
+    setBatchResultMsg(`Successfully added ${successCount} out of ${batchUsers.length} users.`);
+    setShowSuccessModal(true);
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -199,7 +322,7 @@ const AdminUsers = () => {
       }
     };
     fetchUsers();
-  }, [company?.id]);
+  }, [company?.id, refreshTrigger]);
 
   const stats = useMemo(() => [
     { label: "Total Users", value: dbUsers.length, icon: Users, sub: "All registered", subColor: "#888" },
@@ -232,7 +355,34 @@ const AdminUsers = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
-      {showSuccessModal && <SuccessModal message="User successfully deleted." onClose={() => setShowSuccessModal(false)} />}
+      {showSuccessModal && <SuccessModal message={batchResultMsg || "User successfully deleted."} onClose={() => { setShowSuccessModal(false); setBatchResultMsg(""); }} />}
+      {showBatchModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "var(--color-surface)", padding: 32, borderRadius: 16, width: "100%", maxWidth: 450, border: "1px solid var(--color-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <h3 style={{ margin: "0 0 16px", color: "var(--color-text-header)", fontSize: 18, fontWeight: 700 }}>Confirm Batch Upload</h3>
+            <p style={{ margin: "0 0 24px", color: "var(--color-text-muted)", fontSize: 14, lineHeight: 1.5 }}>
+              You are about to upload and create accounts for <strong>{batchUsers.length}</strong> users. 
+              {company?.name?.toUpperCase() === "SPARK CPD" && " Since you are a SPARK CPD admin, users will automatically receive an email with their auto-generated passwords."}
+            </p>
+            {isUploadingBatch ? (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600 }}>
+                  <span>Uploading...</span>
+                  <span>{batchProgress}%</span>
+                </div>
+                <div style={{ width: "100%", height: 8, background: "var(--color-border)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", background: "#FF6B00", width: `${batchProgress}%`, transition: "width 0.3s" }} />
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <Button variant="ghost" onClick={() => setShowBatchModal(false)}>Cancel</Button>
+                <Button variant="primary" onClick={confirmBatchUpload}>Start Upload</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
           <div style={{ background: "var(--color-surface)", padding: 32, borderRadius: 16, width: "100%", maxWidth: 400, border: "1px solid var(--color-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
@@ -260,7 +410,9 @@ const AdminUsers = () => {
             <div className="dash-top">
               <div className="dash-top-greeting"></div>
               <h1 className="dash-top-title" style={{ color: "var(--color-text-header)" }}>Users</h1>
-                <div className="dash-top-btn-wrap">
+                <div className="dash-top-btn-wrap" style={{ display: 'flex', gap: '12px' }}>
+                  <input type="file" accept=".csv" ref={fileInputRef} onChange={handleBatchFileChange} style={{ display: 'none' }} />
+                  <Button size="sm" rounded="pill" variant="outline" leftIcon={<Upload size={16} />} onClick={() => fileInputRef.current?.click()}>Batch Upload</Button>
                   <Button size="sm" rounded="pill" leftIcon={<Plus size={16} />} onClick={() => navigate(`/${slug}/users/add`)}>Add User</Button>
                 </div>
             </div>

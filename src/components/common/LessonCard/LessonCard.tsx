@@ -1,5 +1,6 @@
 import { Play, ArrowRight } from "lucide-react";
 import Button from "../../ui/Button/Button";
+import HybridLessonViewer from "./HybridLessonViewer";
 import "../../ui/RichTextEditor/RichTextEditor.css";
 import "./LessonCard.css";
 
@@ -39,7 +40,7 @@ const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModul
 
   return (
     <div className="lesson-card-wrapper">
-      <h2 className="lesson-card-title">{lesson.title?.replace(/^(Video:|Reading:|Assessment:)\s*/, '')}</h2>
+      <h2 className="lesson-card-title">{lesson.title?.replace(/^(Video:|Hybrid:|Assessment:)\s*/, '')}</h2>
 
       {lesson.type === "video" && (
         <>
@@ -78,11 +79,8 @@ const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModul
         </>
       )}
 
-      {lesson.type === "reading" && (
-        <div 
-          className="lesson-content-body tiptap-content" 
-          dangerouslySetInnerHTML={{ __html: lesson.content || "<p>No content provided for this lesson.</p>" }}
-        />
+      {lesson.type === "hybrid" && (
+        <HybridLessonViewer lesson={lesson} />
       )}
 
       {lesson.type === "assessment" && (
