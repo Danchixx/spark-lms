@@ -80,7 +80,7 @@ const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModul
 
       {lesson.type === "reading" && (
         <div 
-          className="lesson-content-body tiptap-content" 
+          className="lesson-content-body tiptap-content sun-editor-editable" 
           dangerouslySetInnerHTML={{ __html: lesson.content || "<p>No content provided for this lesson.</p>" }}
         />
       )}
