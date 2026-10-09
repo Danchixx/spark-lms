@@ -191,22 +191,20 @@ const CompanyPanel = () => {
 const NotificationsPanel = () => {
   const [notifs, setNotifs] = useState({
     courseAssigned: true,
-    courseReminder: true,
-    assessmentDue: true,
-    certificateEarned: true,
+    newLearningMaterials: true,
+    assessmentUpdates: false,
+    courseAnnouncements: false,
     announcements: false,
-    weeklyDigest: false,
   });
 
   const toggle = (key: string) => setNotifs((n) => ({ ...n, [key]: !n[key as keyof typeof n] }));
 
   const rows = [
-    { key: "courseAssigned", label: "Course Assigned", desc: "Notify when admin assigns you a new course" },
-    { key: "courseReminder", label: "Course Reminder", desc: "Remind you of courses with upcoming deadlines" },
-    { key: "assessmentDue", label: "Assessment Due", desc: "Remind you when an assessment is due" },
-    { key: "certificateEarned", label: "Certificate Earned", desc: "Notify when you earn a new certificate" },
-    { key: "announcements", label: "Announcements", desc: "Receive workspace-wide announcements" },
-    { key: "weeklyDigest", label: "Weekly Digest", desc: "Receive a summary of your activity every Monday" },
+    { key: "courseAssigned", label: "Course Assigned", desc: "Notify when admin assigns you a new course", disabled: false },
+    { key: "newLearningMaterials", label: "New Learning Materials", desc: "Notify when new modules or lessons are added to your courses", disabled: false },
+    { key: "assessmentUpdates", label: "Assessment Updates", desc: "Notify about grading and feedback on your assessments", disabled: true },
+    { key: "courseAnnouncements", label: "Course Announcements", desc: "Receive specific announcements from your enrolled courses", disabled: true },
+    { key: "announcements", label: "Announcements", desc: "Receive general workspace-wide announcements", disabled: true },
   ];
 
   return (
@@ -219,12 +217,15 @@ const NotificationsPanel = () => {
         <div className="settings-card-header">Email & Notifications</div>
         <div className="settings-card-body">
           {rows.map((r) => (
-            <div className="toggle-row" key={r.key}>
+            <div className="toggle-row" key={r.key} style={{ opacity: r.disabled ? 0.6 : 1 }}>
               <div className="toggle-info">
-                <div className="toggle-label">{r.label}</div>
+                <div className="toggle-label">
+                  {r.label}
+                  {r.disabled && <span style={{ marginLeft: 8, fontSize: 10, background: "var(--color-bg-muted)", color: "var(--color-text-muted)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>SOON</span>}
+                </div>
                 <div className="toggle-desc">{r.desc}</div>
               </div>
-              <Toggle checked={(notifs as any)[r.key]} onChange={() => toggle(r.key)} />
+              <Toggle checked={(notifs as any)[r.key]} onChange={() => !r.disabled && toggle(r.key)} disabled={r.disabled} />
             </div>
           ))}
         </div>
