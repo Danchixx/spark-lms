@@ -13,6 +13,7 @@ import {
 import useSidebar from "../../hooks/useSidebar";
 import PageTransition from "../../components/common/PageTransition";
 import { useTheme } from "../../context/ThemeContext";
+import { useSATheme } from "../SuperAdmin/SAThemeContext";
 import {
   Building2, Bell, ShieldCheck, Palette,
   Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar, Copy, Check
@@ -33,9 +34,24 @@ const CompanyPanel = () => {
   const { company } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  if (!company) return null;
+  const activeCompany = company || {
+    name: "SPARK LMS",
+    slug: "spark",
+    industry: "Learning & Development",
+    year_founded: 2026,
+    website_url: "https://spark-ph-lms.com",
+    description: "Enterprise Learning Management System & Development Platform",
+    contact_person: "Super Admin",
+    contact_email: "admin@spark.ph",
+    phone_number: "+63 (02) 8123-4567",
+    country: "Philippines",
+    office_address: "Manila, Philippines",
+    color: "#FF6B00",
+    cover_photo_url: null,
+    logo_url: null
+  };
 
-  const fullUrl = `spark-ph-lms.com/${company.slug}`;
+  const fullUrl = `spark-ph-lms.com/${activeCompany.slug}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullUrl);
@@ -56,17 +72,17 @@ const CompanyPanel = () => {
         <div className="label-small">Logo and Cover Photo</div>
         <div
           className="company-cover-edit"
-          style={company?.cover_photo_url ? {
-            backgroundImage: `url(${company.cover_photo_url})`,
+          style={activeCompany?.cover_photo_url ? {
+            backgroundImage: `url(${activeCompany.cover_photo_url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           } : {}}
         >
           <div className="company-logo-overlay">
-            <div className="logo-circle" style={{ background: "#ffffff", border: "1.5px solid #e2e8f0" }}>
-              {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
-                ? <img src={company.logo_url} alt={company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
-                : <span style={{ fontSize: 24, fontWeight: 900, color: company.color || "#FF6B00" }}>{company.name?.substring(0, 2).toUpperCase()}</span>}
+            <div className="logo-circle" style={{ background: "var(--card, #ffffff)", border: "1.5px solid var(--line, #e2e8f0)" }}>
+              {typeof activeCompany.logo_url === "string" && activeCompany.logo_url.startsWith("http")
+                ? <img src={activeCompany.logo_url} alt={activeCompany.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+                : <span style={{ fontSize: 24, fontWeight: 900, color: activeCompany.color || "#FF6B00" }}>{activeCompany.name?.substring(0, 2).toUpperCase()}</span>}
             </div>
           </div>
         </div>
@@ -77,36 +93,36 @@ const CompanyPanel = () => {
         <div className="form-grid">
           <div className="form-field">
             <label>Company Name</label>
-            <input value={company.name || ""} readOnly />
+            <input value={activeCompany.name || ""} readOnly />
           </div>
           <div className="form-field">
             <label>Industry</label>
-            <input value={company.industry || ""} readOnly />
+            <input value={activeCompany.industry || ""} readOnly />
           </div>
           <div className="form-field">
             <label>Year Founded</label>
             <div className="input-with-icon">
               <Calendar size={14} />
-              <input value={company.year_founded || ""} readOnly />
+              <input value={activeCompany.year_founded || ""} readOnly />
             </div>
           </div>
           <div className="form-field">
             <label>Company Website</label>
             <div className="input-with-icon">
               <Globe size={14} />
-              <input value={company.website_url || ""} readOnly />
+              <input value={activeCompany.website_url || ""} readOnly />
             </div>
           </div>
           <div className="form-field full-width">
             <label>Company Description</label>
-            <textarea rows={3} value={company.description || ""} readOnly />
+            <textarea rows={3} value={activeCompany.description || ""} readOnly />
           </div>
           <div className="form-field full-width">
             <label>Workspace URL</label>
             <div className="workspace-url-input-container">
               <div className="workspace-url-input">
                 <span className="prefix">spark-ph-lms.com/</span>
-                <input value={company.slug || ""} readOnly />
+                <input value={activeCompany.slug || ""} readOnly />
                 <button
                   className={`copy-url-btn ${copied ? 'copied' : ''}`}
                   onClick={handleCopy}
@@ -129,32 +145,32 @@ const CompanyPanel = () => {
             <label>Contact Person</label>
             <div className="input-with-icon">
               <User size={14} />
-              <input value={company.contact_person || ""} readOnly />
+              <input value={activeCompany.contact_person || ""} readOnly />
             </div>
           </div>
           <div className="form-field">
             <label>Contact Email</label>
             <div className="input-with-icon">
               <Mail size={14} />
-              <input value={company.contact_email || ""} readOnly />
+              <input value={activeCompany.contact_email || ""} readOnly />
             </div>
           </div>
           <div className="form-field">
             <label>Phone Number</label>
             <div className="input-with-icon">
               <Phone size={14} />
-              <input value={company.phone_number || ""} readOnly />
+              <input value={activeCompany.phone_number || ""} readOnly />
             </div>
           </div>
           <div className="form-field">
             <label>Country</label>
-            <input value={company.country || ""} readOnly />
+            <input value={activeCompany.country || ""} readOnly />
           </div>
           <div className="form-field full-width">
             <label>Office Address</label>
             <div className="input-with-icon">
               <MapPin size={14} />
-              <input value={company.office_address || ""} readOnly />
+              <input value={activeCompany.office_address || ""} readOnly />
             </div>
           </div>
         </div>
@@ -351,6 +367,16 @@ const SecurityPanel = () => {
 
 const AppearancePanel = () => {
   const { theme, setTheme, sidebarTheme, setSidebarTheme, showSidebarIcons, setShowSidebarIcons } = useTheme();
+  const saTheme = useSATheme();
+  const activeTheme = saTheme ? saTheme.theme : theme;
+  const handleThemeChange = (newTheme: "light" | "dark") => {
+    if (saTheme) {
+      saTheme.setTheme(newTheme);
+    } else {
+      setTheme(newTheme);
+    }
+  };
+
   const [font, setFont] = useState("DM Sans");
   const [collapseSidebar, setCollapseSidebar] = useState(false);
 
@@ -369,7 +395,7 @@ const AppearancePanel = () => {
             { key: "light", label: "Light (Default)" },
             { key: "dark", label: "Dark" },
           ].map((t) => (
-            <div key={t.key} className={`theme-card ${theme === t.key ? "selected" : ""}`} onClick={() => setTheme(t.key as "light" | "dark")}>
+            <div key={t.key} className={`theme-card ${activeTheme === t.key ? "selected" : ""}`} onClick={() => handleThemeChange(t.key as "light" | "dark")}>
               <div className={`theme-card-preview ${t.key}`}>
                 <div className="theme-preview-sidebar" />
                 <div className="theme-preview-content">
@@ -384,7 +410,7 @@ const AppearancePanel = () => {
         </div>
       </div>
 
-      {theme === 'light' && (
+      {activeTheme === 'light' && (
         <div className="card-inner" style={{ marginBottom: 20 }}>
           <div className="settings-card-header">Sidebar Theme</div>
           <div className="theme-options">
@@ -445,7 +471,11 @@ const AppearancePanel = () => {
 };
 
 /* ── Main Settings Page ── */
-const Settings = () => {
+type SettingsProps = {
+  embedded?: boolean;
+};
+
+const Settings = ({ embedded = false }: SettingsProps) => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -456,6 +486,33 @@ const Settings = () => {
 
   const defaultTab = location.state?.activeTab || "company";
 
+  const content = (
+    <PageTransition>
+      <SettingsCard tabs={USER_TABS} defaultTab={defaultTab} title="Settings">
+        <SettingsCard.Section sectionKey="company">
+          <CompanyPanel />
+        </SettingsCard.Section>
+        <SettingsCard.Section sectionKey="notifications">
+          <NotificationsPanel />
+        </SettingsCard.Section>
+        <SettingsCard.Section sectionKey="security">
+          <SecurityPanel />
+        </SettingsCard.Section>
+        <SettingsCard.Section sectionKey="appearance">
+          <AppearancePanel />
+        </SettingsCard.Section>
+      </SettingsCard>
+    </PageTransition>
+  );
+
+  if (embedded) {
+    return (
+      <div style={{ padding: "24px 28px", maxWidth: 1400, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+        {content}
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Settings" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
@@ -464,22 +521,7 @@ const Settings = () => {
         <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <PageTransition>
-            <SettingsCard tabs={USER_TABS} defaultTab={defaultTab} title="Settings">
-              <SettingsCard.Section sectionKey="company">
-                <CompanyPanel />
-              </SettingsCard.Section>
-              <SettingsCard.Section sectionKey="notifications">
-                <NotificationsPanel />
-              </SettingsCard.Section>
-              <SettingsCard.Section sectionKey="security">
-                <SecurityPanel />
-              </SettingsCard.Section>
-              <SettingsCard.Section sectionKey="appearance">
-                <AppearancePanel />
-              </SettingsCard.Section>
-            </SettingsCard>
-          </PageTransition>
+          {content}
         </div>
       </div>
     </div>

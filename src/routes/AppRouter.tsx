@@ -24,6 +24,8 @@ import SADashboard, { DashboardHome, ComingSoon } from "../pages/SuperAdmin/SADa
 import SparkTenants from "../pages/SuperAdmin/Tenants/SparkTenants";
 import SparkApprovals from "../pages/SuperAdmin/Approvals/SparkApprovals";
 import SparkUsers from "../pages/SuperAdmin/Users/SparkUsers";
+import SASettings from "../pages/SuperAdmin/Settings/SASettings";
+import SAContact from "../pages/SuperAdmin/Contact/SAContact";
 import AdminDashboard from "../pages/Admin/Dashboard";
 import AdminProfile from "../pages/Admin/Profile";
 import AdminUsers from "../pages/Admin/Users";
@@ -167,7 +169,8 @@ const AppRoutes = () => {
           <Route path="approvals" element={<SparkApprovals />} />
           <Route path="users" element={<SparkUsers />} />
           <Route path="courses" element={<ComingSoon label="courses" />} />
-          <Route path="settings" element={<ComingSoon label="settings" />} />
+          <Route path="settings" element={<SASettings />} />
+          <Route path="contact" element={<SAContact />} />
         </Route>
 
         {/* Protected — same URL, different component per role */}

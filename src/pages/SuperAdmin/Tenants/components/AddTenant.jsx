@@ -16,8 +16,8 @@ const Stepper = ({ step }) => {
   return (
     <div style={{
       padding: "12px 20px 0",
-      borderBottom: "1px solid #eee",
-      background: "#fff",
+      borderBottom: "1px solid var(--line, #eee)",
+      background: "var(--card, #fff)",
     }}>
       <div style={{
         display: "flex",
@@ -42,7 +42,7 @@ const Stepper = ({ step }) => {
                   top: 7, left: "50%",
                   width: "100%", height: 2,
                   zIndex: 1,
-                  background: done ? "#FF6B00" : "#ddd",
+                  background: done ? "#FF6B00" : "var(--line, #ddd)",
                   transition: "background 0.4s ease",
                 }} />
               )}
@@ -51,15 +51,15 @@ const Stepper = ({ step }) => {
                 borderRadius: "50%",
                 zIndex: 2,
                 marginBottom: 6,
-                background: done || active ? "#FF6B00" : "#fff",
-                border: `2px solid ${done || active ? "#FF6B00" : "#ddd"}`,
+                background: done || active ? "#FF6B00" : "var(--card, #fff)",
+                border: `2px solid ${done || active ? "#FF6B00" : "var(--line, #ddd)"}`,
                 transition: "background 0.3s ease, border-color 0.3s ease",
               }} />
               <div style={{
                 fontSize: 12,
                 whiteSpace: "nowrap",
                 fontWeight: 500,
-                color: done || active ? "#555" : "#aaa",
+                color: done || active ? "var(--text, #555)" : "var(--muted, #aaa)",
                 transition: "color 0.3s ease",
               }}>
                 {label}
@@ -104,20 +104,21 @@ const AddTenant = ({ onBack, onFinish, sidebarOpen = true }) => {
         left: sidebarOpen ? SIDEBAR_WIDTH : 0,
         right: 0,
         zIndex: 90,
-        background: "#fff",
-        boxShadow: "0 2px 8px rgba(0,0,0,.06)",
+        background: "var(--card, #fff)",
+        boxShadow: "var(--shadow, 0 2px 8px rgba(0,0,0,.06))",
+        borderBottom: "1px solid var(--line, #eee)",
         transition: "left 0.3s cubic-bezier(.4,0,.2,1)",
       }}>
         {/* Breadcrumb row */}
         <div style={{
-          borderBottom: "1px solid #eee",
+          borderBottom: "1px solid var(--line, #eee)",
           padding: "10px 20px",
           display: "flex",
           alignItems: "center",
           gap: 12,
         }}>
           <button onClick={onBack} style={s.bcBtn}>‹ TENANT LIST</button>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#555" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text, #555)" }}>
             ADD NEW TENANT
           </span>
         </div>

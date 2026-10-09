@@ -11,7 +11,7 @@ const AddTenantStep3 = ({ onNext, onBack, onCancel }) => {
           <div style={s.subtitle}>SELECT PAYMENT OPTION</div>
 
           {/* Palawan Pay */}
-          <div style={{ ...s.option, borderColor: method === "palawan" ? "#FF6B00" : "#e0e0e0" }}
+          <div style={{ ...s.option, borderColor: method === "palawan" ? "#FF6B00" : "var(--line, #e0e0e0)" }}
             onClick={() => setMethod("palawan")}>
             <div style={s.optRow}>
               <input type="radio" readOnly checked={method === "palawan"}
@@ -22,7 +22,7 @@ const AddTenantStep3 = ({ onNext, onBack, onCancel }) => {
           </div>
 
           {/* Credit Card */}
-          <div style={{ ...s.option, borderColor: method === "card" ? "#FF6B00" : "#e0e0e0" }}
+          <div style={{ ...s.option, borderColor: method === "card" ? "#FF6B00" : "var(--line, #e0e0e0)" }}
             onClick={() => setMethod("card")}>
             <div style={s.optRow}>
               <input type="radio" readOnly checked={method === "card"}
@@ -35,11 +35,11 @@ const AddTenantStep3 = ({ onNext, onBack, onCancel }) => {
             </div>
             {method === "card" && (
               <>
-                <div style={{ fontSize: 11, color: "#aaa", marginLeft: 26,
+                <div style={{ fontSize: 11, color: "var(--muted, #aaa)", marginLeft: 26,
                   marginTop: 4, marginBottom: 8 }}>
                   pay securely using your trusted cards
                 </div>
-                <hr style={{ border: "none", borderTop: "1px solid #f0f0f0",
+                <hr style={{ border: "none", borderTop: "1px solid var(--line, #f0f0f0)",
                   margin: "8px 0" }} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <div>
@@ -66,7 +66,7 @@ const AddTenantStep3 = ({ onNext, onBack, onCancel }) => {
           </div>
 
           {/* Bank Deposit */}
-          <div style={{ ...s.option, borderColor: method === "bank" ? "#FF6B00" : "#e0e0e0" }}
+          <div style={{ ...s.option, borderColor: method === "bank" ? "#FF6B00" : "var(--line, #e0e0e0)" }}
             onClick={() => setMethod("bank")}>
             <div style={s.optRow}>
               <input type="radio" readOnly checked={method === "bank"}
@@ -80,7 +80,7 @@ const AddTenantStep3 = ({ onNext, onBack, onCancel }) => {
           <div style={s.termsRow}>
             <input type="checkbox" defaultChecked
               style={{ width: 14, height: 14, accentColor: "#FF6B00" }} />
-            <span style={{ fontSize: 11, color: "#888" }}>
+            <span style={{ fontSize: 11, color: "var(--muted, #888)" }}>
               By clicking this, I agree to Spark's{" "}
               <span style={{ color: "#FF6B00", cursor: "pointer" }}>Terms and Conditions</span>
               {" "}and{" "}
@@ -98,8 +98,8 @@ const AddTenantStep3 = ({ onNext, onBack, onCancel }) => {
           <div style={s.proofBox}>
             <div style={{ fontSize: 32 }}>☁️</div>
             <button style={s.browseBtn}>BROWSE</button>
-            <div style={{ fontSize: 12, color: "#aaa" }}>drop a file here</div>
-            <div style={{ fontSize: 10, color: "#bbb", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "var(--muted, #aaa)" }}>drop a file here</div>
+            <div style={{ fontSize: 10, color: "var(--muted, #bbb)", marginTop: 4 }}>
               * File supported jpg, png, &amp; webp
             </div>
           </div>
@@ -114,16 +114,16 @@ const AddTenantStep3 = ({ onNext, onBack, onCancel }) => {
 };
 
 const s = {
-  card: { background: "#fff", borderRadius: 10, border: "1px solid #eee",
-    padding: 24, margin: "16px 0" },
+  card: { background: "var(--card, #fff)", borderRadius: 10, border: "1px solid var(--line, #eee)",
+    padding: 24, margin: "16px 0", boxShadow: "var(--shadow, 0 1px 4px rgba(0,0,0,0.06))" },
   grid: { display: "grid", gridTemplateColumns: "3fr 2fr", gap: 24 },
   subtitle: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
     fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase",
-    color: "#888", marginBottom: 14 },
-  option: { border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "13px 16px",
-    marginBottom: 10, cursor: "pointer", transition: "border-color .15s" },
+    color: "var(--muted, #888)", marginBottom: 14 },
+  option: { border: "1.5px solid var(--line, #e0e0e0)", borderRadius: 8, padding: "13px 16px",
+    marginBottom: 10, cursor: "pointer", transition: "border-color .15s", background: "var(--card, #fff)" },
   optRow: { display: "flex", alignItems: "center", gap: 12 },
-  optLabel: { fontWeight: 600, fontSize: 14 },
+  optLabel: { fontWeight: 600, fontSize: 14, color: "var(--text, #333)" },
   palawanBadge: { marginLeft: "auto",
     background: "linear-gradient(135deg,#006633,#00a855)",
     color: "#fff", padding: "3px 8px", borderRadius: 4,
@@ -132,26 +132,26 @@ const s = {
     borderRadius: 3, fontSize: 9, fontWeight: 700 },
   mcBadge: { background: "#eb001b", color: "#fff", padding: "2px 5px",
     borderRadius: 3, fontSize: 9, fontWeight: 700 },
-  fieldLbl: { fontSize: 11, color: "#888", fontWeight: 600, marginBottom: 4 },
-  input: { width: "100%", padding: "9px 12px", border: "1px solid #ddd",
+  fieldLbl: { fontSize: 11, color: "var(--muted, #888)", fontWeight: 600, marginBottom: 4 },
+  input: { width: "100%", padding: "9px 12px", border: "1px solid var(--line, #ddd)",
     borderRadius: 6, fontSize: 13, fontFamily: "'Barlow',sans-serif",
-    outline: "none", boxSizing: "border-box" },
+    outline: "none", boxSizing: "border-box", background: "var(--card, #fff)", color: "var(--text, #333)" },
   paidBtn: { width: "100%", background: "#FF6B00", color: "#fff", border: "none",
     borderRadius: 8, padding: 12, fontWeight: 700, fontSize: 15,
     cursor: "pointer", fontFamily: "'Barlow',sans-serif", marginTop: 4 },
   termsRow: { display: "flex", alignItems: "flex-start", gap: 8, marginTop: 8 },
   backTextBtn: { display: "flex", alignItems: "center", gap: 4,
-    background: "#FFF0E6", border: "1.5px solid #FF6B00", borderRadius: 20,
+    background: "var(--tag-bg, #FFF0E6)", border: "1.5px solid #FF6B00", borderRadius: 20,
     padding: "6px 14px", cursor: "pointer", fontSize: 12, fontWeight: 700,
     color: "#FF6B00", fontFamily: "'Barlow',sans-serif" },
   proofBox: { border: "2px dashed #FF6B00", borderRadius: 8, padding: 30,
     display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
-    cursor: "pointer", background: "#fafafa", minHeight: 160,
+    cursor: "pointer", background: "var(--bg, #fafafa)", minHeight: 160,
     justifyContent: "center" },
   browseBtn: { background: "#FF6B00", color: "#fff", border: "none",
     borderRadius: 8, padding: "8px 20px", fontWeight: 700, fontSize: 12,
     cursor: "pointer", fontFamily: "'Barlow',sans-serif" },
-  cancelBtn: { background: "#aaa", color: "#fff", border: "none", borderRadius: 8,
+  cancelBtn: { background: "#888", color: "#fff", border: "none", borderRadius: 8,
     padding: "9px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer",
     fontFamily: "'Barlow',sans-serif" },
   nextBtn: { background: "#FF6B00", color: "#fff", border: "none", borderRadius: 8,

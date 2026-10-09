@@ -3,6 +3,7 @@ import { MOCK_TENANTS } from "../../../data/mockTenants";
 import TenantList from "./components/TenantList";
 import ViewTenant from "./components/ViewTenant";
 import AddTenant from "./components/AddTenant";
+import PageTransition from "../../../components/common/PageTransition";
 
 // ── Success toast overlay ─────────────────────────────────────
 const SuccessToast = ({ message, onClose }) => (
@@ -16,11 +17,13 @@ const SuccessToast = ({ message, onClose }) => (
     }}
   >
     <div style={{
-      background: "#fff", borderRadius: 14,
+      background: "var(--card, #fff)", borderRadius: 14,
       padding: "36px 40px",
       display: "flex", flexDirection: "column",
       alignItems: "center", gap: 14,
       textAlign: "center", maxWidth: 300,
+      border: "1px solid var(--line, rgba(0,0,0,0.1))",
+      boxShadow: "var(--shadow, 0 4px 20px rgba(0,0,0,0.15))"
     }}>
       <div style={{
         width: 60, height: 60, borderRadius: "50%",
@@ -32,8 +35,8 @@ const SuccessToast = ({ message, onClose }) => (
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: "#333" }}>{message}</div>
-      <div style={{ fontSize: 12, color: "#aaa" }}>Click anywhere to dismiss</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text, #333)" }}>{message}</div>
+      <div style={{ fontSize: 12, color: "var(--muted, #aaa)" }}>Click anywhere to dismiss</div>
     </div>
   </div>
 );
@@ -88,28 +91,30 @@ const SparkTenants = ({ sidebarOpen = true }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-      {view === "list" && (
-        <TenantList
-          tenants={tenants}
-          onAdd={handleAdd}
-          onView={handleView}
-        />
-      )}
+      <PageTransition key={view} style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+        {view === "list" && (
+          <TenantList
+            tenants={tenants}
+            onAdd={handleAdd}
+            onView={handleView}
+          />
+        )}
 
-      {view === "view" && selectedTenant && (
-        <ViewTenant
-          tenant={selectedTenant}
-          onBack={handleBackToList}
-        />
-      )}
+        {view === "view" && selectedTenant && (
+          <ViewTenant
+            tenant={selectedTenant}
+            onBack={handleBackToList}
+          />
+        )}
 
-      {view === "add" && (
-        <AddTenant
-          onBack={handleBackToList}
-          onFinish={handleFinish}
-          sidebarOpen={sidebarOpen}
-        />
-      )}
+        {view === "add" && (
+          <AddTenant
+            onBack={handleBackToList}
+            onFinish={handleFinish}
+            sidebarOpen={sidebarOpen}
+          />
+        )}
+      </PageTransition>
 
       {toast && (
         <SuccessToast

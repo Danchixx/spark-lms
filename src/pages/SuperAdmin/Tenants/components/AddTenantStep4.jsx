@@ -44,8 +44,8 @@ const AddTenantStep4 = ({ onBack, onFinish }) => {
               onClick={() => toggleRole(role.key)}
               style={{
                 ...s.roleCard,
-                borderColor: sel ? "#FF6B00" : "#e0e0e0",
-                boxShadow: sel ? "0 4px 14px rgba(255,107,0,.15)" : "none",
+                borderColor: sel ? "#FF6B00" : "var(--line, #e0e0e0)",
+                boxShadow: sel ? "0 4px 14px rgba(255,107,0,.15)" : "var(--shadow, none)",
               }}
             >
               <div style={s.roleHeader}>
@@ -53,7 +53,7 @@ const AddTenantStep4 = ({ onBack, onFinish }) => {
                 <div style={{
                   ...s.roleCheck,
                   background: sel ? "#FF6B00" : "transparent",
-                  borderColor: sel ? "#FF6B00" : "#ccc",
+                  borderColor: sel ? "#FF6B00" : "var(--line, #ccc)",
                 }}>
                   {sel && (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -107,24 +107,25 @@ const AddTenantStep4 = ({ onBack, onFinish }) => {
 };
 
 const s = {
-  card: { background: "#fff", borderRadius: 10, border: "1px solid #eee",
-    padding: 24, margin: "16px 0" },
+  card: { background: "var(--card, #fff)", borderRadius: 10, border: "1px solid var(--line, #eee)",
+    padding: 24, margin: "16px 0", boxShadow: "var(--shadow, 0 1px 4px rgba(0,0,0,0.06))" },
   title: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
-    fontSize: 22, color: "#333", marginBottom: 16 },
+    fontSize: 22, color: "var(--text, #333)", marginBottom: 16 },
   grid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 },
-  roleCard: { border: "1.5px solid #e0e0e0", borderRadius: 12, padding: 16,
+  roleCard: { border: "1.5px solid var(--line, #e0e0e0)", borderRadius: 12, padding: 16,
+    background: "var(--card, #fff)",
     cursor: "pointer", transition: "border-color .2s, box-shadow .2s" },
   roleHeader: { display: "flex", alignItems: "flex-start",
     justifyContent: "space-between", marginBottom: 10 },
   roleTitle: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
     fontSize: 20, color: "#FF6B00" },
-  roleCheck: { width: 22, height: 22, borderRadius: "50%", border: "2px solid #ccc",
+  roleCheck: { width: 22, height: 22, borderRadius: "50%", border: "2px solid var(--line, #ccc)",
     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  roleDesc: { fontSize: 12, color: "#888", lineHeight: 1.7 },
+  roleDesc: { fontSize: 12, color: "var(--muted, #888)", lineHeight: 1.7 },
   roleFields: { display: "flex", flexDirection: "column", gap: 8, marginTop: 4 },
-  roleInput: { width: "100%", border: "none", background: "#e8e8e8", borderRadius: 6,
+  roleInput: { width: "100%", border: "none", background: "var(--surface, #e8e8e8)", borderRadius: 6,
     padding: "8px 10px", fontSize: 12, fontFamily: "'Barlow',sans-serif",
-    color: "#555", outline: "none", boxSizing: "border-box" },
+    color: "var(--text, #555)", outline: "none", boxSizing: "border-box" },
   formNav: { display: "flex", justifyContent: "space-between",
     alignItems: "center", marginTop: 20 },
   backBtn: { background: "none", border: "none", color: "#FF6B00",

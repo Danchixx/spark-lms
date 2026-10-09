@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { MOCK_COURSES, MOCK_COMPANIES_COURSES } from "../../../data/mockCourses";
 import CourseCard from "./components/CourseCard";
 import CourseDetail from "./components/CourseDetail";
+import PageTransition from "../../../components/common/PageTransition";
 
 // ── SUPABASE INTEGRATION (uncomment when ready):
 // import { fetchCourses } from '../../../data/mockCourses';
@@ -38,24 +39,28 @@ const SparkCourses = () => {
 
   if (view === "detail" && selected) {
     return (
-      <CourseDetail
-        course={selected}
-        onBack={() => { setView("list"); setSelected(null); }}
-      />
+      <PageTransition>
+        <CourseDetail
+          course={selected}
+          onBack={() => { setView("list"); setSelected(null); }}
+        />
+      </PageTransition>
     );
   }
 
   return (
-    <div style={{
+    <PageTransition>
+      <div style={{
       padding: 24, minHeight: "100%",
-      background: "#f4f4f4",
+      background: "var(--bg, #f4f4f4)",
       fontFamily: "'Barlow', sans-serif",
+      color: "var(--text, #222)",
     }}>
 
       {/* ── Page title ── */}
       <div style={{
         fontFamily: "'Barlow Condensed', sans-serif",
-        fontWeight: 900, fontSize: 28, color: "#222",
+        fontWeight: 900, fontSize: 28, color: "var(--text, #222)",
         textTransform: "uppercase", letterSpacing: ".05em",
         marginBottom: 20,
       }}>
@@ -75,17 +80,17 @@ const SparkCourses = () => {
             style={{
               display: "flex", alignItems: "center", gap: 10,
               padding: "9px 16px",
-              background: "#fff",
-              border: "1.5px solid #e0e0e0",
+              background: "var(--card, #fff)",
+              border: "1.5px solid var(--line, #e0e0e0)",
               borderRadius: 8, cursor: "pointer",
-              fontSize: 13, fontWeight: 600, color: "#333",
+              fontSize: 13, fontWeight: 600, color: "var(--text, #333)",
               fontFamily: "'Barlow', sans-serif",
               transition: "border-color .2s",
-              boxShadow: "0 1px 4px rgba(0,0,0,.05)",
+              boxShadow: "var(--shadow, 0 1px 4px rgba(0,0,0,.05))",
               minWidth: 130,
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = "#FF6B00"}
-            onMouseLeave={e => { if (!dropdown) e.currentTarget.style.borderColor = "#e0e0e0"; }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = "var(--accent, #FF6B00)"}
+            onMouseLeave={e => { if (!dropdown) e.currentTarget.style.borderColor = "var(--line, #e0e0e0)"; }}
           >
             <span>{selectedCompany?.name || "SPARK"}</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -102,9 +107,9 @@ const SparkCourses = () => {
               }} />
               <div style={{
                 position: "absolute", top: "calc(100% + 6px)", left: 0,
-                background: "#fff", border: "1px solid #eee",
+                background: "var(--card, #fff)", border: "1px solid var(--line, #eee)",
                 borderRadius: 10, zIndex: 50, minWidth: 220,
-                boxShadow: "0 8px 28px rgba(0,0,0,.12)",
+                boxShadow: "var(--shadow, 0 8px 28px rgba(0,0,0,.12))",
                 overflow: "hidden",
               }}>
                 {MOCK_COMPANIES_COURSES.map(c => (
@@ -114,15 +119,15 @@ const SparkCourses = () => {
                     style={{
                       padding: "10px 16px", fontSize: 13, cursor: "pointer",
                       fontWeight: companyId === c.id ? 700 : 400,
-                      color: companyId === c.id ? "#FF6B00" : "#333",
-                      background: companyId === c.id ? "#FFF0E6" : "transparent",
-                      borderBottom: "1px solid #f5f5f5",
+                      color: companyId === c.id ? "var(--accent-text, #FF6B00)" : "var(--text, #333)",
+                      background: companyId === c.id ? "var(--accent-soft, #FFF0E6)" : "transparent",
+                      borderBottom: "1px solid var(--line, #f5f5f5)",
                       transition: "background .15s",
                       textTransform: c.id === 0 ? "none" : "uppercase",
                       letterSpacing: c.id === 0 ? 0 : ".04em",
                       fontSize: c.id === 0 ? 14 : 12,
                     }}
-                    onMouseEnter={e => { if (companyId !== c.id) e.currentTarget.style.background = "#f9f9f9"; }}
+                    onMouseEnter={e => { if (companyId !== c.id) e.currentTarget.style.background = "var(--card-2, #f9f9f9)"; }}
                     onMouseLeave={e => { if (companyId !== c.id) e.currentTarget.style.background = "transparent"; }}
                   >
                     {c.name}
@@ -144,9 +149,9 @@ const SparkCourses = () => {
             onClick={() => setTab(t.key)}
             style={{
               padding: "9px 18px",
-              background: tab === t.key ? "#FF6B00" : "#fff",
-              color: tab === t.key ? "#fff" : "#555",
-              border: `1.5px solid ${tab === t.key ? "#FF6B00" : "#ddd"}`,
+              background: tab === t.key ? "var(--accent, #FF6B00)" : "var(--card, #fff)",
+              color: tab === t.key ? "#fff" : "var(--muted, #555)",
+              border: `1.5px solid ${tab === t.key ? "var(--accent, #FF6B00)" : "var(--line, #ddd)"}`,
               borderRadius: 8, cursor: "pointer",
               fontSize: 12, fontWeight: 700,
               fontFamily: "'Barlow', sans-serif",
@@ -154,18 +159,18 @@ const SparkCourses = () => {
               transition: "all .15s",
               boxShadow: tab === t.key
                 ? "0 2px 8px rgba(255,107,0,.25)"
-                : "0 1px 4px rgba(0,0,0,.05)",
+                : "var(--shadow, 0 1px 4px rgba(0,0,0,.05))",
             }}
             onMouseEnter={e => {
               if (tab !== t.key) {
-                e.currentTarget.style.borderColor = "#FF6B00";
-                e.currentTarget.style.color = "#FF6B00";
+                e.currentTarget.style.borderColor = "var(--accent, #FF6B00)";
+                e.currentTarget.style.color = "var(--accent-text, #FF6B00)";
               }
             }}
             onMouseLeave={e => {
               if (tab !== t.key) {
-                e.currentTarget.style.borderColor = "#ddd";
-                e.currentTarget.style.color = "#555";
+                e.currentTarget.style.borderColor = "var(--line, #ddd)";
+                e.currentTarget.style.color = "var(--muted, #555)";
               }
             }}
           >
@@ -177,10 +182,11 @@ const SparkCourses = () => {
       {/* ── Course grid ── */}
       {filtered.length === 0 ? (
         <div style={{
-          background: "#fff", borderRadius: 14,
+          background: "var(--card, #fff)", borderRadius: 14,
+          border: "1px solid var(--line, #eee)",
           padding: "48px 24px", textAlign: "center",
-          color: "#bbb", fontSize: 14, fontStyle: "italic",
-          boxShadow: "0 2px 12px rgba(0,0,0,.07)",
+          color: "var(--muted, #bbb)", fontSize: 14, fontStyle: "italic",
+          boxShadow: "var(--shadow, 0 2px 12px rgba(0,0,0,.07))",
         }}>
           No courses found.
         </div>
@@ -199,7 +205,8 @@ const SparkCourses = () => {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 };
 
