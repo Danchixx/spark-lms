@@ -13,11 +13,21 @@ type RichTextEditorProps = {
 const SunEditorComponent = (SunEditor as any).default || SunEditor;
 
 const RichTextEditor = ({ content, onChange, placeholder }: RichTextEditorProps) => {
+
+  const handleChange = (html: string) => {
+    // Automatically convert Google Drive /view to /preview for embedded iframes
+    const modifiedHtml = html.replace(
+      /src="https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)\/(?:view|edit)[^"]*"/gi,
+      'src="https://drive.google.com/file/d/$1/preview"'
+    );
+    onChange(modifiedHtml);
+  };
+
   return (
     <div className="rich-text-editor-container">
       <SunEditorComponent
         setContents={content}
-        onChange={onChange}
+        onChange={handleChange}
         placeholder={placeholder}
         setOptions={{
           buttonList: [
