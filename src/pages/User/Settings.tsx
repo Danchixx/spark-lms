@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
@@ -57,14 +57,6 @@ const MessageModal = ({ title, message, type = "success", onConfirm, confirmText
 const CompanyPanel = () => {
   const { company } = useAuth();
   const [copied, setCopied] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [company?.description]);
 
   const activeCompany = company || {
     name: "SPARK LMS",
@@ -147,13 +139,7 @@ const CompanyPanel = () => {
           </div>
           <div className="form-field full-width">
             <label>Company Description</label>
-            <textarea 
-              ref={textareaRef} 
-              rows={3} 
-              value={company.description || ""} 
-              readOnly 
-              style={{ overflow: "hidden", resize: "none" }} 
-            />
+            <textarea rows={3} value={activeCompany.description || ""} readOnly />
           </div>
           <div className="form-field full-width">
             <label>Workspace URL</label>
@@ -220,20 +206,22 @@ const CompanyPanel = () => {
 const NotificationsPanel = () => {
   const [notifs, setNotifs] = useState({
     courseAssigned: true,
-    newLearningMaterials: true,
-    assessmentUpdates: false,
-    courseAnnouncements: false,
+    courseReminder: true,
+    assessmentDue: true,
+    certificateEarned: true,
     announcements: false,
+    weeklyDigest: false,
   });
 
   const toggle = (key: string) => setNotifs((n) => ({ ...n, [key]: !n[key as keyof typeof n] }));
 
   const rows = [
-    { key: "courseAssigned", label: "Course Assigned", desc: "Notify when admin assigns you a new course", disabled: false },
-    { key: "newLearningMaterials", label: "New Learning Materials", desc: "Notify when new modules or lessons are added to your courses", disabled: false },
-    { key: "assessmentUpdates", label: "Assessment Updates", desc: "Notify about grading and feedback on your assessments", disabled: true },
-    { key: "courseAnnouncements", label: "Course Announcements", desc: "Receive specific announcements from your enrolled courses", disabled: true },
-    { key: "announcements", label: "Announcements", desc: "Receive general workspace-wide announcements", disabled: true },
+    { key: "courseAssigned", label: "Course Assigned", desc: "Notify when admin assigns you a new course" },
+    { key: "courseReminder", label: "Course Reminder", desc: "Remind you of courses with upcoming deadlines" },
+    { key: "assessmentDue", label: "Assessment Due", desc: "Remind you when an assessment is due" },
+    { key: "certificateEarned", label: "Certificate Earned", desc: "Notify when you earn a new certificate" },
+    { key: "announcements", label: "Announcements", desc: "Receive workspace-wide announcements" },
+    { key: "weeklyDigest", label: "Weekly Digest", desc: "Receive a summary of your activity every Monday" },
   ];
 
   return (
@@ -246,15 +234,12 @@ const NotificationsPanel = () => {
         <div className="settings-card-header">Email & Notifications</div>
         <div className="settings-card-body">
           {rows.map((r) => (
-            <div className="toggle-row" key={r.key} style={{ opacity: r.disabled ? 0.6 : 1 }}>
+            <div className="toggle-row" key={r.key}>
               <div className="toggle-info">
-                <div className="toggle-label">
-                  {r.label}
-                  {r.disabled && <span style={{ marginLeft: 8, fontSize: 10, background: "var(--color-bg-muted)", color: "var(--color-text-muted)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>SOON</span>}
-                </div>
+                <div className="toggle-label">{r.label}</div>
                 <div className="toggle-desc">{r.desc}</div>
               </div>
-              <Toggle checked={(notifs as any)[r.key]} onChange={() => !r.disabled && toggle(r.key)} disabled={r.disabled} />
+              <Toggle checked={(notifs as any)[r.key]} onChange={() => toggle(r.key)} />
             </div>
           ))}
         </div>
@@ -378,15 +363,12 @@ const SecurityPanel = () => {
       {/* Session */}
       <div className="card-inner" style={{ marginBottom: 20 }}>
         <div className="settings-card-header">Session</div>
-        <div className="toggle-row" style={{ opacity: 0.6 }}>
+        <div className="toggle-row">
           <div className="toggle-info">
-            <div className="toggle-label">
-              Session Timeout
-              <span style={{ marginLeft: 8, fontSize: 10, background: "var(--color-bg-muted)", color: "var(--color-text-muted)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>REQUIRED</span>
-            </div>
+            <div className="toggle-label">Session Timeout</div>
             <div className="toggle-desc">Auto-logout after 1 hour of inactivity</div>
           </div>
-          <Toggle checked={sessionTimeout} onChange={() => {}} disabled={true} />
+          <Toggle checked={sessionTimeout} onChange={setSessionTimeout} />
         </div>
       </div>
 
@@ -432,14 +414,11 @@ const SecurityPanel = () => {
 };
 
 const AppearancePanel = () => {
-  const { 
-    theme, setTheme, 
-    sidebarTheme, setSidebarTheme, 
-    showSidebarIcons, setShowSidebarIcons,
-    font, setFont
-  } = useTheme();
+  const { theme, setTheme, sidebarTheme, setSidebarTheme, showSidebarIcons, setShowSidebarIcons } = useTheme();
+  const [font, setFont] = useState("DM Sans");
+  const [collapseSidebar, setCollapseSidebar] = useState(false);
 
-  const fonts = ["Barlow", "DM Sans", "Inter", "Georgia", "DM Mono"];
+  const fonts = ["DM Sans", "Inter", "Georgia", "DM Mono"];
 
   return (
     <div className="section-card">
@@ -507,6 +486,13 @@ const AppearancePanel = () => {
         <div className="settings-card-header">Sidebar Behavior</div>
         <div className="toggle-row">
           <div className="toggle-info">
+            <div className="toggle-label">Collapse Sidebar <span style={{ color: "gray" }}>(Only for Desktop)</span> </div>
+            <div className="toggle-desc">Show only icons until hovered — saves horizontal space</div>
+          </div>
+          <Toggle checked={collapseSidebar} onChange={setCollapseSidebar} />
+        </div>
+        <div className="toggle-row">
+          <div className="toggle-info">
             <div className="toggle-label">Show Icons</div>
             <div className="toggle-desc">Display icons alongside text labels</div>
           </div>
@@ -566,7 +552,7 @@ const Settings = ({ embedded = false }: SettingsProps) => {
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Settings" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
