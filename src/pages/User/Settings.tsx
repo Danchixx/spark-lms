@@ -349,12 +349,15 @@ const SecurityPanel = () => {
       {/* Session */}
       <div className="card-inner" style={{ marginBottom: 20 }}>
         <div className="settings-card-header">Session</div>
-        <div className="toggle-row">
+        <div className="toggle-row" style={{ opacity: 0.6 }}>
           <div className="toggle-info">
-            <div className="toggle-label">Session Timeout</div>
+            <div className="toggle-label">
+              Session Timeout
+              <span style={{ marginLeft: 8, fontSize: 10, background: "var(--color-bg-muted)", color: "var(--color-text-muted)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>REQUIRED</span>
+            </div>
             <div className="toggle-desc">Auto-logout after 1 hour of inactivity</div>
           </div>
-          <Toggle checked={sessionTimeout} onChange={setSessionTimeout} />
+          <Toggle checked={sessionTimeout} onChange={() => {}} disabled={true} />
         </div>
       </div>
 
