@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
 import { useAdminCourseContext } from "../../context/AdminCourseContext";
 import { supabase } from "../../lib/supabase";
+import { logAuditEvent } from "../../services/auditService";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -229,6 +230,20 @@ const AdminAddUser = () => {
         }
       }
 
+      // Log audit event for SuperAdmin monitoring
+      await logAuditEvent({
+        action: 'CREATE_LEARNER',
+        tableName: 'users',
+        userId: user?.id || null,
+        newValue: {
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          company: company.name,
+          company_id: company.id,
+          assigned_courses: formData.selectedCourses?.length || 0,
+        },
+      });
+
       setShowSuccessModal(true);
     } catch (err: any) {
       console.error("Error creating user:", err);
@@ -239,7 +254,7 @@ const AdminAddUser = () => {
   };
   
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Users" onNavigate={(p) => navigate(`/${slug}/${p.toLowerCase()}`)} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -702,6 +717,7 @@ const AdminAddUser = () => {
                         setFormData({
                           firstName: "", lastName: "", middleName: "", email: "", contact: "", dob: "", gender: "Select",
                           address: "", employeeId: "", jobTitle: "", department: "Select Department", dateHired: "",
+                          prcId: "", position: "", schoolName: "",
                           sendEmail: true, selectedCourses: []
                         });
                         setAvatarPreview(null);

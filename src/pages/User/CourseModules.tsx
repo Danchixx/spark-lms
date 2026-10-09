@@ -82,7 +82,7 @@ const CourseModules = () => {
 
   return (
     <>
-      <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -256,20 +256,26 @@ const CourseModules = () => {
                             </div>
 
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              {(unit.status === "open" || (unit.status === "completed" && unit.type !== "assessment")) && (
-                                <Button
-                                  size="sm"
-                                  variant={unit.status === "completed" ? "outline" : "primary"}
-                                  rounded="pill"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/${slug}/courses/lessons`, {
-                                      state: { courseId, moduleId: module.id, lessonId: unit.id }
-                                    });
-                                  }}
-                                >
-                                  {unit.status === "completed" ? "Review" : "Open"}
-                                </Button>
+                              {unit.type === "assessment" && (unit.attemptsCount ?? 0) >= 3 && unit.status !== "completed" ? (
+                                <span style={{ fontSize: 12, fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "4px 10px", borderRadius: 99, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  <Lock size={12} /> Locked (3/3 Attempts)
+                                </span>
+                              ) : (
+                                (unit.status === "open" || (unit.status === "completed" && unit.type !== "assessment")) && (
+                                  <Button
+                                    size="sm"
+                                    variant={unit.status === "completed" ? "outline" : "primary"}
+                                    rounded="pill"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/${slug}/courses/lessons`, {
+                                        state: { courseId, moduleId: module.id, lessonId: unit.id }
+                                      });
+                                    }}
+                                  >
+                                    {unit.status === "completed" ? "Review" : "Open"}
+                                  </Button>
+                                )
                               )}
                               {unit.type === "assessment" && (unit.status === "completed" || unit.status === "open") && (unit.attemptsCount ?? 0) > 0 && (
                                 <Button

@@ -4,6 +4,7 @@ import { Users, User, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, 
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
 import { supabase } from "../../lib/supabase";
+import { logAuditEvent } from "../../services/auditService";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -104,7 +105,7 @@ const AdminUsers = () => {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [isUploadingBatch, setIsUploadingBatch] = useState(false);
   const [batchProgress, setBatchProgress] = useState(0);
-  const [batchResultMsg, setBatchResultMsg] = useStlyte("");
+  const [batchResultMsg, setBatchResultMsg] = useState("");
 
   const handleBatchFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,7 +129,9 @@ const AdminUsers = () => {
     
     const parsedUsers = [];
     for (let i = 1; i < rows.length; i++) {
-       const vals = parseRow(rows[i]).map(v => v.replace(/^"|"$/g, ''));
+       const row = rows[i];
+       if (!row) continue;
+       const vals = parseRow(row).map(v => v.replace(/^"|"$/g, ''));
        parsedUsers.push({
          firstName: vals[0] || "",
          lastName: vals[1] || "",
@@ -218,6 +221,20 @@ const AdminUsers = () => {
     setBatchResultMsg(`Successfully added ${successCount} out of ${batchUsers.length} users.`);
     setShowSuccessModal(true);
     setRefreshTrigger(prev => prev + 1);
+
+    if (successCount > 0) {
+      await logAuditEvent({
+        action: 'BATCH_IMPORT_LEARNERS',
+        tableName: 'users',
+        userId: user?.id || null,
+        newValue: {
+          imported_count: successCount,
+          total_submitted: batchUsers.length,
+          company: company.name,
+          company_id: company.id,
+        },
+      });
+    }
   };
 
   const confirmDelete = async () => {
@@ -236,6 +253,13 @@ const AdminUsers = () => {
         // The Edge Function returns { error: "..." } with status 400/500 on failure
         if (data?.error) throw new Error(data.error);
         setDbUsers(prev => prev.filter(u => u.id !== deleteTarget));
+
+        await logAuditEvent({
+          action: 'PERMANENT_DELETE_LEARNER',
+          tableName: 'users',
+          userId: user?.id || null,
+          newValue: { target_id: deleteTarget, company_id: company?.id },
+        });
       } else {
         // Archive (soft delete) — no auth changes needed
         const { error } = await supabase.from('users').update({ 
@@ -244,6 +268,13 @@ const AdminUsers = () => {
         }).eq('id', deleteTarget);
         if (error) throw error;
         setDbUsers(prev => prev.map(u => u.id === deleteTarget ? { ...u, isArchived: true } : u));
+
+        await logAuditEvent({
+          action: 'ARCHIVE_LEARNER',
+          tableName: 'users',
+          userId: user?.id || null,
+          newValue: { target_id: deleteTarget, company_id: company?.id },
+        });
       }
       setDeleteTarget(null);
       setShowSuccessModal(true);
@@ -263,6 +294,13 @@ const AdminUsers = () => {
       }).eq('id', id);
       if (error) throw error;
       setDbUsers(prev => prev.map(u => u.id === id ? { ...u, isArchived: false } : u));
+
+      await logAuditEvent({
+        action: 'RESTORE_LEARNER',
+        tableName: 'users',
+        userId: user?.id || null,
+        newValue: { target_id: id, company_id: company?.id },
+      });
     } catch (err) {
       console.error("Failed to restore user:", err);
       alert("Failed to restore user.");
@@ -354,7 +392,7 @@ const AdminUsers = () => {
   }, [dbUsers]);
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       {showSuccessModal && <SuccessModal message={batchResultMsg || "User successfully deleted."} onClose={() => { setShowSuccessModal(false); setBatchResultMsg(""); }} />}
       {showBatchModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>

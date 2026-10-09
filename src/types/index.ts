@@ -52,6 +52,10 @@ export type UserRow = {
   is_archived: boolean;
   archived_at: string | null;
   archived_by: string | null;
+  cpd_prc_id?: string | null;
+  cpd_position?: string | null;
+  cpd_school_name?: string | null;
+  password?: string;
 };
 
 /** The user object after AuthContext unpacks Supabase joins */
@@ -105,7 +109,7 @@ export type CourseLesson = {
   id: number;
   module_id: number;
   title: string;
-  type: 'video' | 'reading' | 'assessment';
+  type: 'video' | 'reading' | 'assessment' | 'hybrid';
   content: string | null;
   video_url: string | null;
   position: number;

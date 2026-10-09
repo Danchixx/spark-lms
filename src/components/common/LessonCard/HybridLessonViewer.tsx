@@ -3,11 +3,12 @@ import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import Button from "../../ui/Button/Button";
 import { Check, X, CheckCircle } from "lucide-react";
+import { FileBlockViewer } from "./FileBlock";
 import "../../ui/RichTextEditor/RichTextEditor.css";
 
 interface HybridBlock {
   id: string;
-  type: "reading" | "question";
+  type: "reading" | "question" | "file";
   content?: string;
   question?: {
     question_text: string;
@@ -15,6 +16,9 @@ interface HybridBlock {
     choices: any[];
     correct_answers: string[];
   };
+  file?: any;
+  caption?: string;
+  allowDownload?: boolean;
 }
 
 export default function HybridLessonViewer({ lesson }: { lesson: any }) {
@@ -85,6 +89,8 @@ export default function HybridLessonViewer({ lesson }: { lesson: any }) {
               className="tiptap-content sun-editor-editable" 
               dangerouslySetInnerHTML={{ __html: block.content || "" }}
             />
+          ) : block.type === 'file' ? (
+            <FileBlockViewer block={block as any} />
           ) : block.type === 'question' && block.question ? (
             <div style={{ padding: 24, background: 'var(--color-surface)', borderRadius: 12, border: '1px solid var(--color-border)' }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text-header)', marginBottom: 16 }}>

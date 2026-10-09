@@ -2,7 +2,7 @@ const PLANS = [
   {
     key: "personal", name: "PERSONAL",
     desc: "lorem ipsum dolor\nlorem ipsum dolor\nlorem ipsum dolor\nlorem ipsum dolor\nlorem ipsum dolor",
-    headerBg: "#e8e8e8", headerColor: "#333", footerBg: "#aaa", footerColor: "#fff",
+    headerBg: "var(--surface, #e8e8e8)", headerColor: "var(--text, #333)", footerBg: "#888", footerColor: "#fff",
   },
   {
     key: "institute", name: "INSTITUTE",
@@ -28,10 +28,10 @@ const AddTenantStep2 = ({ selectedPlan, onSelect, onBack }) => (
           style={{
             ...s.planCard,
             border: selectedPlan === plan.key
-              ? "2px solid #FF6B00" : "2px solid transparent",
+              ? "2px solid #FF6B00" : "1px solid var(--line, #eee)",
             transform: selectedPlan === plan.key ? "translateY(-3px)" : "none",
             boxShadow: selectedPlan === plan.key
-              ? "0 8px 24px rgba(0,0,0,.12)" : "0 2px 8px rgba(0,0,0,.06)",
+              ? "0 8px 24px rgba(0,0,0,.12)" : "var(--shadow, 0 2px 8px rgba(0,0,0,.06))",
           }}
         >
           <div style={{ ...s.planHeader, background: plan.headerBg }}>
@@ -42,7 +42,7 @@ const AddTenantStep2 = ({ selectedPlan, onSelect, onBack }) => (
           </div>
           <div style={s.planBody}>
             {plan.desc.split("\n").map((line, i) => (
-              <div key={i} style={{ fontSize: 12, color: "#888", lineHeight: 1.8 }}>
+              <div key={i} style={{ fontSize: 12, color: "var(--muted, #888)", lineHeight: 1.8 }}>
                 {line}
               </div>
             ))}
@@ -63,16 +63,17 @@ const AddTenantStep2 = ({ selectedPlan, onSelect, onBack }) => (
 );
 
 const s = {
-  card: { background: "#fff", borderRadius: 10, border: "1px solid #eee",
-    padding: 24, margin: "16px 0" },
+  card: { background: "var(--card, #fff)", borderRadius: 10, border: "1px solid var(--line, #eee)",
+    padding: 24, margin: "16px 0", boxShadow: "var(--shadow, 0 1px 4px rgba(0,0,0,0.06))" },
   title: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
-    fontSize: 22, color: "#333", marginBottom: 8 },
-  divider: { border: "none", borderTop: "1px solid #eee", margin: "12px 0 20px" },
+    fontSize: 22, color: "var(--text, #333)", marginBottom: 8 },
+  divider: { border: "none", borderTop: "1px solid var(--line, #eee)", margin: "12px 0 20px" },
   grid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 },
   planCard: { borderRadius: 14, overflow: "hidden", cursor: "pointer",
+    background: "var(--card, #fff)",
     transition: "transform .2s, box-shadow .2s" },
   planHeader: { padding: "18px 16px 14px" },
-  planBody: { padding: "14px 16px", background: "#fff" },
+  planBody: { padding: "14px 16px", background: "var(--card, #fff)" },
   planFooter: { padding: "12px 16px", textAlign: "center",
     fontWeight: 700, fontSize: 13, cursor: "pointer" },
   backBtn: { background: "none", border: "none", color: "#FF6B00",

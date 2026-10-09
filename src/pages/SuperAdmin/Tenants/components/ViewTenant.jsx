@@ -10,26 +10,27 @@ const SubscriptionHistoryModal = ({ tenant, onClose }) => {
 
   return (
     <div onClick={onClose} style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
+      position: "fixed", inset: 0, background: "rgba(0,0,0,.55)",
       zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
-        background: "#fff", borderRadius: 14, padding: 28, width: 520,
-        maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)",
+        background: "var(--card, #fff)", borderRadius: 14, padding: 28, width: 520,
+        maxWidth: "90vw", boxShadow: "var(--shadow, 0 20px 60px rgba(0,0,0,.2))",
+        border: "1px solid var(--line, #eee)", color: "var(--text, #222)"
       }}>
         <div style={{ display: "flex", justifyContent: "space-between",
           alignItems: "center", marginBottom: 20 }}>
           <div>
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 900, fontSize: 20, color: "#222" }}>
+              fontWeight: 900, fontSize: 20, color: "var(--text, #222)" }}>
               Subscription History
             </div>
-            <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: "var(--muted, #aaa)", marginTop: 2 }}>
               {tenant.name}
             </div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none",
-            fontSize: 20, cursor: "pointer", color: "#aaa", lineHeight: 1 }}>
+          <button onClick={onClose} aria-label="Close modal" style={{ background: "none", border: "none",
+            fontSize: 20, cursor: "pointer", color: "var(--muted, #aaa)", lineHeight: 1 }}>
             ×
           </button>
         </div>
@@ -38,10 +39,10 @@ const SubscriptionHistoryModal = ({ tenant, onClose }) => {
           <thead>
             <tr>
               {["Plan", "Date Started", "Date Ended", "Status"].map((h) => (
-                <th key={h} style={{ fontSize: 10, fontWeight: 700, color: "#aaa",
+                <th key={h} style={{ fontSize: 10, fontWeight: 700, color: "var(--muted, #aaa)",
                   letterSpacing: ".1em", textTransform: "uppercase",
                   padding: "8px 12px", textAlign: "left",
-                  background: "#f7f7f7", borderBottom: "1px solid #eee" }}>
+                  background: "var(--card-2, #f7f7f7)", borderBottom: "1px solid var(--line, #eee)" }}>
                   {h}
                 </th>
               ))}
@@ -51,14 +52,14 @@ const SubscriptionHistoryModal = ({ tenant, onClose }) => {
             {history.map((row, i) => (
               <tr key={i}>
                 <td style={mStyle.td}>
-                  <span style={{ color: "#FF6B00", fontWeight: 700 }}>{row.plan}</span>
+                  <span style={{ color: "var(--accent, #FF6B00)", fontWeight: 700 }}>{row.plan}</span>
                 </td>
                 <td style={mStyle.td}>{row.started}</td>
                 <td style={mStyle.td}>{row.ended}</td>
                 <td style={mStyle.td}>
                   <span style={{
-                    background: row.status === "Active" ? "#d5f5e0" : "#f5f5f5",
-                    color: row.status === "Active" ? "#1e8449" : "#888",
+                    background: row.status === "Active" ? "var(--green-soft, #d5f5e0)" : "var(--card-2, #f5f5f5)",
+                    color: row.status === "Active" ? "var(--green, #1e8449)" : "var(--muted, #888)",
                     fontSize: 11, fontWeight: 700, padding: "3px 10px",
                     borderRadius: 20, display: "inline-block",
                   }}>
@@ -71,7 +72,7 @@ const SubscriptionHistoryModal = ({ tenant, onClose }) => {
         </table>
 
         <div style={{ marginTop: 20, textAlign: "right" }}>
-          <button onClick={onClose} style={{ background: "#FF6B00", color: "#fff",
+          <button onClick={onClose} style={{ background: "var(--accent, #FF6B00)", color: "#fff",
             border: "none", borderRadius: 8, padding: "8px 20px",
             fontWeight: 700, fontSize: 13, cursor: "pointer",
             fontFamily: "'Barlow', sans-serif" }}>
@@ -84,8 +85,8 @@ const SubscriptionHistoryModal = ({ tenant, onClose }) => {
 };
 
 const mStyle = {
-  td: { padding: "11px 12px", borderBottom: "1px solid #f2f2f2",
-    fontSize: 13, color: "#555", verticalAlign: "middle" },
+  td: { padding: "11px 12px", borderBottom: "1px solid var(--line, #f2f2f2)",
+    fontSize: 13, color: "var(--text, #555)", verticalAlign: "middle" },
 };
 
 // ── Subscription card ─────────────────────────────────────────
@@ -107,38 +108,38 @@ const SubscriptionCard = ({ plan, joined, end }) => (
         {plan.toUpperCase()}
       </div>
       <span style={{ fontFamily: "'Barlow Condensed', sans-serif",
-        fontWeight: 900, fontSize: 20, color: "#222",
+        fontWeight: 900, fontSize: 20, color: "#fff",
         letterSpacing: ".08em", paddingBottom: 6 }}>
         SUBSCRIPTION
       </span>
     </div>
 
-    {/* Inner white box */}
-    <div style={{ background: "#fff", borderRadius: "0 12px 12px 12px",
+    {/* Inner box */}
+    <div style={{ background: "var(--card, #fff)", borderRadius: "0 12px 12px 12px",
       padding: "16px 20px", display: "flex", alignItems: "center", gap: 20 }}>
       {/* Storage circle */}
       <div style={{ display: "flex", flexDirection: "column",
         alignItems: "center", gap: 8, flexShrink: 0 }}>
         <div style={{ width: 88, height: 88, borderRadius: "50%",
-          border: "8px solid #c0392b", background: "#fff",
+          border: "8px solid #c0392b", background: "var(--card, #fff)",
           display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: "#c0392b",
             textAlign: "center", lineHeight: 1.4 }}>
             storage<br />full
           </span>
         </div>
-        <span style={{ fontSize: 11, color: "#888", cursor: "pointer",
+        <span style={{ fontSize: 11, color: "var(--muted, #888)", cursor: "pointer",
           textDecoration: "underline" }}>
           view usage
         </span>
       </div>
       {/* Duration */}
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: "#222", marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text, #222)", marginBottom: 12 }}>
           Subscription Duration
         </div>
         <div style={{ position: "relative", marginBottom: 10 }}>
-          <div style={{ height: 14, background: "#e0e0e0", borderRadius: 7, overflow: "hidden" }}>
+          <div style={{ height: 14, background: "var(--line, #e0e0e0)", borderRadius: 7, overflow: "hidden" }}>
             <div style={{ height: "100%", width: "50%", borderRadius: 7,
               background: "linear-gradient(90deg, #7B3F00, #FF6B00)" }} />
           </div>
@@ -151,7 +152,7 @@ const SubscriptionCard = ({ plan, joined, end }) => (
           </div>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between",
-          fontSize: 11, color: "#888" }}>
+          fontSize: 11, color: "var(--muted, #888)" }}>
           <span>Date Started &nbsp; {joined}</span>
           <span>Date End &nbsp; {end}</span>
         </div>
@@ -165,19 +166,19 @@ const ViewTenant = ({ tenant, onBack }) => {
   const [showSubHistory, setShowSubHistory] = useState(false);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, color: "var(--text)" }}>
       {/* Breadcrumb */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #eee",
+      <div style={{ background: "var(--card, #fff)", borderBottom: "1px solid var(--line, #eee)",
         padding: "10px 20px", display: "flex", alignItems: "center", gap: 10 }}>
         <button onClick={onBack} style={s.bcBtn}>← Tenant List</button>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "#333" }}>Tenant Profile</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text, #333)" }}>Tenant Profile</span>
       </div>
 
       <div style={{ padding: 20, overflowY: "auto", flex: 1 }}>
         <div style={s.card}>
           {/* Cover */}
           <div style={s.cover}>
-            <span style={{ fontSize: 64, opacity: 0.15 }}>🏛️</span>
+            <span style={{ fontSize: 64, opacity: 0.25 }}>🏛️</span>
           </div>
 
           <div style={{ padding: "0 20px 24px" }}>
@@ -191,7 +192,7 @@ const ViewTenant = ({ tenant, onBack }) => {
                 </span>
               </div>
               <span style={{ fontFamily: "'Barlow Condensed', sans-serif",
-                fontWeight: 700, fontSize: 24, color: "#222" }}>
+                fontWeight: 700, fontSize: 24, color: "var(--text, #222)" }}>
                 {tenant.name}
               </span>
             </div>
@@ -199,7 +200,7 @@ const ViewTenant = ({ tenant, onBack }) => {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
               {/* Left: About */}
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "#333", marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text, #333)", marginBottom: 10 }}>
                   About this tenant
                 </div>
                 <p style={s.about}>
@@ -212,7 +213,7 @@ const ViewTenant = ({ tenant, onBack }) => {
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
                   incididunt ut labore et dolore magna aliqua.
                 </p>
-                <div style={{ fontWeight: 700, fontSize: 13, color: "#555", marginBottom: 8 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text, #555)", marginBottom: 8 }}>
                   Contact
                 </div>
                 <div style={s.contactRow}>📧 {tenant.email}</div>
@@ -221,7 +222,7 @@ const ViewTenant = ({ tenant, onBack }) => {
 
               {/* Right: Stats + Subscription */}
               <div>
-                {/* Stat mini cards — Total Subscriptions replaces Total Revenue */}
+                {/* Stat mini cards */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)",
                   gap: 8, marginBottom: 16 }}>
                   {[
@@ -236,22 +237,22 @@ const ViewTenant = ({ tenant, onBack }) => {
                       style={{
                         ...s.statMini,
                         cursor: st.clickable ? "pointer" : "default",
-                        border: st.clickable ? "1px solid #FF6B00" : "1px solid #eee",
+                        border: st.clickable ? "1px solid var(--accent, #FF6B00)" : "1px solid var(--line, #eee)",
                         transition: "box-shadow .15s",
                       }}
                       title={st.clickable ? "Click to view subscription history" : ""}
                     >
                       <div style={{ fontSize: 20 }}>{st.icon}</div>
-                      <div style={{ fontSize: 9, color: st.clickable ? "#FF6B00" : "#aaa",
+                      <div style={{ fontSize: 9, color: st.clickable ? "var(--accent-text, #FF6B00)" : "var(--muted, #aaa)",
                         textTransform: "uppercase", letterSpacing: ".08em",
                         textAlign: "center", fontWeight: st.clickable ? 700 : 400 }}>
                         {st.label}
                       </div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "#333" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text, #333)" }}>
                         {st.val}
                       </div>
                       {st.clickable && (
-                        <div style={{ fontSize: 9, color: "#FF6B00" }}>view history →</div>
+                        <div style={{ fontSize: 9, color: "var(--accent-text, #FF6B00)" }}>view history →</div>
                       )}
                     </div>
                   ))}
@@ -279,21 +280,21 @@ const ViewTenant = ({ tenant, onBack }) => {
 };
 
 const s = {
-  bcBtn: { display: "flex", alignItems: "center", gap: 6, background: "#FFF0E6",
-    border: "1.5px solid #FF6B00", borderRadius: 20, padding: "6px 14px",
-    cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#FF6B00",
+  bcBtn: { display: "flex", alignItems: "center", gap: 6, background: "var(--accent-soft, #FFF0E6)",
+    border: "1.5px solid var(--accent, #FF6B00)", borderRadius: 20, padding: "6px 14px",
+    cursor: "pointer", fontSize: 12, fontWeight: 700, color: "var(--accent-text, #FF6B00)",
     fontFamily: "'Barlow', sans-serif" },
-  card: { background: "#fff", borderRadius: 10, border: "1px solid #eee", overflow: "hidden" },
+  card: { background: "var(--card, #fff)", borderRadius: 10, border: "1px solid var(--line, #eee)", overflow: "hidden" },
   cover: { width: "100%", height: 130,
     background: "linear-gradient(135deg, #c8d4e8, #8fa8c8)",
     display: "flex", alignItems: "center", justifyContent: "center" },
-  logoWrap: { width: 80, height: 80, borderRadius: "50%", background: "#fff",
-    border: "3px solid #ddd", display: "flex", alignItems: "center",
+  logoWrap: { width: 80, height: 80, borderRadius: "50%", background: "var(--card, #fff)",
+    border: "3px solid var(--line, #ddd)", display: "flex", alignItems: "center",
     justifyContent: "center", position: "relative", zIndex: 2, flexShrink: 0 },
-  about: { fontSize: 13, color: "#888", lineHeight: 1.7, marginBottom: 12 },
-  contactRow: { fontSize: 13, color: "#888", display: "flex",
+  about: { fontSize: 13, color: "var(--muted, #888)", lineHeight: 1.7, marginBottom: 12 },
+  contactRow: { fontSize: 13, color: "var(--muted, #888)", display: "flex",
     alignItems: "center", gap: 6, marginBottom: 4 },
-  statMini: { background: "#fff", border: "1px solid #eee", borderRadius: 8,
+  statMini: { background: "var(--card, #fff)", border: "1px solid var(--line, #eee)", borderRadius: 8,
     padding: "10px 6px", display: "flex", flexDirection: "column",
     alignItems: "center", gap: 3 },
 };

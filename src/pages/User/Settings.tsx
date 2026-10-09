@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
@@ -57,18 +57,25 @@ const MessageModal = ({ title, message, type = "success", onConfirm, confirmText
 const CompanyPanel = () => {
   const { company } = useAuth();
   const [copied, setCopied] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [company?.description]);
+  const activeCompany = company || {
+    name: "SPARK LMS",
+    slug: "spark",
+    industry: "Learning & Development",
+    year_founded: 2026,
+    website_url: "https://spark-ph-lms.com",
+    description: "Enterprise Learning Management System & Development Platform",
+    contact_person: "Super Admin",
+    contact_email: "admin@spark.ph",
+    phone_number: "+63 (02) 8123-4567",
+    country: "Philippines",
+    office_address: "Manila, Philippines",
+    color: "#FF6B00",
+    cover_photo_url: null,
+    logo_url: null
+  };
 
-  if (!company) return null;
-
-  const fullUrl = `sparkph-lms.vercel.app/${company.slug}`;
+  const fullUrl = `sparkph-lms.vercel.app/${company?.slug || activeCompany.slug}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullUrl);
@@ -89,17 +96,17 @@ const CompanyPanel = () => {
         <div className="label-small">Logo and Cover Photo</div>
         <div
           className="company-cover-edit"
-          style={company?.cover_photo_url ? {
-            backgroundImage: `url(${company.cover_photo_url})`,
+          style={activeCompany?.cover_photo_url ? {
+            backgroundImage: `url(${activeCompany.cover_photo_url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           } : {}}
         >
           <div className="company-logo-overlay">
-            <div className="logo-circle" style={{ background: "#ffffff", border: "1.5px solid #e2e8f0" }}>
-              {typeof company.logo_url === "string" && company.logo_url.startsWith("http")
-                ? <img src={company.logo_url} alt={company.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
-                : <span style={{ fontSize: 24, fontWeight: 900, color: company.color || "#FF6B00" }}>{company.name?.substring(0, 2).toUpperCase()}</span>}
+            <div className="logo-circle" style={{ background: "var(--card, #ffffff)", border: "1.5px solid var(--line, #e2e8f0)" }}>
+              {typeof activeCompany.logo_url === "string" && activeCompany.logo_url.startsWith("http")
+                ? <img src={activeCompany.logo_url} alt={activeCompany.name} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+                : <span style={{ fontSize: 24, fontWeight: 900, color: activeCompany.color || "#FF6B00" }}>{activeCompany.name?.substring(0, 2).toUpperCase()}</span>}
             </div>
           </div>
         </div>
@@ -110,42 +117,36 @@ const CompanyPanel = () => {
         <div className="form-grid">
           <div className="form-field">
             <label>Company Name</label>
-            <input value={company.name || ""} readOnly />
+            <input value={activeCompany.name || ""} readOnly />
           </div>
           <div className="form-field">
             <label>Industry</label>
-            <input value={company.industry || ""} readOnly />
+            <input value={activeCompany.industry || ""} readOnly />
           </div>
           <div className="form-field">
             <label>Year Founded</label>
             <div className="input-with-icon">
               <Calendar size={14} />
-              <input value={company.year_founded || ""} readOnly />
+              <input value={activeCompany.year_founded || ""} readOnly />
             </div>
           </div>
           <div className="form-field">
             <label>Company Website</label>
             <div className="input-with-icon">
               <Globe size={14} />
-              <input value={company.website_url || ""} readOnly />
+              <input value={activeCompany.website_url || ""} readOnly />
             </div>
           </div>
           <div className="form-field full-width">
             <label>Company Description</label>
-            <textarea 
-              ref={textareaRef} 
-              rows={3} 
-              value={company.description || ""} 
-              readOnly 
-              style={{ overflow: "hidden", resize: "none" }} 
-            />
+            <textarea rows={3} value={activeCompany.description || ""} readOnly />
           </div>
           <div className="form-field full-width">
             <label>Workspace URL</label>
             <div className="workspace-url-input-container">
               <div className="workspace-url-input">
                 <span className="prefix">sparkph-lms.vercel.app/</span>
-                <input value={company.slug || ""} readOnly />
+                <input value={company?.slug || activeCompany.slug || ""} readOnly />
                 <button
                   className={`copy-url-btn ${copied ? 'copied' : ''}`}
                   onClick={handleCopy}
@@ -168,32 +169,32 @@ const CompanyPanel = () => {
             <label>Contact Person</label>
             <div className="input-with-icon">
               <User size={14} />
-              <input value={company.contact_person || ""} readOnly />
+              <input value={activeCompany.contact_person || ""} readOnly />
             </div>
           </div>
           <div className="form-field">
             <label>Contact Email</label>
             <div className="input-with-icon">
               <Mail size={14} />
-              <input value={company.contact_email || ""} readOnly />
+              <input value={activeCompany.contact_email || ""} readOnly />
             </div>
           </div>
           <div className="form-field">
             <label>Phone Number</label>
             <div className="input-with-icon">
               <Phone size={14} />
-              <input value={company.phone_number || ""} readOnly />
+              <input value={activeCompany.phone_number || ""} readOnly />
             </div>
           </div>
           <div className="form-field">
             <label>Country</label>
-            <input value={company.country || ""} readOnly />
+            <input value={activeCompany.country || ""} readOnly />
           </div>
           <div className="form-field full-width">
             <label>Office Address</label>
             <div className="input-with-icon">
               <MapPin size={14} />
-              <input value={company.office_address || ""} readOnly />
+              <input value={activeCompany.office_address || ""} readOnly />
             </div>
           </div>
         </div>
@@ -205,20 +206,22 @@ const CompanyPanel = () => {
 const NotificationsPanel = () => {
   const [notifs, setNotifs] = useState({
     courseAssigned: true,
-    newLearningMaterials: true,
-    assessmentUpdates: false,
-    courseAnnouncements: false,
+    courseReminder: true,
+    assessmentDue: true,
+    certificateEarned: true,
     announcements: false,
+    weeklyDigest: false,
   });
 
   const toggle = (key: string) => setNotifs((n) => ({ ...n, [key]: !n[key as keyof typeof n] }));
 
   const rows = [
-    { key: "courseAssigned", label: "Course Assigned", desc: "Notify when admin assigns you a new course", disabled: false },
-    { key: "newLearningMaterials", label: "New Learning Materials", desc: "Notify when new modules or lessons are added to your courses", disabled: false },
-    { key: "assessmentUpdates", label: "Assessment Updates", desc: "Notify about grading and feedback on your assessments", disabled: true },
-    { key: "courseAnnouncements", label: "Course Announcements", desc: "Receive specific announcements from your enrolled courses", disabled: true },
-    { key: "announcements", label: "Announcements", desc: "Receive general workspace-wide announcements", disabled: true },
+    { key: "courseAssigned", label: "Course Assigned", desc: "Notify when admin assigns you a new course" },
+    { key: "courseReminder", label: "Course Reminder", desc: "Remind you of courses with upcoming deadlines" },
+    { key: "assessmentDue", label: "Assessment Due", desc: "Remind you when an assessment is due" },
+    { key: "certificateEarned", label: "Certificate Earned", desc: "Notify when you earn a new certificate" },
+    { key: "announcements", label: "Announcements", desc: "Receive workspace-wide announcements" },
+    { key: "weeklyDigest", label: "Weekly Digest", desc: "Receive a summary of your activity every Monday" },
   ];
 
   return (
@@ -231,15 +234,12 @@ const NotificationsPanel = () => {
         <div className="settings-card-header">Email & Notifications</div>
         <div className="settings-card-body">
           {rows.map((r) => (
-            <div className="toggle-row" key={r.key} style={{ opacity: r.disabled ? 0.6 : 1 }}>
+            <div className="toggle-row" key={r.key}>
               <div className="toggle-info">
-                <div className="toggle-label">
-                  {r.label}
-                  {r.disabled && <span style={{ marginLeft: 8, fontSize: 10, background: "var(--color-bg-muted)", color: "var(--color-text-muted)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>SOON</span>}
-                </div>
+                <div className="toggle-label">{r.label}</div>
                 <div className="toggle-desc">{r.desc}</div>
               </div>
-              <Toggle checked={(notifs as any)[r.key]} onChange={() => !r.disabled && toggle(r.key)} disabled={r.disabled} />
+              <Toggle checked={(notifs as any)[r.key]} onChange={() => toggle(r.key)} />
             </div>
           ))}
         </div>
@@ -363,15 +363,12 @@ const SecurityPanel = () => {
       {/* Session */}
       <div className="card-inner" style={{ marginBottom: 20 }}>
         <div className="settings-card-header">Session</div>
-        <div className="toggle-row" style={{ opacity: 0.6 }}>
+        <div className="toggle-row">
           <div className="toggle-info">
-            <div className="toggle-label">
-              Session Timeout
-              <span style={{ marginLeft: 8, fontSize: 10, background: "var(--color-bg-muted)", color: "var(--color-text-muted)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>REQUIRED</span>
-            </div>
+            <div className="toggle-label">Session Timeout</div>
             <div className="toggle-desc">Auto-logout after 1 hour of inactivity</div>
           </div>
-          <Toggle checked={sessionTimeout} onChange={() => {}} disabled={true} />
+          <Toggle checked={sessionTimeout} onChange={setSessionTimeout} />
         </div>
       </div>
 
@@ -417,14 +414,11 @@ const SecurityPanel = () => {
 };
 
 const AppearancePanel = () => {
-  const { 
-    theme, setTheme, 
-    sidebarTheme, setSidebarTheme, 
-    showSidebarIcons, setShowSidebarIcons,
-    font, setFont
-  } = useTheme();
+  const { theme, setTheme, sidebarTheme, setSidebarTheme, showSidebarIcons, setShowSidebarIcons } = useTheme();
+  const [font, setFont] = useState("DM Sans");
+  const [collapseSidebar, setCollapseSidebar] = useState(false);
 
-  const fonts = ["Barlow", "DM Sans", "Inter", "Georgia", "DM Mono"];
+  const fonts = ["DM Sans", "Inter", "Georgia", "DM Mono"];
 
   return (
     <div className="section-card">
@@ -492,6 +486,13 @@ const AppearancePanel = () => {
         <div className="settings-card-header">Sidebar Behavior</div>
         <div className="toggle-row">
           <div className="toggle-info">
+            <div className="toggle-label">Collapse Sidebar <span style={{ color: "gray" }}>(Only for Desktop)</span> </div>
+            <div className="toggle-desc">Show only icons until hovered — saves horizontal space</div>
+          </div>
+          <Toggle checked={collapseSidebar} onChange={setCollapseSidebar} />
+        </div>
+        <div className="toggle-row">
+          <div className="toggle-info">
             <div className="toggle-label">Show Icons</div>
             <div className="toggle-desc">Display icons alongside text labels</div>
           </div>
@@ -508,7 +509,11 @@ const AppearancePanel = () => {
 };
 
 /* ── Main Settings Page ── */
-const Settings = () => {
+type SettingsProps = {
+  embedded?: boolean;
+};
+
+const Settings = ({ embedded = false }: SettingsProps) => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -519,30 +524,42 @@ const Settings = () => {
 
   const defaultTab = location.state?.activeTab || "company";
 
+  const content = (
+    <PageTransition>
+      <SettingsCard tabs={USER_TABS} defaultTab={defaultTab} title="Settings">
+        <SettingsCard.Section sectionKey="company">
+          <CompanyPanel />
+        </SettingsCard.Section>
+        <SettingsCard.Section sectionKey="notifications">
+          <NotificationsPanel />
+        </SettingsCard.Section>
+        <SettingsCard.Section sectionKey="security">
+          <SecurityPanel />
+        </SettingsCard.Section>
+        <SettingsCard.Section sectionKey="appearance">
+          <AppearancePanel />
+        </SettingsCard.Section>
+      </SettingsCard>
+    </PageTransition>
+  );
+
+  if (embedded) {
+    return (
+      <div style={{ padding: "24px 28px", maxWidth: 1400, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+        {content}
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Settings" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search ..." role="User" />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <PageTransition>
-            <SettingsCard tabs={USER_TABS} defaultTab={defaultTab} title="Settings">
-              <SettingsCard.Section sectionKey="company">
-                <CompanyPanel />
-              </SettingsCard.Section>
-              <SettingsCard.Section sectionKey="notifications">
-                <NotificationsPanel />
-              </SettingsCard.Section>
-              <SettingsCard.Section sectionKey="security">
-                <SecurityPanel />
-              </SettingsCard.Section>
-              <SettingsCard.Section sectionKey="appearance">
-                <AppearancePanel />
-              </SettingsCard.Section>
-            </SettingsCard>
-          </PageTransition>
+          {content}
         </div>
       </div>
     </div>

@@ -1,17 +1,42 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import "./superadmin-theme.css";
+import { SAThemeProvider, useSATheme } from "./SAThemeContext";
 
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
+import { fetchRecentAuditLogs } from "../../services/auditService";
 import { MOCK_TENANTS } from "../../data/mockTenants";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
-import SparkTenants from "./Tenants/SparkTenants";
-import SparkApprovals from "./Approvals/SparkApprovals";
-import SparkUsers from "./Users/SparkUsers";
 import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
+import PageTransition from "../../components/common/PageTransition";
+
+import {
+  PageContainer,
+  PageHeading,
+  StatGrid,
+  StatCard,
+  MainGrid,
+  Card,
+  CardHeader,
+  TableHeader,
+  TableRow,
+  Pill,
+  TenantLogo,
+  StatusAndDateCell,
+  GhostButton,
+  PrimaryButton,
+  SideListRow,
+  ProgressBar,
+} from "./components/SALayout";
 
 // ... (helpers)
-const daysSince = (isoDate) =>
-  Math.floor((Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24));
+const daysSince = (isoDate) => {
+  if (!isoDate) return NaN;
+  const d = new Date(isoDate).getTime();
+  if (isNaN(d)) return NaN;
+  return Math.floor((Date.now() - d) / (1000 * 60 * 60 * 24));
+};
 
 const avgProgress = (courseActivity) => {
   if (!courseActivity?.length) return 0;
@@ -21,20 +46,24 @@ const avgProgress = (courseActivity) => {
 // ─────────────────────────────────────────────────────────────
 // Top Bar  (fixed, full width)
 // ─────────────────────────────────────────────────────────────
-const TopBar = ({ onBurger, sidebarOpen, user }) => (
+const TopBar = ({ onBurger, sidebarOpen, user }) => {
+  const { theme, toggleTheme } = useSATheme();
+
+  return (
   <div style={{
     position: "fixed",
     top: 0, left: 0, right: 0,
     height: TOPBAR_HEIGHT,
-    background: "#fff",
-    borderBottom: "2px solid #FF6B00",
+    background: "var(--bg-side, #ffffff)",
+    borderBottom: "1px solid var(--accent, #f05a0a)",
     display: "flex",
     alignItems: "center",
     padding: "0 24px",
     gap: 12,
     zIndex: 110,
+    boxSizing: "border-box",
   }}>
-    <button className="sa-burger-btn" onClick={onBurger} style={t.burgerBtn}>
+    <button className="sa-burger-btn" onClick={onBurger} style={t.burgerBtn} aria-label="Toggle sidebar">
       <span style={{
         ...t.burgerLine,
         transform: sidebarOpen ? "translateY(6px) rotate(45deg)" : "none",
@@ -57,7 +86,7 @@ const TopBar = ({ onBurger, sidebarOpen, user }) => (
       <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center" }}>
         <span style={t.logoText}>SPARK</span>
         <span style={{
-          color: "#9e9e9e",
+          color: "var(--muted, #64748b)",
           fontFamily: "'Open Sans', sans-serif",
           fontSize: 6.4,
           textTransform: "uppercase",
@@ -71,24 +100,64 @@ const TopBar = ({ onBurger, sidebarOpen, user }) => (
       <img src={SparkLogo} alt="Spark Logo" style={{ height: 44, width: "auto" }} />
     </div>
 
-    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-      {/* ... (user info) */}
-      <span style={{ fontWeight: 700, fontSize: 15, color: "#FF6B00" }}>
-        {user?.name?.split(" ")[0] || "Ian"}
-      </span>
-      <div style={{
-        width: 36, height: 36, borderRadius: "50%",
-        background: "#e8e0d8", border: "2px solid #ddd", overflow: "hidden"
-      }}>
-        <svg viewBox="0 0 100 100" width="36" height="36">
-          <circle cx="50" cy="50" r="50" fill="#e8e0d8" />
-          <circle cx="50" cy="36" r="18" fill="#b0a090" />
-          <ellipse cx="50" cy="85" rx="28" ry="20" fill="#b0a090" />
-        </svg>
+    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+      {/* Theme toggle */}
+      <button 
+        onClick={toggleTheme} 
+        aria-label={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        style={{
+          background: "none", border: "none", cursor: "pointer",
+          width: 38, height: 38, borderRadius: 10,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "var(--muted, #475569)", transition: "background 0.2s, color 0.2s"
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = "var(--card-2, #f6f8fc)";
+          e.currentTarget.style.color = "var(--text, #0f172a)";
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = "none";
+          e.currentTarget.style.color = "var(--muted, #475569)";
+        }}
+        onFocus={e => {
+          e.currentTarget.style.outline = "2px solid var(--accent, #f05a0a)";
+          e.currentTarget.style.outlineOffset = "2px";
+        }}
+        onBlur={e => {
+          e.currentTarget.style.outline = "none";
+        }}
+      >
+        {theme === 'dark' ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        )}
+      </button>
+
+      {/* Avatar + name — desktop */}
+      <div
+        title="Super Admin Profile"
+        style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 8, padding: "4px 8px", transition: "background 0.2s ease" }}
+      >
+        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#ffffff", border: "1.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt={user?.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          )}
+        </div>
+        <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text, #0f172a)" }}>{user?.name || "Super Admin"}</span>
       </div>
+
+      {/* Role badge */}
+      <span style={{ background: "#FF6B00", color: "white", padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
+        Superadmin
+      </span>
     </div>
   </div>
-);
+  );
+};
 
 const t = {
   burgerBtn: {
@@ -97,11 +166,11 @@ const t = {
   },
   burgerLine: {
     display: "block", width: 20, height: 2,
-    background: "#444", borderRadius: 2
+    background: "var(--text, #0f172a)", borderRadius: 2
   },
   logoText: {
     fontFamily: "'Sora', sans-serif",
-    fontWeight: 600, fontSize: 26, color: "#222", letterSpacing: 3
+    fontWeight: 600, fontSize: 26, color: "var(--text, #0f172a)", letterSpacing: 3
   },
 };
 
@@ -114,18 +183,19 @@ const WelcomeScreen = ({ name, onDone }) => {
 
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "#fff",
+      position: "fixed", inset: 0, background: "var(--bg, #fff)",
       zIndex: 300, display: "flex", flexDirection: "column"
     }}>
       <div style={{
-        height: TOPBAR_HEIGHT, borderBottom: "2px solid #FF6B00",
+        height: TOPBAR_HEIGHT, borderBottom: "2px solid var(--accent, #FF6B00)",
+        background: "var(--bg-side, #ffffff)",
         display: "flex", alignItems: "center", padding: "0 24px"
       }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, alignItems: "center" }}>
             <span style={t.logoText}>SPARK</span>
             <span style={{
-              color: "#9e9e9e",
+              color: "var(--muted, #9e9e9e)",
               fontFamily: "'Open Sans', sans-serif",
               fontSize: 6.4,
               textTransform: "uppercase",
@@ -148,8 +218,8 @@ const WelcomeScreen = ({ name, onDone }) => {
           fontWeight: 900, fontSize: 52,
           animation: "slideUp .7s .3s cubic-bezier(.22,1,.36,1) both",
         }}>
-          <span style={{ color: "#222" }}>WELCOME </span>
-          <span style={{ color: "#FF6B00" }}>
+          <span style={{ color: "var(--text, #222)" }}>WELCOME </span>
+          <span style={{ color: "var(--accent, #FF6B00)" }}>
             {(name || "ADMIN").toUpperCase()}
           </span>
         </div>
@@ -172,15 +242,19 @@ const NotifyModal = ({ tenant, onClose }) => {
   const [sent, setSent] = useState(false);
 
   const send = () => { setSent(true); setTimeout(onClose, 1800); };
+  const days = daysSince(tenant.lastActive);
+  const daysText = !isNaN(days) ? `${days} days` : "an extended period";
 
   return (
     <div onClick={onClose} style={{
       position: "fixed", inset: 0,
-      background: "rgba(0,0,0,.45)", zIndex: 999,
+      background: "rgba(0,0,0,.6)", zIndex: 999,
       display: "flex", alignItems: "center", justifyContent: "center"
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
-        background: "#fff",
+        background: "var(--card, #fff)",
+        border: "1px solid var(--line, #e2e8f0)",
+        boxShadow: "var(--shadow, 0 10px 30px rgba(0,0,0,0.3))",
         borderRadius: 14, padding: 28, width: 500, maxWidth: "90vw"
       }}>
         {sent ? (
@@ -190,7 +264,7 @@ const NotifyModal = ({ tenant, onClose }) => {
           }}>
             <div style={{
               width: 54, height: 54, borderRadius: "50%",
-              background: "#FF6B00", display: "flex",
+              background: "var(--accent, #FF6B00)", display: "flex",
               alignItems: "center", justifyContent: "center"
             }}>
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
@@ -198,7 +272,7 @@ const NotifyModal = ({ tenant, onClose }) => {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: "#333" }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text, #333)" }}>
               Notification sent!
             </div>
           </div>
@@ -211,20 +285,20 @@ const NotifyModal = ({ tenant, onClose }) => {
               <div>
                 <div style={{
                   fontFamily: "'Barlow Condensed', sans-serif",
-                  fontWeight: 900, fontSize: 20, color: "#222"
+                  fontWeight: 900, fontSize: 20, color: "var(--text, #222)"
                 }}>
                   Notify Tenant Admin
                 </div>
-                <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>
-                  {tenant.name} — inactive for {daysSince(tenant.lastActive)} days
+                <div style={{ fontSize: 12, color: "var(--muted, #aaa)", marginTop: 2 }}>
+                  {tenant.name} — inactive for {daysText}
                 </div>
               </div>
               <button onClick={onClose} style={{
                 background: "none", border: "none",
-                fontSize: 22, cursor: "pointer", color: "#aaa"
+                fontSize: 22, cursor: "pointer", color: "var(--muted, #aaa)"
               }}>×</button>
             </div>
-            <div style={{ fontSize: 12, color: "#888", marginBottom: 6, fontWeight: 600 }}>
+            <div style={{ fontSize: 12, color: "var(--muted, #888)", marginBottom: 6, fontWeight: 600 }}>
               To: {tenant.email}
             </div>
             <textarea
@@ -232,23 +306,24 @@ const NotifyModal = ({ tenant, onClose }) => {
               onChange={(e) => setMsg(e.target.value)}
               style={{
                 width: "100%", height: 160, padding: "10px 14px",
-                border: "1.5px solid #FF6B00", borderRadius: 8,
+                border: "1.5px solid var(--accent, #FF6B00)", borderRadius: 8,
+                background: "var(--bg, #f8fafc)",
                 fontSize: 13, fontFamily: "'Barlow', sans-serif",
                 outline: "none", resize: "vertical",
-                boxSizing: "border-box", color: "#333", marginBottom: 16
+                boxSizing: "border-box", color: "var(--text, #333)", marginBottom: 16
               }}
             />
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
               <button onClick={onClose} style={{
-                background: "#f0f0f0", color: "#555",
-                border: "none", borderRadius: 8, padding: "9px 18px",
+                background: "var(--card-2, #f0f0f0)", color: "var(--text, #555)",
+                border: "1px solid var(--line, transparent)", borderRadius: 8, padding: "9px 18px",
                 fontWeight: 600, fontSize: 13, cursor: "pointer",
                 fontFamily: "'Barlow', sans-serif"
               }}>
                 Cancel
               </button>
               <button onClick={send} style={{
-                background: "#FF6B00", color: "#fff",
+                background: "var(--accent, #FF6B00)", color: "#fff",
                 border: "none", borderRadius: 8, padding: "9px 18px",
                 fontWeight: 700, fontSize: 13, cursor: "pointer",
                 fontFamily: "'Barlow', sans-serif"
@@ -263,171 +338,268 @@ const NotifyModal = ({ tenant, onClose }) => {
   );
 };
 
-// ... (TenantActivityCard component)
-const TenantActivityCard = ({ tenant, onNotify }) => {
-  const days = daysSince(tenant.lastActive);
-  const inactive = days >= 7;
-  const avg = avgProgress(tenant.courseActivity);
-  const [expanded, setExpanded] = useState(false);
+const RECENT_SUBS = [
+  { id: 1, name: "Department of Education", since: "Feb. 25 2026", renewal: "Feb. 25 2027", type: "Institute", bg: "#2980b9", abbr: "DepEd", learners: 200, courses: 13, status: "Active" },
+  { id: 2, name: "Eleksis Marketing Corp", since: "Jan. 10 2026", renewal: "Jan. 10 2027", type: "Enterprise", bg: "#c0392b", abbr: "ELEKSIS", learners: 320, courses: 20, status: "Active" },
+  { id: 3, name: "De La Salle University", since: "Jan. 01 2026", renewal: "Jan. 01 2027", type: "Institute", bg: "#27ae60", abbr: "DLSU", learners: 500, courses: 35, status: "Active" },
+  { id: 4, name: "Zoup Sales & Marketing", since: "Feb. 01 2026", renewal: "Feb. 01 2027", type: "Personal", bg: "#8e44ad", abbr: "ZOUP", learners: 32, courses: 8, status: "Active" },
+  { id: 5, name: "Build Hub PH", since: "Mar. 01 2026", renewal: "Mar. 01 2027", type: "Enterprise", bg: "#e67e22", abbr: "BHUB", learners: 0, courses: 0, status: "Inactive" },
+];
 
+const SYSTEM_UPDATES = [
+  { icon: "🆕", text: "New tenant registered: Build Hub PH", time: "2h ago", color: "#2980b9" },
+  { icon: "✅", text: "Course approved: Sales Fundamentals", time: "5h ago", color: "#27ae60" },
+  { icon: "⚠️", text: "Eleksis inactive for 10 days", time: "1d ago", color: "#c0392b" },
+  { icon: "💳", text: "DLSU renewed Institute subscription", time: "2d ago", color: "#FF6B00" },
+  { icon: "👤", text: "New admin role assigned at DepEd", time: "3d ago", color: "#8e44ad" },
+];
+
+const formatTimeAgo = (isoDate) => {
+  if (!isoDate) return "recently";
+  const sec = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+  if (sec < 60) return "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.floor(hr / 24);
+  return `${days}d ago`;
+};
+
+const parseNewValue = (val) => {
+  if (!val) return {};
+  if (typeof val === "object") return val;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return { raw: val };
+  }
+};
+
+const formatAuditLog = (log) => {
+  const val = parseNewValue(log.new_value);
+  const time = formatTimeAgo(log.created_at);
+
+  switch (log.action) {
+    case "PROVISION_TENANT_STAFF":
+      return {
+        icon: "👤",
+        text: `Provisioned ${val.role || "staff"}: ${val.staff_name || val.email || "Staff User"}`,
+        time,
+        color: "#FF6B00",
+      };
+    case "CREATE_LEARNER":
+      return {
+        icon: "🎓",
+        text: `Learner added: ${val.name || val.email || "User"} (${val.company || "Tenant"})`,
+        time,
+        color: "#27ae60",
+      };
+    case "BATCH_IMPORT_LEARNERS":
+      return {
+        icon: "👥",
+        text: `Batch upload: ${val.imported_count || ""} learners added at ${val.company || "Tenant"}`,
+        time,
+        color: "#8e44ad",
+      };
+    case "CREATE_COURSE":
+      return {
+        icon: "📚",
+        text: `New course created: ${val.title || "Untitled Course"}`,
+        time,
+        color: "#2980b9",
+      };
+    case "PUBLISH_COURSE":
+      return {
+        icon: "✅",
+        text: `Course published: ${val.title || "Course"}`,
+        time,
+        color: "#27ae60",
+      };
+    case "UPDATE_COURSE":
+      return {
+        icon: "✏️",
+        text: `Course updated: ${val.title || "Course"}`,
+        time,
+        color: "#3498db",
+      };
+    case "DELETE_COURSE":
+      return {
+        icon: "🗑️",
+        text: `Course deleted (ID: ${log.record_id || "N/A"})`,
+        time,
+        color: "#e74c3c",
+      };
+    case "ARCHIVE_LEARNER":
+      return {
+        icon: "📦",
+        text: `Tenant admin archived a learner account`,
+        time,
+        color: "#7f8c8d",
+      };
+    case "RESTORE_LEARNER":
+      return {
+        icon: "🔄",
+        text: `Tenant admin restored a learner account`,
+        time,
+        color: "#16a085",
+      };
+    case "PERMANENT_DELETE_LEARNER":
+      return {
+        icon: "❌",
+        text: `Tenant admin deleted learner permanently`,
+        time,
+        color: "#c0392b",
+      };
+    case "RESET_STAFF_PASSWORD":
+      return {
+        icon: "🔑",
+        text: `Password reset for: ${val.email || "Staff member"}`,
+        time,
+        color: "#d35400",
+      };
+    default:
+      return {
+        icon: "⚡",
+        text: `${log.action ? log.action.replace(/_/g, " ") : "Platform Activity"} (${log.table_name || "system"})`,
+        time,
+        color: "#FF6B00",
+      };
+  }
+};
+
+// ── Subscription Detail Modal ──────────────────────────────
+const SubscriptionDetailModal = ({ sub, onClose, onManage }) => {
+  if (!sub) return null;
   return (
-    <div style={{
-      background: "#fff", borderRadius: 10,
-      border: "none",
-      borderLeft: `4px solid ${inactive ? "#c0392b" : "#27ae60"}`,
-      boxShadow: inactive
-        ? "0 2px 12px rgba(192,57,43,.08), 0 1px 3px rgba(0,0,0,.04)"
-        : "0 2px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03)",
-      padding: "14px 16px", marginBottom: 10,
-    }}>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 6,
-          background: tenant.color + "22", display: "flex",
-          alignItems: "center", justifyContent: "center",
-          fontSize: 9, fontWeight: 900, color: tenant.color, flexShrink: 0
-        }}>
-          {tenant.abbr.slice(0, 5)}
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.6)",
+        zIndex: 999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--line)",
+          boxShadow: "var(--shadow, 0 10px 30px rgba(0,0,0,0.3))",
+          borderRadius: 14,
+          padding: 24,
+          width: 440,
+          maxWidth: "92vw",
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <TenantLogo name={sub.name} abbr={sub.abbr} color={sub.bg} size={42} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text)" }}>
+                {sub.name}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                Subscription Overview
+              </div>
+            </div>
+          </div>
+          <Pill variant={sub.type}>{sub.type}</Pill>
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "#222" }}>{tenant.name}</div>
-          <div style={{
-            fontSize: 11, fontWeight: 600,
-            color: inactive ? "#c0392b" : "#27ae60"
-          }}>
-            {inactive
-              ? `Inactive — ${days} days ago`
-              : `Active — ${days === 0 ? "today" : `${days}d ago`}`}
+
+        {/* Details Grid */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: 12,
+          padding: "16px 14px",
+          background: "var(--bg)",
+          borderRadius: 10,
+          border: "1px solid var(--line)",
+          marginBottom: 20,
+        }}>
+          <div>
+            <span style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".04em" }}>
+              Status
+            </span>
+            <div style={{ marginTop: 4 }}>
+              <Pill variant={sub.status || "Active"}>{sub.status || "Active"}</Pill>
+            </div>
+          </div>
+          <div>
+            <span style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".04em" }}>
+              Subscribed On
+            </span>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+              {sub.since}
+            </div>
+          </div>
+          <div>
+            <span style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".04em" }}>
+              Renewal Date
+            </span>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+              {sub.renewal || "Jan 10 2027"}
+            </div>
+          </div>
+          <div>
+            <span style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".04em" }}>
+              Learners
+            </span>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+              {sub.learners !== undefined ? `${sub.learners} users` : "320 users"}
+            </div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {inactive && (
-            <button onClick={() => onNotify(tenant)}
-              style={{
-                background: "#c0392b", color: "#fff", border: "none",
-                borderRadius: 6, padding: "5px 10px", fontSize: 11,
-                fontWeight: 700, cursor: "pointer",
-                fontFamily: "'Barlow', sans-serif", whiteSpace: "nowrap"
-              }}>
-              🔔 Notify
-            </button>
-          )}
-          <button onClick={() => setExpanded((v) => !v)}
-            style={{
-              background: "none", border: "1px solid #ddd", borderRadius: 6,
-              padding: "5px 10px", fontSize: 11, cursor: "pointer", color: "#888",
-              fontFamily: "'Barlow', sans-serif"
-            }}>
-            {expanded ? "▲ Less" : "▼ More"}
-          </button>
+
+        {/* Modal actions */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <GhostButton onClick={onClose}>
+            Close
+          </GhostButton>
+          <PrimaryButton onClick={() => { onClose(); onManage(); }}>
+            Manage in Tenants →
+          </PrimaryButton>
         </div>
       </div>
-
-      {/* Overall bar */}
-      <div>
-        <div style={{
-          display: "flex", justifyContent: "space-between",
-          fontSize: 11, color: "#aaa", marginBottom: 4
-        }}>
-          <span>Overall Course Activity</span>
-          <span style={{
-            fontWeight: 700,
-            color: avg >= 60 ? "#27ae60" : avg >= 30 ? "#FF6B00" : "#c0392b"
-          }}>
-            {avg}%
-          </span>
-        </div>
-        <div style={{
-          height: 8, background: "#f0f0f0",
-          borderRadius: 4, overflow: "hidden"
-        }}>
-          <div style={{
-            height: "100%", borderRadius: 4, width: `${avg}%`,
-            background: avg >= 60
-              ? "linear-gradient(90deg,#27ae60,#2ecc71)"
-              : avg >= 30
-                ? "linear-gradient(90deg,#FF6B00,#f39c12)"
-                : "linear-gradient(90deg,#c0392b,#e74c3c)",
-            transition: "width .6s ease"
-          }} />
-        </div>
-      </div>
-
-      {/* Expanded per-course */}
-      {expanded && (
-        <div style={{ marginTop: 12, borderTop: "1px solid #f5f5f5", paddingTop: 10 }}>
-          {!tenant.courseActivity?.length ? (
-            <div style={{ fontSize: 12, color: "#bbb", textAlign: "center", padding: "8px 0" }}>
-              No course activity yet
-            </div>
-          ) : (
-            tenant.courseActivity.map((c) => (
-              <div key={c.name} style={{ marginBottom: 8 }}>
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  fontSize: 11, color: "#666", marginBottom: 3
-                }}>
-                  <span>{c.name}</span>
-                  <span style={{ color: "#aaa" }}>{c.progress}% · {c.totalUsers} users</span>
-                </div>
-                <div style={{
-                  height: 6, background: "#f0f0f0",
-                  borderRadius: 3, overflow: "hidden"
-                }}>
-                  <div style={{
-                    height: "100%", borderRadius: 3,
-                    width: `${c.progress}%`,
-                    background: c.progress >= 70 ? "#27ae60"
-                      : c.progress >= 40 ? "#FF6B00" : "#c0392b",
-                    transition: "width .5s ease"
-                  }} />
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
     </div>
   );
 };
 
-const RECENT_SUBS = [
-  { name: "Department of Education", since: "Feb. 25 2026", type: "Institute", bg: "#2980b9", abbr: "DepEd" },
-  { name: "Eleksis Marketing Corp", since: "Jan. 10 2026", type: "Enterprise", bg: "#c0392b", abbr: "ELEKSIS" },
-  { name: "De La Salle University", since: "Jan. 01 2026", type: "Institute", bg: "#27ae60", abbr: "DLSU" },
-  { name: "Zoup Sales & Marketing", since: "Feb. 01 2026", type: "Personal", bg: "#8e44ad", abbr: "ZOUP" },
-];
-
 // ─────────────────────────────────────────────────────────────
 // Dashboard Home
 // ─────────────────────────────────────────────────────────────
-// ── SVG icons matching the user dashboard style ───────────────
 const StatIcons = {
   tenants: (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-      stroke="#FF6B00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   ),
   approvals: (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-      stroke="#FF6B00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
     </svg>
   ),
   courses: (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-      stroke="#FF6B00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
     </svg>
   ),
   subscriptions: (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-      stroke="#FF6B00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="4" width="22" height="16" rx="2" />
       <line x1="1" y1="10" x2="23" y2="10" />
     </svg>
@@ -436,298 +608,528 @@ const StatIcons = {
 
 export const DashboardHome = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [notifyTenant, setNotifyTenant] = useState(null);
-  const inactiveCount = MOCK_TENANTS.filter((t) => daysSince(t.lastActive) >= 7).length;
+  const [expandedTenants, setExpandedTenants] = useState({});
+  const [showAllSubs, setShowAllSubs] = useState(false);
+  const [selectedSub, setSelectedSub] = useState(null);
+  const [liveUpdates, setLiveUpdates] = useState(SYSTEM_UPDATES);
+  const [counts, setCounts] = useState({
+    tenants: 24,
+    approvals: 8,
+    courses: 61,
+    subscriptions: 18,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch audit logs
+        const logs = await fetchRecentAuditLogs(6);
+        if (isMounted && logs && logs.length > 0) {
+          const formatted = logs.map(formatAuditLog);
+          if (formatted.length < 5) {
+            setLiveUpdates([...formatted, ...SYSTEM_UPDATES.slice(formatted.length)]);
+          } else {
+            setLiveUpdates(formatted);
+          }
+        }
+
+        // Fetch live counts
+        const [compRes, coursesRes, pendingCoursesRes] = await Promise.all([
+          supabase.from("companies").select("id", { count: "exact", head: true }).eq("is_archived", false),
+          supabase.from("courses").select("id", { count: "exact", head: true }),
+          supabase.from("courses").select("id", { count: "exact", head: true }).eq("status", "draft"),
+        ]);
+
+        if (isMounted) {
+          setCounts({
+            tenants: compRes.count !== null && compRes.count > 0 ? compRes.count : 24,
+            approvals: pendingCoursesRes.count !== null && pendingCoursesRes.count > 0 ? pendingCoursesRes.count : 8,
+            courses: coursesRes.count !== null && coursesRes.count > 0 ? coursesRes.count : 61,
+            subscriptions: compRes.count !== null && compRes.count > 0 ? compRes.count : 18,
+          });
+        }
+      } catch (err) {
+        console.warn("Live dashboard fetch error:", err);
+      }
+    };
+
+    fetchDashboardData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const toggleExpand = (id) => {
+    setExpandedTenants((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const firstName = user?.name ? user.name.split(" ")[0] : "";
+  const inactiveCount = MOCK_TENANTS.filter((t) => {
+    const d = daysSince(t.lastActive);
+    return !isNaN(d) && d >= 7;
+  }).length;
 
   const STATS = [
-    { key: "tenants", label: "Tenants", count: 24, sub: "+5 this week", iconKey: "tenants" },
-    { key: "approvals", label: "Approvals", count: 8, sub: "+3 this week", iconKey: "approvals" },
-    { key: "courses", label: "Courses", count: 61, sub: "4 new", iconKey: "courses" },
-    { key: "tenants", label: "Subscriptions", count: 18, sub: "+3 this quarter", iconKey: "subscriptions" },
+    { key: "tenants", label: "Tenants", count: counts.tenants, sub: "Live database", iconKey: "tenants", path: "/superadmin/tenants" },
+    { key: "approvals", label: "Approvals", count: counts.approvals, sub: "Pending review", iconKey: "approvals", path: "/superadmin/approvals" },
+    { key: "courses", label: "Courses", count: counts.courses, sub: "Catalog", iconKey: "courses", path: "/superadmin/courses" },
+    { key: "subscriptions", label: "Subscriptions", count: counts.subscriptions, sub: "Active organizations", iconKey: "subscriptions", path: "/superadmin/tenants" },
   ];
 
   return (
-    <div style={{ padding: 20 }}>
-
-      {/* ── Dashboard title ── */}
-      <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontWeight: 900, fontSize: 28, color: "#222", marginBottom: 20
-      }}>
-        Dashboard
-      </div>
-
-      {/* ── Stat cards — orange border on top ── */}
-      <div className="sa-stat-grid" style={{
-        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: 16, marginBottom: 24
-      }}>
-        {STATS.map((s, i) => (
-          <div
-            key={i}
-            onClick={() => navigate("/superadmin/" + s.key)}
-            style={d.statCard}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,.12), 0 3px 8px rgba(0,0,0,.07)";
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)";
-            }}
+    <PageTransition>
+      <PageContainer>
+      {/* ── Page Heading ── */}
+      <PageHeading
+        greeting={firstName ? `Hello ${firstName}, welcome back!` : undefined}
+        title="Dashboard"
+        subtitle="Overview of tenants, approvals, courses and subscriptions."
+        actions={
+          <PrimaryButton
+            onClick={() => navigate("/superadmin/approvals")}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            }
           >
-            <div style={{
-              fontSize: 11, color: "#888", fontWeight: 500,
-              textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8
-            }}>
-              {s.label}
-            </div>
-            <div style={{
-              display: "flex", alignItems: "flex-end",
-              justifyContent: "space-between"
-            }}>
-              <div>
-                <div style={{
-                  fontSize: 36, fontWeight: 700, color: "#222",
-                  lineHeight: 1
-                }}>
-                  {s.count}
-                </div>
-                <div style={{
-                  fontSize: 12, color: "#FF6B00", marginTop: 6,
-                  fontWeight: 500
-                }}>
-                  ↑ {s.sub}
-                </div>
-              </div>
-              <div style={d.statIconWrap}>
-                {StatIcons[s.iconKey]}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            Review Approvals
+          </PrimaryButton>
+        }
+      />
 
-      {/* ── Inactive alert ── */}
+      {/* ── Stat cards ── */}
+      <StatGrid columns={4}>
+        {STATS.map((s) => (
+          <StatCard
+            key={s.key}
+            label={s.label}
+            value={s.count}
+            sub={s.sub}
+            subColor="var(--accent-text)"
+            icon={StatIcons[s.iconKey]}
+            onClick={() => navigate(s.path)}
+          />
+        ))}
+      </StatGrid>
+
+      {/* ── Inactive alert (if any) ── */}
       {inactiveCount > 0 && (
         <div style={{
-          background: "#fde8e8", border: "1px solid #f5c6c6",
-          borderRadius: 10, padding: "12px 18px", marginBottom: 20,
-          display: "flex", alignItems: "center", gap: 12
+          background: "var(--red-soft)",
+          border: "1px solid color-mix(in srgb, var(--red) 30%, transparent)",
+          borderRadius: 10,
+          padding: "12px 18px",
+          marginBottom: "var(--space-5, 20px)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12
         }}>
           <span style={{ fontSize: 20 }}>⚠️</span>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#c0392b" }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--red)" }}>
               {inactiveCount} tenant{inactiveCount > 1 ? "s" : ""} inactive for 7+ days
             </div>
-            <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
               Check the Tenant Activeness panel below and send notifications.
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Two-column layout: Activeness box | Right panels ── */}
-      <div className="sa-main-grid" style={{
-        display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 340px)",
-        gap: 20, alignItems: "start"
-      }}>
+      {/* ── Main grid ── */}
+      <MainGrid style={{ gridTemplateColumns: "minmax(0, 1fr) 370px" }}>
+        {/* LEFT COLUMN: Tenant Activeness */}
+        <Card>
+          <CardHeader
+            title="Tenant Activeness"
+            count={`${MOCK_TENANTS.length} tenants`}
+          />
 
-        {/* LEFT — Tenant Activeness contained in a white box */}
-        <div style={d.panel}>
-          <div style={d.panelTitle}>Tenant Activeness</div>
-          <style>{`
-            .tenant-scroll::-webkit-scrollbar {
-              width: 4px;
-            }
-            .tenant-scroll::-webkit-scrollbar-track {
-              background: transparent;
-            }
-            .tenant-scroll::-webkit-scrollbar-thumb {
-              background: #e0e0e0;
-              border-radius: 99px;
-            }
-            .tenant-scroll::-webkit-scrollbar-thumb:hover {
-              background: #ccc;
-            }
+          {/* Table Header */}
+          <TableHeader
+            columns={[
+              { label: "Tenant" },
+              { label: "Status & Activity" },
+              { label: "Course Activity" },
+              { label: "Action", style: { textAlign: "left" } },
+            ]}
+            style={{
+              gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1.1fr) minmax(0, 1.4fr) 115px",
+            }}
+          />
 
-            /* ── Responsive breakpoints ── */
-            @media (max-width: 1024px) {
-              .sa-main-grid {
-                grid-template-columns: 1fr !important;
-              }
-              .sa-right-col {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-              }
-            }
-            @media (max-width: 640px) {
-              .sa-stat-grid {
-                grid-template-columns: 1fr 1fr !important;
-              }
-              .sa-main-grid {
-                grid-template-columns: 1fr !important;
-              }
-              .sa-right-col {
-                display: grid !important;
-                grid-template-columns: 1fr !important;
-              }
-            }
-            @media (max-width: 400px) {
-              .sa-stat-grid {
-                grid-template-columns: 1fr !important;
-              }
-            }
-          `}</style>
-          <div className="tenant-scroll"
-            style={{ maxHeight: 520, overflowY: "auto", paddingRight: 6 }}>
-            {MOCK_TENANTS.map((ten) => (
-              <TenantActivityCard key={ten.id} tenant={ten} onNotify={setNotifyTenant} />
-            ))}
+          <div style={{ overflowX: "auto" }}>
+            <div style={{ minWidth: 620 }}>
+              {MOCK_TENANTS.map((tenant, idx) => {
+                const days = daysSince(tenant.lastActive);
+                const hasValidDays = tenant.lastActive && !isNaN(days);
+                const isInactive = hasValidDays && days >= 7;
+                const avg = avgProgress(tenant.courseActivity);
+                const isExpanded = !!expandedTenants[tenant.id];
+
+                // Presentational guard for NaNd ago
+                const activityText = hasValidDays
+                  ? (days === 0 ? "Active today" : `${days}d ago`)
+                  : "No activity recorded";
+
+                return (
+                  <div key={tenant.id}>
+                    <TableRow
+                      isLast={idx === MOCK_TENANTS.length - 1 && !isExpanded}
+                      style={{
+                        gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1.1fr) minmax(0, 1.4fr) 115px",
+                      }}
+                    >
+                      {/* Column 1: TENANT */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                        <TenantLogo
+                          id={tenant.id}
+                          name={tenant.name}
+                          abbr={tenant.abbr}
+                          color={tenant.color}
+                          size={36}
+                        />
+                        <div style={{ minWidth: 0 }}>
+                          <span
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 13.5,
+                              color: "var(--text)",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "block",
+                            }}
+                          >
+                            {tenant.name}
+                          </span>
+                          <span style={{ fontSize: 11.5, color: "var(--muted)", display: "block", marginTop: 2 }}>
+                            {tenant.plan || "Institute"} Plan
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Column 2: STATUS & ACTIVITY */}
+                      <div>
+                        <StatusAndDateCell
+                          status={isInactive ? "Inactive" : "Active"}
+                          date={
+                            <span style={hasValidDays ? {} : { color: "var(--faint)" }}>
+                              {activityText}
+                            </span>
+                          }
+                        />
+                      </div>
+
+                      {/* Column 3: COURSE ACTIVITY */}
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", maxWidth: 280 }}>
+                          <div style={{ flex: 1 }}>
+                            <ProgressBar
+                              progress={avg}
+                              color={avg >= 60 ? "var(--green)" : avg >= 30 ? "var(--accent)" : "var(--red)"}
+                              height={7}
+                            />
+                          </div>
+                          <span style={{
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            fontVariantNumeric: "tabular-nums",
+                            color: avg >= 60 ? "var(--green)" : avg >= 30 ? "var(--accent-text)" : "var(--red)",
+                            width: 36,
+                            textAlign: "right",
+                            flexShrink: 0,
+                          }}>
+                            {avg}%
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                          Overall Course Activity
+                        </div>
+                      </div>
+
+                      {/* Column 4: ACTION */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-start" }}>
+                        {isInactive && (
+                          <GhostButton
+                            onClick={() => setNotifyTenant(tenant)}
+                            style={{ height: 30, padding: "0 8px", fontSize: 11.5, color: "var(--red)" }}
+                          >
+                            🔔 Notify
+                          </GhostButton>
+                        )}
+                        <GhostButton
+                          onClick={() => toggleExpand(tenant.id)}
+                          style={{ height: 30, padding: "0 10px", fontSize: 11.5 }}
+                        >
+                          {isExpanded ? "▲ Less" : "▼ More"}
+                        </GhostButton>
+                      </div>
+                    </TableRow>
+
+                    {/* Expanded course drawer */}
+                    {isExpanded && (
+                      <div style={{
+                        background: "var(--card-2)",
+                        padding: "16px 20px",
+                        borderBottom: "1px solid var(--line)"
+                      }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 12 }}>
+                          Course Breakdown
+                        </div>
+                        {!tenant.courseActivity?.length ? (
+                          <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "8px 0" }}>
+                            No course activity yet
+                          </div>
+                        ) : (
+                          tenant.courseActivity.map((c) => (
+                            <div key={c.name} style={{ marginBottom: 10 }}>
+                              <div style={{
+                                display: "flex", justifyContent: "space-between",
+                                fontSize: 12, color: "var(--text)", marginBottom: 4
+                              }}>
+                                <span style={{ fontWeight: 500 }}>{c.name}</span>
+                                <span style={{ color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
+                                  {c.progress}% · {c.totalUsers} users
+                                </span>
+                              </div>
+                              <ProgressBar
+                                progress={c.progress}
+                                color={c.progress >= 70 ? "var(--green)" : c.progress >= 40 ? "var(--accent)" : "var(--red)"}
+                                height={6}
+                              />
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </Card>
 
-        {/* RIGHT — Recent Subscriptions + System Updates */}
-        <div className="sa-right-col" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
+        {/* RIGHT COLUMN: Recent Subscriptions + System Updates */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4, 16px)" }}>
           {/* Recent Subscriptions */}
-          <div style={d.panel}>
-            <div style={d.panelTitle}>Recent Subscriptions</div>
-            {RECENT_SUBS.map((sub, i) => (
-              <div key={sub.name} style={{
-                ...d.subItem,
-                borderBottom: i < RECENT_SUBS.length - 1
-                  ? "1px solid #f2f2f2" : "none",
-              }}>
-                <div style={{ ...d.subLogo, background: sub.bg }}>
-                  <span style={{
-                    color: "#fff", fontSize: 8, fontWeight: 900,
-                    textAlign: "center", lineHeight: 1.2
-                  }}>
-                    {sub.abbr.slice(0, 6)}
-                  </span>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: 12, fontWeight: 700, color: "#222",
-                    marginBottom: 3, whiteSpace: "nowrap",
-                    overflow: "hidden", textOverflow: "ellipsis"
-                  }}>
-                    {sub.name}
+          <Card>
+            <CardHeader
+              title="Recent Subscriptions"
+              count={showAllSubs ? `${RECENT_SUBS.length} total` : "3 of 5"}
+              action={
+                <GhostButton
+                  onClick={() => setShowAllSubs((prev) => !prev)}
+                  style={{ height: 28, padding: "0 10px", fontSize: 11.5 }}
+                >
+                  {showAllSubs ? "Show Top 3 ▴" : `View All (${RECENT_SUBS.length}) ▾`}
+                </GhostButton>
+              }
+            />
+            <div
+              style={{
+                padding: "0 16px 8px",
+                maxHeight: showAllSubs ? 280 : "none",
+                overflowY: showAllSubs ? "auto" : "visible",
+                transition: "max-height 0.2s ease",
+              }}
+            >
+              {(showAllSubs ? RECENT_SUBS : RECENT_SUBS.slice(0, 3)).map((sub, i, arr) => (
+                <div
+                  key={sub.id || sub.name}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedSub(sub)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedSub(sub); }}
+                  title="Click to view subscription details"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 8px",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    transition: "background 0.15s ease, transform 0.15s ease",
+                    borderBottom: i < arr.length - 1 ? "1px solid var(--line)" : "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--line)";
+                    e.currentTarget.style.transform = "translateX(2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.transform = "none";
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1, paddingRight: 8 }}>
+                    <TenantLogo
+                      name={sub.name}
+                      abbr={sub.abbr}
+                      color={sub.bg}
+                      size={36}
+                    />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{
+                        fontWeight: 600,
+                        fontSize: 13.5,
+                        color: "var(--text)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}>
+                        {sub.name}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>
+                        Subscribed since {sub.since}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{
-                    display: "grid", gridTemplateColumns: "auto 1fr",
-                    gap: "2px 8px", fontSize: 11, color: "#888"
-                  }}>
-                    <span style={{ color: "#aaa" }}>Subscribed Since</span>
-                    <span>{sub.since}</span>
-                    <span style={{ color: "#aaa" }}>Type</span>
-                    <span style={{ color: "#FF6B00", fontWeight: 700 }}>{sub.type}</span>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <Pill variant={sub.type}>{sub.type}</Pill>
+                    <span style={{ color: "var(--muted)", fontSize: 16, lineHeight: 1 }}>›</span>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <div style={{
+              padding: "10px 16px 12px",
+              borderTop: "1px solid var(--line)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: 12,
+            }}>
+              <span style={{ color: "var(--muted)" }}>
+                Click any row for details
+              </span>
+              <button
+                onClick={() => navigate("/superadmin/tenants")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--accent-text)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                Manage in Tenants →
+              </button>
+            </div>
+          </Card>
 
           {/* System Updates */}
-          <div style={d.panel}>
-            <div style={d.panelTitle}>System Updates</div>
-            {[
-              { icon: "🆕", text: "New tenant registered: Build Hub PH", time: "2h ago", color: "#2980b9" },
-              { icon: "✅", text: "Course approved: Sales Fundamentals", time: "5h ago", color: "#27ae60" },
-              { icon: "⚠️", text: "Eleksis inactive for 10 days", time: "1d ago", color: "#c0392b" },
-              { icon: "💳", text: "DLSU renewed Institute subscription", time: "2d ago", color: "#FF6B00" },
-              { icon: "👤", text: "New admin role assigned at DepEd", time: "3d ago", color: "#8e44ad" },
-            ].map((u, i, arr) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "flex-start",
-                gap: 10, padding: "9px 0",
-                borderBottom: i < arr.length - 1 ? "1px solid #f5f5f5" : "none"
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 8,
-                  background: u.color + "18", display: "flex",
-                  alignItems: "center", justifyContent: "center",
-                  fontSize: 15, flexShrink: 0
-                }}>
-                  {u.icon}
+          <Card>
+            <CardHeader
+              title="System Updates"
+              count={`${liveUpdates.length} updates`}
+            />
+            <div style={{ padding: "0 16px 12px" }}>
+              {liveUpdates.map((u, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "10px 8px",
+                    borderRadius: 8,
+                    borderBottom: i < SYSTEM_UPDATES.length - 1 ? "1px solid var(--line)" : "none",
+                    transition: "background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--line)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <div style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: `color-mix(in srgb, ${u.color} 15%, transparent)`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 15,
+                    flexShrink: 0
+                  }}>
+                    {u.icon}
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "var(--text)",
+                    lineHeight: 1.4,
+                  }}>
+                    {u.text}
+                  </div>
+                  <div style={{
+                    fontSize: 11.5,
+                    color: "var(--muted)",
+                    fontVariantNumeric: "tabular-nums",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                    marginLeft: 8,
+                  }}>
+                    {u.time}
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "#333", lineHeight: 1.5 }}>{u.text}</div>
-                  <div style={{ fontSize: 11, color: "#bbb", marginTop: 2 }}>{u.time}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Card>
         </div>
-      </div>
+      </MainGrid>
 
       {notifyTenant && (
         <NotifyModal tenant={notifyTenant} onClose={() => setNotifyTenant(null)} />
       )}
-    </div>
+      {selectedSub && (
+        <SubscriptionDetailModal
+          sub={selectedSub}
+          onClose={() => setSelectedSub(null)}
+          onManage={() => navigate("/superadmin/tenants")}
+        />
+      )}
+    </PageContainer>
+    </PageTransition>
   );
 };
 
-const d = {
-  // Stat card — shadow lifts it off the #f4f4f4 background
-  statCard: {
-    background: "#fff",
-    borderRadius: 12,
-    border: "none",
-    borderTop: "3px solid #FF6B00",
-    boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
-    padding: "20px 22px",
-    cursor: "pointer",
-    transition: "transform .2s ease, box-shadow .2s ease",
-  },
-  statIconWrap: {
-    width: 52, height: 52,
-    background: "#FFF0E6",
-    borderRadius: 12,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    flexShrink: 0,
-  },
-  panel: {
-    background: "#fff",
-    borderRadius: 12,
-    border: "none",
-    boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
-    padding: "18px 20px",
-  },
-  panelTitle: {
-    fontSize: 15, fontWeight: 700, color: "#222", marginBottom: 14,
-  },
-  subItem: {
-    display: "flex", alignItems: "flex-start",
-    gap: 12, paddingTop: 10, paddingBottom: 10,
-  },
-  subLogo: {
-    width: 38, height: 38, borderRadius: 8, flexShrink: 0,
-    display: "flex", alignItems: "center", justifyContent: "center",
-  },
-};
-
 export const ComingSoon = ({ label }) => (
-  <div style={{
-    flex: 1, display: "flex", flexDirection: "column",
-    alignItems: "center", justifyContent: "center", color: "#aaa", gap: 12,
-    minHeight: 400
-  }}>
-    <div style={{ fontSize: 48, opacity: .4 }}>
-      {{ approvals: "🕐", users: "👥", courses: "📚", settings: "⚙️" }[label] || "📄"}
+  <PageTransition style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+    <div style={{
+      flex: 1, display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", color: "var(--muted)", gap: 12,
+      minHeight: 400
+    }}>
+      <div style={{ fontSize: 48, opacity: .6 }}>
+        {{ approvals: "🕐", users: "👥", courses: "📚", settings: "⚙️" }[label] || "📄"}
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)" }}>
+        {label.charAt(0).toUpperCase() + label.slice(1)}
+      </div>
+      <div style={{ fontSize: 13, color: "var(--muted)" }}>Design coming soon — frontend in progress</div>
     </div>
-    <div style={{ fontSize: 16, fontWeight: 600 }}>
-      {label.charAt(0).toUpperCase() + label.slice(1)}
-    </div>
-    <div style={{ fontSize: 13 }}>Design coming soon — frontend in progress</div>
-  </div>
+  </PageTransition>
 );
 
 // ─────────────────────────────────────────────────────────────
 // Main SADashboard
 // ─────────────────────────────────────────────────────────────
-const SADashboard = () => {
+const SADashboardInner = () => {
+  const { theme } = useSATheme();
   const { user } = useAuth();
   const location = useLocation();
   const [showWelcome, setShowWelcome] = useState(true);
@@ -756,11 +1158,16 @@ const SADashboard = () => {
   }
 
   return (
-    <div style={{
-      fontFamily: "'Barlow', sans-serif",
-      background: "#f4f4f4",
-      minHeight: "100vh",
-    }}>
+    <div
+      data-sa-theme={theme}
+      className="sa-root"
+      style={{
+        fontFamily: "'Barlow', sans-serif",
+        background: "var(--bg, #f3f5f9)",
+        color: "var(--text, #0f172a)",
+        minHeight: "100vh",
+      }}
+    >
       <style>{`
         @media (max-width: 768px) {
           .sa-content-area {
@@ -778,20 +1185,16 @@ const SADashboard = () => {
         user={user}
       />
 
-      {/*
-        Page content area:
-        - marginTop pushes it below the fixed top bar
-        - marginLeft shifts it right of the fixed sidebar (with smooth transition)
-        - overflowY: auto makes only THIS area scroll — sidebar stays fixed
-      */}
+      {/* Page content area */}
       <div className="sa-content-area" style={{
         marginTop: TOPBAR_HEIGHT,
         marginLeft: sidebarOpen ? SIDEBAR_WIDTH : 0,
         transition: "margin-left .25s ease",
         minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
-        overflowY: "auto",
+        overflowX: "clip",
         display: "flex",
         flexDirection: "column",
+        background: "var(--bg, #f3f5f9)",
       }}>
         <Outlet />
       </div>
@@ -799,5 +1202,10 @@ const SADashboard = () => {
   );
 };
 
+const SADashboard = () => (
+  <SAThemeProvider>
+    <SADashboardInner />
+  </SAThemeProvider>
+);
 
 export default SADashboard;

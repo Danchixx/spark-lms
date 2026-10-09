@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { logAuditEvent } from './auditService';
 
 // ─── Types ──────────────────────────────────────────────────
 export type CourseCreatePayload = {
@@ -28,7 +29,7 @@ export type ModulePayload = {
 
 export type LessonPayload = {
   title: string;
-  type: 'video' | 'reading' | 'assessment';
+  type: 'video' | 'reading' | 'assessment' | 'hybrid';
   content?: string | null;
   video_url?: string | null;
   position: number;
@@ -67,6 +68,21 @@ export async function createCourse(data: CourseCreatePayload) {
     .single();
 
   if (error) throw error;
+
+  if (course) {
+    await logAuditEvent({
+      action: 'CREATE_COURSE',
+      tableName: 'courses',
+      recordId: course.id,
+      userId: data.created_by || null,
+      newValue: {
+        title: course.title,
+        company_id: course.company_id,
+        status: course.status,
+      },
+    });
+  }
+
   return course;
 }
 
@@ -80,6 +96,20 @@ export async function updateCourse(courseId: number, data: CourseUpdatePayload) 
     .single();
 
   if (error) throw error;
+
+  if (course) {
+    const isPublishing = data.status === 'published';
+    await logAuditEvent({
+      action: isPublishing ? 'PUBLISH_COURSE' : 'UPDATE_COURSE',
+      tableName: 'courses',
+      recordId: course.id,
+      newValue: {
+        title: course.title,
+        status: course.status,
+      },
+    });
+  }
+
   return course;
 }
 
@@ -91,6 +121,12 @@ export async function deleteCourse(courseId: number) {
     .eq('id', courseId);
 
   if (error) throw error;
+
+  await logAuditEvent({
+    action: 'DELETE_COURSE',
+    tableName: 'courses',
+    recordId: courseId,
+  });
 }
 
 /** Fetch a course with all its modules and lessons (for CourseBuilder) */
@@ -467,6 +503,67 @@ export async function uploadThumbnail(file: File, companyId: number, courseId: n
     .getPublicUrl(filePath);
 
   return data.publicUrl;
+}
+
+// ─── Lesson File Attachments ────────────────────────────────
+
+export const LESSON_FILES_BUCKET = 'lesson-files';
+export const LESSON_FILE_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
+export const LESSON_FILE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
+
+export type LessonFileMeta = {
+  path: string;
+  name: string;
+  size: number;
+  mime: string;
+};
+
+/** Upload a document (PDF / Word / Excel / PowerPoint) for a lesson's File Block */
+export async function uploadLessonFile(
+  file: File,
+  companyId: number | string,
+  courseId: number | string,
+  lessonId: number | string
+): Promise<LessonFileMeta> {
+  if (file.size > LESSON_FILE_MAX_BYTES) {
+    throw new Error('File is larger than 25 MB.');
+  }
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (!LESSON_FILE_ACCEPT.split(',').includes(`.${ext}`)) {
+    throw new Error('Unsupported file type. Use PDF, Word, Excel, or PowerPoint.');
+  }
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filePath = `${companyId}/${courseId}/${lessonId}/${Date.now()}_${safeName}`;
+
+  const { error } = await supabase.storage
+    .from(LESSON_FILES_BUCKET)
+    .upload(filePath, file, { upsert: false, contentType: file.type || undefined });
+  if (error) {
+    if (error.message?.toLowerCase().includes('bucket not found') || (error as any).statusCode === '404') {
+      throw new Error(`Storage bucket "${LESSON_FILES_BUCKET}" does not exist in Supabase. Please create a "${LESSON_FILES_BUCKET}" bucket in your Supabase Storage dashboard.`);
+    }
+    throw error;
+  }
+
+  return { path: filePath, name: file.name, size: file.size, mime: file.type };
+}
+
+/** Remove a previously uploaded lesson file (best-effort) */
+export async function deleteLessonFile(path: string) {
+  if (!path) return;
+  await supabase.storage.from(LESSON_FILES_BUCKET).remove([path]);
+}
+
+/**
+ * Get a short-lived signed URL for a lesson file.
+ * Pass `downloadName` to force a browser download with that filename.
+ */
+export async function getLessonFileUrl(path: string, downloadName?: string, expiresIn = 3600) {
+  const { data, error } = await supabase.storage
+    .from(LESSON_FILES_BUCKET)
+    .createSignedUrl(path, expiresIn, downloadName ? { download: downloadName } : undefined);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 // ─── Creator Courses List ───────────────────────────────────

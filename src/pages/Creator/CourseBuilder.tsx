@@ -19,7 +19,7 @@ import "./CourseBuilder.css";
 type BuilderLesson = {
   id: number;
   title: string;
-  type: "video" | "reading" | "assessment";
+  type: "video" | "reading" | "assessment" | "hybrid";
   content: string | null;
   video_url: string | null;
   position: number;
@@ -30,7 +30,7 @@ type BuilderModule = {
   title: string;
   description: string | null;
   order: number;
-  status: "draft" | "published";
+  status?: "draft" | "published";
   lessons: BuilderLesson[];
 };
 
@@ -517,7 +517,7 @@ const CourseBuilder = () => {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>

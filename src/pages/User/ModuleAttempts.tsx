@@ -6,13 +6,14 @@ import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
-import { ArrowLeft, Check, X, RotateCcw, Send } from "lucide-react";
+import { ArrowLeft, Check, X, RotateCcw, Send, Lock } from "lucide-react";
 import { useCourseById } from "../../hooks/useCourses";
 import { supabase } from "../../lib/supabase";
 import PageTransition from "../../components/common/PageTransition";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
 const PASSING_SCORE = 70;
+const MAX_ATTEMPTS = 3;
 
 const ModuleAttempts = () => {
   const { user, company, logout } = useAuth();
@@ -142,7 +143,7 @@ const ModuleAttempts = () => {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -186,7 +187,7 @@ const ModuleAttempts = () => {
                   </h2>
                   <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)" }}>
                     Passing score: <strong style={{ color: "#FF6B00" }}>{PASSING_SCORE}%</strong> · 
-                    {" "}Total attempts: <strong style={{color: "var(--color-text-header)"}}>{attempts.length}</strong> · 
+                    {" "}Attempts: <strong style={{ color: attempts.length >= MAX_ATTEMPTS ? "#dc2626" : "var(--color-text-header)" }}>{attempts.length} / {MAX_ATTEMPTS}</strong> · 
                     {" "}Best score: <strong style={{ color: bestScore >= PASSING_SCORE ? "#27ae60" : "#e74c3c" }}>{bestScore}%</strong>
                   </p>
                 </div>
@@ -196,10 +197,32 @@ const ModuleAttempts = () => {
                 <Check size={18} color="#27ae60" strokeWidth={3} />
                 <span style={{ fontWeight: 700, color: "#27ae60", fontSize: 14 }}>Assessment Completed</span>
               </div>
+            ) : attempts.length >= MAX_ATTEMPTS ? (
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                {hasPassingAttempt ? (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#dc2626", fontSize: 13, fontWeight: 600 }}>
+                      <Lock size={15} /> Max attempts reached
+                    </div>
+                    <Button variant="primary" rounded="pill" leftIcon={<Send size={16} />} onClick={handleSubmitAttempt}>
+                      Submit Attempt
+                    </Button>
+                  </>
+                ) : (
+                  <div style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    background: "#fee2e2", color: "#dc2626",
+                    padding: "8px 20px", borderRadius: 99,
+                    fontWeight: 700, fontSize: 13, border: "1px solid #fca5a5"
+                  }}>
+                    <Lock size={16} /> Locked Out (3/3 Attempts)
+                  </div>
+                )}
+              </div>
             ) : (
               <div style={{ display: "flex", gap: 12 }}>
                 <Button variant="outline" rounded="pill" leftIcon={<RotateCcw size={16} />} onClick={handleReAssess}>
-                  Re-Assess
+                  Re-Assess ({MAX_ATTEMPTS - attempts.length} attempt{MAX_ATTEMPTS - attempts.length === 1 ? '' : 's'} left)
                 </Button>
                 {hasPassingAttempt && (
                   <Button variant="primary" rounded="pill" leftIcon={<Send size={16} />} onClick={handleSubmitAttempt}>
@@ -209,6 +232,33 @@ const ModuleAttempts = () => {
               </div>
             )}
           </div>
+
+          {/* Lockout Warning Banner when 3 attempts exhausted without passing */}
+          {attempts.length >= MAX_ATTEMPTS && !hasPassingAttempt && !assessmentCompleted && (
+            <div style={{
+              background: "#fef2f2", borderRadius: 10, padding: "16px 20px",
+              marginBottom: 24, display: "flex", alignItems: "center", gap: 14,
+              border: "1px solid #fca5a5"
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: "50%", background: "#fee2e2",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+              }}>
+                <Lock size={20} color="#dc2626" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#991b1b" }}>
+                  Maximum Attempts Exceeded (3/3 Attempts Used)
+                </div>
+                <div style={{ fontSize: 13, color: "#b91c1c", marginTop: 2 }}>
+                  You have exhausted all 3 allowed attempts for this assessment. Retakes are locked. Please contact your instructor or administrator for assistance.
+                </div>
+              </div>
+              <Button variant="outline" size="sm" rounded="pill" onClick={handleBackToModules} style={{ marginLeft: "auto", borderColor: "#dc2626", color: "#dc2626" }}>
+                Back to Modules
+              </Button>
+            </div>
+          )}
 
           {assessmentCompleted && (
             <div style={{

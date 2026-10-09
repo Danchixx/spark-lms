@@ -1,962 +1,2120 @@
 // src/pages/SuperAdmin/Users/SparkUsers.jsx
-// All users across all tenants — search, filter, suspend, ban, reactivate
+// Multi-tenant user directory and staff provisioning for SuperAdmin
 
 import { useState, useMemo, useEffect } from "react";
-import { MOCK_ALL_USERS, COMPANIES_LIST, DEPARTMENTS_LIST } from "../../../data/mockUsers";
+import { supabase } from "../../../lib/supabase";
+import { logAuditEvent } from "../../../services/auditService";
+import { useAuth } from "../../../context/AuthContext";
+import { useSATheme } from "../SAThemeContext";
+import { StatusAndDateCell } from "../components/SALayout";
+import { getTenantColorStyles, getStableTenantColor } from "../components/tenantColors";
+import PageTransition from "../../../components/common/PageTransition";
+import { Loader2, Plus, Eye, Key, Shield, UserCheck, AlertCircle, Check, X, Building2, User, Mail, Briefcase, Pencil, Phone, Hash, UserCog } from "lucide-react";
 
 const ITEMS_PER_PAGE = 8;
 
 // ─────────────────────────────────────────────────────────────
-// Shared tiny components
+// Dropdown select with dark mode support
 // ─────────────────────────────────────────────────────────────
-
-const Avatar = ({ size = 40, color = "#ccc", abbr = "?" }) => (
-  <div style={{
-    width: size, height: size, borderRadius: "50%",
-    background: color + "22", border: `2px solid ${color}55`,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: size * 0.3, fontWeight: 800, color,
-    flexShrink: 0,
-  }}>
-    {abbr.slice(0, 2).toUpperCase()}
-  </div>
-);
-
-const StatusBadge = ({ status }) => {
-  const map = {
-    Active:      { bg: "#d5f5e0", color: "#1e8449" },
-    Pending:     { bg: "#FFF0E6", color: "#FF6B00" },
-    Suspended:   { bg: "#fef9e7", color: "#d4ac0d" },
-    Banned:      { bg: "#fde8e8", color: "#922b21" },
-    Rejected:    { bg: "#f0f0f0", color: "#888"    },
-    Reactivated: { bg: "#d5f5e0", color: "#1e8449" },
-  };
-  const { bg, color } = map[status] || map.Pending;
-  return (
-    <span style={{
-      background: bg, color,
-      fontSize: 11, fontWeight: 700,
-      padding: "3px 12px", borderRadius: 20,
-      display: "inline-block", whiteSpace: "nowrap",
-    }}>
-      {status}
-    </span>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────
-// Stat summary cards (top of page)
-// ─────────────────────────────────────────────────────────────
-
-const StatCard = ({ label, value, accent, icon, sub, subColor }) => (
-  <div style={{
-    background: "#fff",
-    borderRadius: 12,
-    borderTop: `3px solid ${accent}`,
-    boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
-    padding: "20px 22px",
-    display: "flex", alignItems: "center",
-    justifyContent: "space-between",
-  }}>
-    <div>
-      <div style={{
-        fontSize: 10, fontWeight: 700, color: "#aaa",
-        letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 8,
-      }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 32, fontWeight: 900, color: "#222", lineHeight: 1, marginBottom: 6 }}>
-        {value}
-      </div>
-      {sub && (
-        <div style={{ fontSize: 12, color: subColor || "#27ae60", fontWeight: 500 }}>
-          {sub}
-        </div>
-      )}
-    </div>
-    <div style={{
-      width: 52, height: 52, borderRadius: 12,
-      background: "#FFF0E6",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      color: "#FF6B00", flexShrink: 0,
-    }}>
-      {icon}
-    </div>
-  </div>
-);
-
-// ─────────────────────────────────────────────────────────────
-// Dropdown select
-// ─────────────────────────────────────────────────────────────
-
-const Select = ({ value, onChange, options, placeholder }) => (
+const Select = ({ value, onChange, options, placeholder, isDark }) => (
   <div style={{ position: "relative", display: "inline-flex", alignItems: "center", width: "100%" }}>
-    <select value={value} onChange={e => onChange(e.target.value)} style={{
-      appearance: "none", background: "#fff",
-      border: "1.5px solid #e0e0e0", borderRadius: 8,
-      padding: "9px 32px 9px 12px",
-      fontSize: 13, color: value ? "#333" : "#aaa",
-      cursor: "pointer", fontFamily: "'Barlow', sans-serif",
-      outline: "none", width: "100%",
-      transition: "border-color .2s",
-    }}
-      onFocus={e => e.target.style.borderColor = "#FF6B00"}
-      onBlur={e => e.target.style.borderColor = "#e0e0e0"}
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        appearance: "none",
+        background: "var(--bg)",
+        border: "1.5px solid var(--line)",
+        borderRadius: 10,
+        padding: "9px 32px 9px 12px",
+        fontSize: 13,
+        color: value ? "var(--text)" : "var(--faint)",
+        cursor: "pointer",
+        fontFamily: "'Barlow', sans-serif",
+        outline: "none",
+        width: "100%",
+        colorScheme: isDark ? "dark" : "light",
+        transition: "border-color .2s",
+      }}
+      onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+      onBlur={(e) => (e.target.style.borderColor = "var(--line)")}
     >
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map(o => (
-        <option key={o.value} value={o.value}>{o.label}</option>
+      {placeholder && (
+        <option value="" style={{ background: "var(--card)", color: "var(--muted)" }}>
+          {placeholder}
+        </option>
+      )}
+      {options.map((o) => (
+        <option key={o.value} value={o.value} style={{ background: "var(--card)", color: "var(--text)" }}>
+          {o.label}
+        </option>
       ))}
     </select>
-    <svg style={{ position: "absolute", right: 10, pointerEvents: "none" }}
-      width="12" height="12" viewBox="0 0 24 24" fill="none"
-      stroke="#888" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9"/>
+    <svg
+      style={{ position: "absolute", right: 10, pointerEvents: "none" }}
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--muted)"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="6 9 12 15 18 9" />
     </svg>
   </div>
 );
 
 // ─────────────────────────────────────────────────────────────
-// Reason modal (suspend / ban)
+// Stat summary cards
 // ─────────────────────────────────────────────────────────────
+const StatCard = ({ label, value, accent, topBorderColor, icon, sub, subColor }) => (
+  <div
+    style={{
+      background: "var(--card)",
+      borderRadius: 14,
+      border: "1px solid var(--line)",
+      borderTop: `3px solid ${topBorderColor || accent}`,
+      boxShadow: "var(--shadow, 0 2px 12px rgba(0,0,0,.07))",
+      padding: "18px 20px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    }}
+  >
+    <div>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--muted)",
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+          marginBottom: 6,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 30,
+          fontWeight: 800,
+          color: "var(--text)",
+          lineHeight: 1,
+          marginBottom: 6,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value}
+      </div>
+      {sub && (
+        <div style={{ fontSize: 12, color: subColor || "var(--green)", fontWeight: 500 }}>
+          {sub}
+        </div>
+      )}
+    </div>
+    <div
+      style={{
+        width: 50,
+        height: 50,
+        borderRadius: 12,
+        background: `color-mix(in srgb, ${accent} 14%, transparent)`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: accent,
+        flexShrink: 0,
+      }}
+    >
+      {icon}
+    </div>
+  </div>
+);
 
-const ReasonModal = ({ actionLabel, actionColor, onConfirm, onCancel }) => {
-  const [reason, setReason] = useState("");
-  const [duration, setDuration] = useState("1 week");
-  const isSuspend = actionLabel === "Suspend";
+const ModalField = ({ label, value }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+      {label}
+    </div>
+    <div
+      style={{
+        background: "var(--bg)",
+        borderRadius: 6,
+        padding: "8px 10px",
+        fontSize: 13,
+        color: value ? "var(--text)" : "var(--faint)",
+        border: "1px solid var(--line)",
+        minHeight: 34,
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      {value || "—"}
+    </div>
+  </div>
+);
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
+const SectionTitle = ({ title }) => (
+  <div
+    style={{
+      fontSize: 11,
+      fontWeight: 800,
+      color: "var(--accent-text, #FF6B00)",
+      letterSpacing: ".1em",
+      textTransform: "uppercase",
+      marginBottom: 10,
+    }}
+  >
+    {title}
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────
+// Add Staff Modal (Tenant Admin or Course Creator provisioning)
+// ─────────────────────────────────────────────────────────────
+const AddStaffModal = ({ companies, roles, onClose, onSuccess, theme }) => {
+  const { user: currentAdmin } = useAuth();
+  const [companyId, setCompanyId] = useState(companies[0]?.id || "");
+  const [roleName, setRoleName] = useState("admin"); // 'admin' or 'course creator'
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [department, setDepartment] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleGeneratePassword = () => {
+    const selectedComp = companies.find((c) => String(c.id) === String(companyId));
+    const compSlug = selectedComp ? selectedComp.slug.toUpperCase() : "SPARK";
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    setPassword(`Spark-${compSlug}-${rand}`);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!companyId || !firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+      setErrorMsg("Please complete all required fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      // 1. Create in Supabase Auth via Edge Function
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("create-admin-user", {
+        body: {
+          email: email.trim(),
+          password: password.trim(),
+          name: `${firstName.trim()} ${lastName.trim()}`,
+          sendEmail: false,
+        },
+      });
+
+      if (fnError) throw new Error(fnError.message || "Failed to create Auth account");
+      if (fnData?.error) throw new Error(fnData.error);
+
+      const authUserId = fnData.user.id;
+
+      // 2. Find target role ID
+      const targetRole = roles.find((r) => r.name.toLowerCase() === roleName.toLowerCase());
+      if (!targetRole) throw new Error(`Role '${roleName}' not found in database.`);
+
+      // 3. Insert into public.users
+      const { error: dbError } = await supabase.from("users").insert({
+        id: authUserId,
+        company_id: Number(companyId),
+        role_id: targetRole.id,
+        firstname: firstName.trim(),
+        lastname: lastName.trim(),
+        email: email.trim(),
+        password: password.trim(),
+        department: department.trim() || null,
+        job_title: jobTitle.trim() || (roleName === "admin" ? "Tenant Administrator" : "Course Creator"),
+        status: "active",
+        created_by: currentAdmin?.id || null,
+      });
+
+      if (dbError) throw dbError;
+
+      // 4. Log audit trail
+      await logAuditEvent({
+        action: "PROVISION_TENANT_STAFF",
+        tableName: "users",
+        userId: currentAdmin?.id || null,
+        newValue: {
+          email: email.trim(),
+          company_id: companyId,
+          role: roleName,
+          staff_name: `${firstName} ${lastName}`,
+        },
+      });
+
+      onSuccess();
+    } catch (err) {
+      console.error("Staff creation failed:", err);
+      setErrorMsg(err.message || "Failed to create staff account.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div onClick={onCancel} style={{
-      position: "fixed", inset: 0,
-      background: "rgba(0,0,0,.6)", zIndex: 1100,
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: "#fff", borderRadius: 14,
-        width: 440, maxWidth: "90vw", padding: 28,
-        boxShadow: "0 20px 60px rgba(0,0,0,.25)",
-      }}>
-        <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900, fontSize: 20, color: "#222", marginBottom: 6,
-        }}>
-          {isSuspend ? "Suspend User" : "Ban User"}
-        </div>
-        <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
-          {isSuspend
-            ? "The user will temporarily lose access. You can reactivate them later."
-            : "The user will be permanently blocked from the system."}
+    <div
+      onClick={onClose}
+      data-sa-theme={theme}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.65)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--card)",
+          borderRadius: 14,
+          border: "1px solid var(--line)",
+          width: "min(560px, 95vw)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          boxShadow: "var(--shadow, 0 24px 80px rgba(0,0,0,.4))",
+          padding: 28,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div>
+            <h3 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: "var(--text)" }}>Provision Tenant Staff</h3>
+            <p style={{ fontSize: 13, color: "var(--muted)", margin: "4px 0 0" }}>
+              Create an Administrator or Course Creator account for a tenant organization.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)" }}
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        {isSuspend && (
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#555",
-              marginBottom: 6, textTransform: "uppercase", letterSpacing: ".08em" }}>
-              Duration
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {["1 week", "2 weeks", "1 month", "3 months"].map(d => (
-                <button key={d} onClick={() => setDuration(d)} style={{
-                  padding: "5px 12px", borderRadius: 20, fontSize: 12,
-                  fontWeight: 600, cursor: "pointer",
-                  border: `1.5px solid ${duration === d ? "#FF6B00" : "#ddd"}`,
-                  background: duration === d ? "#FFF0E6" : "#fff",
-                  color: duration === d ? "#FF6B00" : "#555",
-                  fontFamily: "'Barlow', sans-serif", transition: "all .15s",
-                }}>
-                  {d}
-                </button>
+        {errorMsg && (
+          <div
+            style={{
+              padding: "10px 14px",
+              background: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: 8,
+              color: "#ef4444",
+              fontSize: 13,
+              marginBottom: 16,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <AlertCircle size={16} />
+            {errorMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Company Selection */}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+              Tenant Company *
+            </label>
+            <select
+              value={companyId}
+              onChange={(e) => setCompanyId(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--line)",
+                background: "var(--bg)",
+                color: "var(--text)",
+                fontSize: 13,
+                outline: "none",
+              }}
+            >
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.slug})
+                </option>
               ))}
+            </select>
+          </div>
+
+          {/* Role Choice */}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+              Assigned Role *
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div
+                onClick={() => setRoleName("admin")}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  border: `2px solid ${roleName === "admin" ? "#FF6B00" : "var(--line)"}`,
+                  background: roleName === "admin" ? "rgba(255, 107, 0, 0.08)" : "var(--bg)",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>Tenant Admin</div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Manages users</div>
+              </div>
+
+              <div
+                onClick={() => setRoleName("course creator")}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  border: `2px solid ${roleName === "course creator" ? "#FF6B00" : "var(--line)"}`,
+                  background: roleName === "course creator" ? "rgba(255, 107, 0, 0.08)" : "var(--bg)",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>Course Creator</div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Creates courses and assessments</div>
+              </div>
+            </div>
+          </div>
+
+          {/* First & Last Name */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                First Name *
+              </label>
+              <input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Juan"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--line)",
+                  background: "var(--bg)",
+                  color: "var(--text)",
+                  fontSize: 13,
+                  outline: "none",
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                Last Name *
+              </label>
+              <input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Dela Cruz"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--line)",
+                  background: "var(--bg)",
+                  color: "var(--text)",
+                  fontSize: 13,
+                  outline: "none",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Email */}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+              Email Address *
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="staff@company.com"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--line)",
+                background: "var(--bg)",
+                color: "var(--text)",
+                fontSize: 13,
+                outline: "none",
+              }}
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>Password *</label>
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--accent-text, #FF6B00)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Auto-generate
+              </button>
+            </div>
+            <input
+              type="text"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter or generate temporary password"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--line)",
+                background: "var(--bg)",
+                color: "var(--text)",
+                fontSize: 13,
+                outline: "none",
+                fontFamily: "monospace",
+              }}
+            />
+          </div>
+
+          {/* Department & Job Title */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                Department
+              </label>
+              <input
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                placeholder="Operations / L&D"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--line)",
+                  background: "var(--bg)",
+                  color: "var(--text)",
+                  fontSize: 13,
+                  outline: "none",
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                Job Title
+              </label>
+              <input
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+                placeholder="Admin Lead / Content Designer"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--line)",
+                  background: "var(--bg)",
+                  color: "var(--text)",
+                  fontSize: 13,
+                  outline: "none",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 8,
+                border: "1px solid var(--line)",
+                background: "var(--card)",
+                color: "var(--text)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                padding: "10px 24px",
+                borderRadius: 8,
+                border: "none",
+                background: "#FF6B00",
+                color: "white",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} /> Creating Staff...
+                </>
+              ) : (
+                "Create Account"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// User Inspection & Management Modal (Unified Manage & Edit Card)
+// ─────────────────────────────────────────────────────────────
+const UserModal = ({
+  user,
+  companies = [],
+  roles = [],
+  onClose,
+  onSuccess,
+  theme,
+}) => {
+  const { user: currentAdmin } = useAuth();
+  const [currentUser, setCurrentUser] = useState(user);
+  const isLearner = (currentUser?.roleName || user?.roleName) === "user";
+
+  // Mode: Viewing vs Editing (Learners can NEVER edit)
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  // Edit Form Fields
+  const [editForm, setEditForm] = useState({
+    firstName: user?.firstname || "",
+    lastName: user?.lastname || "",
+    email: user?.email || "",
+    companyId: user?.company_id ? String(user.company_id) : "",
+    roleName: user?.roleName === "course creator" || user?.roleName === "creator" ? "course creator" : "admin",
+    department: user?.department || "",
+    jobTitle: user?.job_title || "",
+    status: user?.status || "active",
+    employeeId: user?.employee_id || "",
+    contactNo: user?.contact_no || "",
+  });
+
+  // Password Reset State
+  const [newPassword, setNewPassword] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetError, setResetError] = useState("");
+
+  // Keep state synced when user prop changes
+  useEffect(() => {
+    setCurrentUser(user);
+    setIsEditing(false);
+    setSaveSuccess(false);
+    setSaveError("");
+    setResetSuccess(false);
+    setResetError("");
+    setNewPassword("");
+    setEditForm({
+      firstName: user?.firstname || "",
+      lastName: user?.lastname || "",
+      email: user?.email || "",
+      companyId: user?.company_id ? String(user.company_id) : "",
+      roleName: user?.roleName === "course creator" || user?.roleName === "creator" ? "course creator" : "admin",
+      department: user?.department || "",
+      jobTitle: user?.job_title || "",
+      status: user?.status || "active",
+      employeeId: user?.employee_id || "",
+      contactNo: user?.contact_no || "",
+    });
+  }, [user]);
+
+  const handleStartEdit = () => {
+    if (isLearner) return;
+    setSaveSuccess(false);
+    setSaveError("");
+    setEditForm({
+      firstName: currentUser?.firstname || "",
+      lastName: currentUser?.lastname || "",
+      email: currentUser?.email || "",
+      companyId: currentUser?.company_id ? String(currentUser.company_id) : "",
+      roleName: currentUser?.roleName === "course creator" || currentUser?.roleName === "creator" ? "course creator" : "admin",
+      department: currentUser?.department || "",
+      jobTitle: currentUser?.job_title || "",
+      status: currentUser?.status || "active",
+      employeeId: currentUser?.employee_id || "",
+      contactNo: currentUser?.contact_no || "",
+    });
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setSaveError("");
+  };
+
+  const handleSaveEdit = async (e) => {
+    if (e) e.preventDefault();
+    if (!editForm.firstName.trim() || !editForm.lastName.trim() || !editForm.email.trim() || !editForm.companyId) {
+      setSaveError("Please complete all required fields (First Name, Last Name, Email, Organization).");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError("");
+    setSaveSuccess(false);
+
+    try {
+      const targetRole = roles.find((r) => r.name.toLowerCase() === editForm.roleName.toLowerCase());
+      if (!targetRole) {
+        throw new Error(`Role '${editForm.roleName}' not found in the database.`);
+      }
+
+      const updates = {
+        firstname: editForm.firstName.trim(),
+        lastname: editForm.lastName.trim(),
+        email: editForm.email.trim(),
+        company_id: Number(editForm.companyId),
+        role_id: targetRole.id,
+        department: editForm.department.trim() || null,
+        job_title: editForm.jobTitle.trim() || (editForm.roleName === "admin" ? "Tenant Administrator" : "Course Creator"),
+        status: editForm.status,
+        employee_id: editForm.employeeId.trim() || null,
+        contact_no: editForm.contactNo.trim() || null,
+      };
+
+      const { error: dbError } = await supabase
+        .from("users")
+        .update(updates)
+        .eq("id", currentUser.id);
+
+      if (dbError) throw dbError;
+
+      // Log Audit Event
+      await logAuditEvent({
+        action: "UPDATE_TENANT_STAFF",
+        tableName: "users",
+        userId: currentAdmin?.id || null,
+        oldValue: {
+          firstname: currentUser.firstname,
+          lastname: currentUser.lastname,
+          email: currentUser.email,
+          company_id: currentUser.company_id,
+          role_id: currentUser.role_id,
+          status: currentUser.status,
+          department: currentUser.department,
+          job_title: currentUser.job_title,
+          employee_id: currentUser.employee_id,
+          contact_no: currentUser.contact_no,
+        },
+        newValue: {
+          ...updates,
+          target_user_id: currentUser.id,
+        },
+      });
+
+      // Update local currentUser representation
+      const targetComp = companies.find((c) => String(c.id) === String(updates.company_id));
+      const updatedUserObj = {
+        ...currentUser,
+        ...updates,
+        name: `${updates.firstname} ${updates.lastname}`.trim(),
+        roleName: editForm.roleName,
+        companyName: targetComp?.name || currentUser.companyName,
+        companyColor: getStableTenantColor(updates.company_id),
+      };
+
+      setCurrentUser(updatedUserObj);
+      setSaveSuccess(true);
+      setIsEditing(false);
+
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err) {
+      console.error("Failed to update staff:", err);
+      setSaveError(err.message || "Failed to update staff details.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!newPassword.trim()) {
+      setResetError("Enter a new password first.");
+      return;
+    }
+    setIsResetting(true);
+    setResetError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("create-admin-user", {
+        body: {
+          action: "reset_password",
+          userId: currentUser.id,
+          newPassword: newPassword.trim(),
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setResetSuccess(true);
+      await logAuditEvent({
+        action: "RESET_STAFF_PASSWORD",
+        tableName: "users",
+        userId: currentAdmin?.id || null,
+        newValue: { target_user_id: currentUser.id, email: currentUser.email },
+      });
+    } catch (err) {
+      setResetError(err.message || "Failed to reset password.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const s = String(status || "").toLowerCase();
+    const isAct = s === "active";
+    const isPend = s === "pending";
+    const bg = isAct ? "rgba(34, 197, 94, 0.12)" : isPend ? "rgba(234, 179, 8, 0.12)" : "rgba(239, 68, 68, 0.12)";
+    const color = isAct ? "#22c55e" : isPend ? "#eab308" : "#ef4444";
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "3px 10px",
+          borderRadius: 6,
+          fontSize: 12,
+          fontWeight: 700,
+          background: bg,
+          color: color,
+          textTransform: "uppercase",
+        }}
+      >
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: color }} />
+        {status || "ACTIVE"}
+      </span>
+    );
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      data-sa-theme={theme}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.6)",
+        zIndex: 999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--card)",
+          borderRadius: 16,
+          border: "1px solid var(--line)",
+          width: "min(780px, 95vw)",
+          maxHeight: "90vh",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "var(--shadow, 0 24px 80px rgba(0,0,0,.4))",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: "20px 24px",
+            borderBottom: "1px solid var(--line)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "var(--card-2)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                background: currentUser?.companyColor || "#FF6B00",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 900,
+                fontSize: 18,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+              }}
+            >
+              {currentUser?.firstname?.[0]?.toUpperCase() || currentUser?.name?.[0]?.toUpperCase() || "U"}
+            </div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>
+                  {currentUser?.firstname} {currentUser?.lastname}
+                </span>
+                <span
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    background: !isLearner ? "rgba(255, 107, 0, 0.12)" : "rgba(59, 130, 246, 0.12)",
+                    color: !isLearner ? "#FF6B00" : "#3b82f6",
+                  }}
+                >
+                  {currentUser?.roleName}
+                </span>
+                {isEditing && (
+                  <span
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      fontSize: 10,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      background: "rgba(255, 107, 0, 0.15)",
+                      color: "#FF6B00",
+                      border: "1px solid rgba(255, 107, 0, 0.3)",
+                    }}
+                  >
+                    Editing Mode
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
+                {currentUser?.email} • <strong style={{ color: "var(--text)" }}>{currentUser?.companyName}</strong>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--muted)",
+              padding: 6,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "background .15s",
+            }}
+            title="Close dialog"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Informative Banner for Learners (Strict Read-Only) */}
+        {isLearner && (
+          <div
+            style={{
+              padding: "12px 24px",
+              background: "rgba(59, 130, 246, 0.08)",
+              borderBottom: "1px solid rgba(59, 130, 246, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              fontSize: 13,
+              color: "var(--text)",
+            }}
+          >
+            <Shield size={18} color="#3b82f6" style={{ flexShrink: 0 }} />
+            <span>
+              <strong>Tenant Learner Account</strong> — Managed exclusively by <strong>{currentUser?.companyName}</strong>'s Administrator. SuperAdmin has read-only audit visibility.
+            </span>
+          </div>
+        )}
+
+        {/* Content body */}
+        <div style={{ padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Success Notification */}
+          {saveSuccess && !isEditing && (
+            <div
+              style={{
+                padding: "12px 16px",
+                background: "rgba(34, 197, 94, 0.1)",
+                color: "#22c55e",
+                borderRadius: 8,
+                fontSize: 13,
+                border: "1px solid rgba(34, 197, 94, 0.25)",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Check size={16} />
+              <span>Staff details updated successfully and logged in audit trails.</span>
+            </div>
+          )}
+
+          {/* EDIT FORM (When Editing Staff) */}
+          {isEditing && !isLearner ? (
+            <form id="staff-edit-form" onSubmit={handleSaveEdit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Informative Banner */}
+              <div
+                style={{
+                  padding: "12px 18px",
+                  background: "rgba(255, 107, 0, 0.08)",
+                  border: "1px solid rgba(255, 107, 0, 0.25)",
+                  borderRadius: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  fontSize: 13,
+                  color: "var(--text)",
+                }}
+              >
+                <Pencil size={18} color="#FF6B00" style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>Staff Account Editor</strong> — Modify role assignments, tenant organization, profile information, and account status.
+                </span>
+              </div>
+
+              {/* Error Alert */}
+              {saveError && (
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    background: "rgba(239, 68, 68, 0.1)",
+                    color: "#ef4444",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    border: "1px solid rgba(239, 68, 68, 0.25)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  <span>{saveError}</span>
+                </div>
+              )}
+
+              {/* Role Selection */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 8 }}>
+                  Staff Role *
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div
+                    onClick={() => setEditForm((prev) => ({ ...prev, roleName: "admin" }))}
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: 10,
+                      border: `2px solid ${editForm.roleName === "admin" ? "#FF6B00" : "var(--line)"}`,
+                      background: editForm.roleName === "admin" ? "rgba(255, 107, 0, 0.08)" : "var(--bg)",
+                      cursor: "pointer",
+                      transition: "all .15s",
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>Tenant Admin</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Manages users</div>
+                  </div>
+
+                  <div
+                    onClick={() => setEditForm((prev) => ({ ...prev, roleName: "course creator" }))}
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: 10,
+                      border: `2px solid ${editForm.roleName === "course creator" ? "#FF6B00" : "var(--line)"}`,
+                      background: editForm.roleName === "course creator" ? "rgba(255, 107, 0, 0.08)" : "var(--bg)",
+                      cursor: "pointer",
+                      transition: "all .15s",
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>Course Creator</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Creates courses and assessments</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Organization / Tenant */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                  Organization / Tenant Assignment *
+                </label>
+                <select
+                  value={editForm.companyId}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, companyId: e.target.value }))}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    border: "1px solid var(--line)",
+                    background: "var(--bg)",
+                    color: "var(--text)",
+                    fontSize: 13,
+                    outline: "none",
+                  }}
+                >
+                  {companies.map((c) => (
+                    <option key={c.id} value={c.id} style={{ background: "var(--card)", color: "var(--text)" }}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* First & Last Name */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    First Name *
+                  </label>
+                  <input
+                    value={editForm.firstName}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, firstName: e.target.value }))}
+                    placeholder="First Name"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Last Name *
+                  </label>
+                  <input
+                    value={editForm.lastName}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, lastName: e.target.value }))}
+                    placeholder="Last Name"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Email & Contact Number */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="staff@company.com"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Contact Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={editForm.contactNo}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, contactNo: e.target.value }))}
+                    placeholder="e.g. 0917-123-4567"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Department & Job Title */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Department
+                  </label>
+                  <input
+                    value={editForm.department}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, department: e.target.value }))}
+                    placeholder="e.g. Training & Academic"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Job Title / Position
+                  </label>
+                  <input
+                    value={editForm.jobTitle}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, jobTitle: e.target.value }))}
+                    placeholder="e.g. Lead Instructor"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Employee ID & Account Status */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Employee ID
+                  </label>
+                  <input
+                    value={editForm.employeeId}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, employeeId: e.target.value }))}
+                    placeholder="e.g. EMP-001"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Account Status
+                  </label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  >
+                    <option value="active" style={{ background: "var(--card)", color: "var(--text)" }}>Active</option>
+                    <option value="pending" style={{ background: "var(--card)", color: "var(--text)" }}>Pending</option>
+                    <option value="suspended" style={{ background: "var(--card)", color: "var(--text)" }}>Suspended</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <>
+              {/* VIEW PROFILE DISPLAY */}
+              <div>
+                <SectionTitle title="Account Profile" />
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                  <ModalField label="First Name" value={currentUser?.firstname} />
+                  <ModalField label="Last Name" value={currentUser?.lastname} />
+                  <ModalField label="Role" value={currentUser?.roleName?.toUpperCase()} />
+                  <ModalField label="Organization" value={currentUser?.companyName} />
+                  <ModalField label="Email Address" value={currentUser?.email} />
+                  <ModalField label="Contact Number" value={currentUser?.contact_no} />
+                  <ModalField label="Employee ID" value={currentUser?.employee_id} />
+                  <ModalField label="Department" value={currentUser?.department} />
+                  <ModalField label="Job Position" value={currentUser?.job_title} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+                      Account Status
+                    </div>
+                    <div
+                      style={{
+                        background: "var(--bg)",
+                        borderRadius: 6,
+                        padding: "6px 10px",
+                        border: "1px solid var(--line)",
+                        minHeight: 34,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      {getStatusBadge(currentUser?.status)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Security & Password Reset (For Staff Only) */}
+              {!isLearner && (
+                <div style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 18, background: "var(--bg)" }}>
+                  <SectionTitle title="Staff Credentials & Access" />
+                  <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 14px" }}>
+                    As SuperAdmin, you can issue password overrides for Tenant Administrators and Course Creators.
+                  </p>
+
+                  {resetSuccess && (
+                    <div style={{ padding: "8px 12px", background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", borderRadius: 6, fontSize: 13, marginBottom: 12 }}>
+                      ✓ Password has been updated successfully.
+                    </div>
+                  )}
+                  {resetError && (
+                    <div style={{ padding: "8px 12px", background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", borderRadius: 6, fontSize: 13, marginBottom: 12 }}>
+                      {resetError}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 10, maxWidth: 440 }}>
+                    <input
+                      type="text"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New temporary password"
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        border: "1px solid var(--line)",
+                        background: "var(--card)",
+                        color: "var(--text)",
+                        fontSize: 13,
+                        outline: "none",
+                      }}
+                    />
+                    <button
+                      onClick={handlePasswordReset}
+                      disabled={isResetting}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: "#FF6B00",
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        cursor: isResetting ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {isResetting ? "Updating..." : "Update Password"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Unified Modal Footer */}
+        <div
+          style={{
+            padding: "16px 24px",
+            borderTop: "1px solid var(--line)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "var(--card-2)",
+          }}
+        >
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>
+            {isEditing
+              ? "Review changes before saving."
+              : isLearner
+              ? "Read-only learner audit view"
+              : "Staff account management"}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {isEditing ? (
+              <>
+                <button
+                  key="cancel-btn"
+                  type="button"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  style={{
+                    padding: "8px 20px",
+                    borderRadius: 8,
+                    border: "1px solid var(--line)",
+                    background: "var(--card)",
+                    color: "var(--text)",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  key="save-btn"
+                  type="submit"
+                  form="staff-edit-form"
+                  disabled={isSaving}
+                  style={{
+                    padding: "8px 22px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: "#FF6B00",
+                    color: "white",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: isSaving ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    boxShadow: "0 2px 8px rgba(255, 107, 0, 0.25)",
+                  }}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="animate-spin" size={15} /> Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  key="close-btn"
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    padding: "8px 20px",
+                    borderRadius: 8,
+                    border: "1px solid var(--line)",
+                    background: "var(--card)",
+                    color: "var(--text)",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
+                {!isLearner && (
+                  <button
+                    key="edit-btn"
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleStartEdit();
+                    }}
+                    style={{
+                      padding: "8px 20px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: "#FF6B00",
+                      color: "white",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      boxShadow: "0 2px 8px rgba(255, 107, 0, 0.25)",
+                    }}
+                  >
+                    <Pencil size={14} />
+                    <span>Edit Details</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// Main SparkUsers Page Component
+// ─────────────────────────────────────────────────────────────
+const SparkUsers = () => {
+  const { theme } = useSATheme();
+  const isDark = theme === "dark";
+
+  // State
+  const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Active Tab: 'staff' | 'learners' | 'all'
+  const [activeTab, setActiveTab] = useState("staff");
+
+  // Modals
+  const [inspectUser, setInspectUser] = useState(null);
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+
+  // 1. Fetch live data from Supabase
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch users with company and role joins
+      const { data: usersData, error: usersError } = await supabase
+        .from("users")
+        .select(`
+          id,
+          firstname,
+          lastname,
+          middlename,
+          email,
+          status,
+          created_at,
+          employee_id,
+          contact_no,
+          department,
+          job_title,
+          role_id,
+          company_id,
+          roles(id, name),
+          company:companies!users_company_id_fkey(id, name, slug, logo_url)
+        `)
+        .eq("is_archived", false)
+        .order("created_at", { ascending: false });
+
+      if (usersError) throw usersError;
+
+      // Fetch active companies
+      const { data: companiesData, error: companiesError } = await supabase
+        .from("companies")
+        .select("id, name, slug, logo_url")
+        .eq("is_archived", false)
+        .order("name", { ascending: true });
+
+      if (companiesError) throw companiesError;
+
+      // Fetch roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("roles")
+        .select("id, name");
+
+      if (rolesError) throw rolesError;
+
+      // Format user rows
+      const formatted = (usersData || []).map((u) => {
+        const foundRole = (rolesData || []).find((r) => r.id === u.role_id);
+        const rName = (foundRole?.name || (Array.isArray(u.roles) ? u.roles[0]?.name : u.roles?.name) || "user").toLowerCase();
+        const foundCompany = (companiesData || []).find((c) => c.id === u.company_id);
+        const cName = foundCompany?.name || u.company?.name || "Unassigned";
+        const cColor = getStableTenantColor(u.company_id);
+        return {
+          ...u,
+          name: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.email,
+          roleName: rName,
+          companyName: cName,
+          companyColor: cColor,
+        };
+      });
+
+      setUsers(formatted);
+      setCompanies(companiesData || []);
+      setRoles(rolesData || []);
+    } catch (err) {
+      console.error("Failed to load user directory:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Filtered dataset
+  const filtered = useMemo(() => {
+    return users.filter((u) => {
+      // Exclude platform superadmin from client-side listing
+      if (u.roleName === "superadmin" || u.roleName === "spark_admin") return false;
+
+      // Tab filtering
+      if (activeTab === "staff") {
+        if (u.roleName !== "admin" && u.roleName !== "course creator" && u.roleName !== "creator") {
+          return false;
+        }
+      } else if (activeTab === "learners") {
+        if (u.roleName !== "user") {
+          return false;
+        }
+      }
+
+      // Search filter
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const matchesName = u.name.toLowerCase().includes(q);
+        const matchesEmail = u.email.toLowerCase().includes(q);
+        const matchesEmpId = u.employee_id ? u.employee_id.toLowerCase().includes(q) : false;
+        if (!matchesName && !matchesEmail && !matchesEmpId) return false;
+      }
+
+      // Company filter
+      if (companyFilter && String(u.company_id) !== String(companyFilter)) {
+        return false;
+      }
+
+      // Status filter
+      if (statusFilter && u.status?.toLowerCase() !== statusFilter.toLowerCase()) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [users, activeTab, search, companyFilter, statusFilter]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
+
+  // Statistics
+  const totalStaffCount = users.filter((u) => u.roleName === "admin" || u.roleName === "course creator" || u.roleName === "creator").length;
+  const totalLearnerCount = users.filter((u) => u.roleName === "user").length;
+  const totalTenantsCount = companies.length;
+
+  return (
+    <PageTransition>
+      <div
+        style={{
+          padding: 24,
+          minHeight: "100%",
+          background: "var(--bg)",
+          fontFamily: "'Barlow', sans-serif",
+          color: "var(--text)",
+        }}
+      >
+        {/* Page Top Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+          <div>
+            <div
+              style={{
+                fontFamily: "'Barlow Condensed', sans-serif",
+                fontWeight: 900,
+                fontSize: 26,
+                color: "var(--text)",
+                textTransform: "uppercase",
+                letterSpacing: ".05em",
+              }}
+            >
+              USER & STAFF DIRECTORY
+            </div>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
+              Platform-wide tenant administration and learner oversight
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAddStaffModal(true)}
+            style={{
+              background: "#FF6B00",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "10px 18px",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 14px rgba(255, 107, 0, 0.25)",
+            }}
+          >
+            <Plus size={16} />
+            <span>New Staff Account</span>
+          </button>
+        </div>
+
+        {/* Metric Summary Cards */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 14,
+            marginBottom: 20,
+          }}
+        >
+          <StatCard
+            label="Tenant Staff"
+            value={totalStaffCount}
+            accent="#FF6B00"
+            topBorderColor="#FF6B00"
+            sub="Tenant Admins & Creators"
+            icon={<Briefcase size={22} />}
+          />
+          <StatCard
+            label="Tenant Learners"
+            value={totalLearnerCount}
+            accent="#3b82f6"
+            topBorderColor="#3b82f6"
+            sub="Managed by Tenant Admins"
+            icon={<User size={22} />}
+          />
+          <StatCard
+            label="Active Organizations"
+            value={totalTenantsCount}
+            accent="#22c55e"
+            topBorderColor="#22c55e"
+            sub="Multi-tenant workspaces"
+            icon={<Building2 size={22} />}
+          />
+        </div>
+
+        {/* Tab Selection */}
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            borderBottom: "1px solid var(--line)",
+            marginBottom: 18,
+          }}
+        >
+          {[
+            { key: "staff", label: "Tenant Staff (Admins & Creators)", count: totalStaffCount },
+            { key: "learners", label: "Tenant Learners", count: totalLearnerCount },
+            { key: "all", label: "All Accounts", count: totalStaffCount + totalLearnerCount },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setPage(1);
+              }}
+              style={{
+                padding: "10px 18px",
+                border: "none",
+                background: "transparent",
+                color: activeTab === tab.key ? "#FF6B00" : "var(--muted)",
+                fontWeight: activeTab === tab.key ? 700 : 600,
+                fontSize: 14,
+                cursor: "pointer",
+                borderBottom: `2px solid ${activeTab === tab.key ? "#FF6B00" : "transparent"}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span>{tab.label}</span>
+              <span
+                style={{
+                  background: activeTab === tab.key ? "rgba(255, 107, 0, 0.15)" : "var(--bg)",
+                  color: activeTab === tab.key ? "#FF6B00" : "var(--muted)",
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Read-Only Notice when viewing Learners */}
+        {activeTab === "learners" && (
+          <div
+            style={{
+              padding: "12px 18px",
+              background: "rgba(59, 130, 246, 0.08)",
+              border: "1px solid rgba(59, 130, 246, 0.25)",
+              borderRadius: 10,
+              marginBottom: 16,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              fontSize: 13,
+              color: "var(--text)",
+            }}
+          >
+            <Shield size={20} color="#3b82f6" style={{ flexShrink: 0 }} />
+            <div>
+              <strong>Tenant Admin Ownership Rule:</strong> End-user learners are provisioned and managed directly by each organization's Tenant Administrator. SuperAdmin has read-only access for cross-tenant monitoring.
             </div>
           </div>
         )}
 
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#555",
-            marginBottom: 6, textTransform: "uppercase", letterSpacing: ".08em" }}>
-            Reason <span style={{ color: "#e74c3c" }}>*</span>
-          </div>
-          <textarea value={reason} onChange={e => setReason(e.target.value)}
-            placeholder={`Why is this user being ${isSuspend ? "suspended" : "banned"}?`}
-            style={{
-              width: "100%", height: 88, padding: "10px 14px",
-              border: "1.5px solid #e0e0e0", borderRadius: 8,
-              fontSize: 13, fontFamily: "'Barlow', sans-serif",
-              outline: "none", resize: "none", boxSizing: "border-box", color: "#333",
-              transition: "border-color .2s",
-            }}
-            onFocus={e => e.target.style.borderColor = "#FF6B00"}
-            onBlur={e => e.target.style.borderColor = "#e0e0e0"}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onCancel} style={{
-            flex: 1, padding: "10px 0", background: "#fff", color: "#555",
-            border: "1.5px solid #ddd", borderRadius: 8,
-            fontWeight: 600, fontSize: 14, cursor: "pointer",
-            fontFamily: "'Barlow', sans-serif",
-          }}>
-            Cancel
-          </button>
-          <button onClick={() => reason.trim() && onConfirm({ reason, duration })}
-            style={{
-              flex: 1, padding: "10px 0",
-              background: reason.trim() ? actionColor : "#ccc",
-              color: "#fff", border: "none", borderRadius: 8,
-              fontWeight: 700, fontSize: 14,
-              cursor: reason.trim() ? "pointer" : "not-allowed",
-              fontFamily: "'Barlow', sans-serif", transition: "background .2s",
-            }}>
-            Confirm {actionLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────
-// User profile + manage modal
-// ─────────────────────────────────────────────────────────────
-
-const ResultScreen = ({ action }) => {
-  const map = {
-    suspended:   { bg: "#d4ac0d", label: "User suspended."   },
-    banned:      { bg: "#922b21", label: "User banned."       },
-    reactivated: { bg: "#27ae60", label: "User reactivated!"  },
-  };
-  const { bg, label } = map[action] || {};
-  return (
-    <div style={{
-      display: "flex", flexDirection: "column",
-      alignItems: "center", gap: 14, padding: "28px 0",
-    }}>
-      <div style={{
-        width: 56, height: 56, borderRadius: "50%", background: bg,
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-          stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          {action === "banned"
-            ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-            : action === "suspended"
-            ? <><line x1="12" y1="5" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="#fff"/></>
-            : <polyline points="20 6 9 17 4 12"/>
-          }
-        </svg>
-      </div>
-      <div style={{ fontWeight: 700, fontSize: 16, color: "#333" }}>{label}</div>
-    </div>
-  );
-};
-
-const UserManageModal = ({ user, onClose, onSuspend, onBan, onReactivate }) => {
-  const [action, setAction]       = useState(null);
-  const [showReason, setShowReason] = useState(null);
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
-
-  const canSuspend    = ["Active", "Reactivated"].includes(user.status);
-  const canBan        = user.status !== "Banned";
-  const canReactivate = user.status === "Suspended";
-
-  const handleSuspend = ({ reason, duration }) => {
-    setShowReason(null); setAction("suspended");
-    setTimeout(() => { onSuspend(user, reason, duration); onClose(); }, 1200);
-  };
-  const handleBan = ({ reason }) => {
-    setShowReason(null); setAction("banned");
-    setTimeout(() => { onBan(user, reason); onClose(); }, 1200);
-  };
-  const handleReactivate = () => {
-    setAction("reactivated");
-    setTimeout(() => { onReactivate(user); onClose(); }, 1200);
-  };
-
-  const Field = ({ label, value }) => (
-    <div>
-      <div style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>{label}</div>
-      <div style={{
-        background: "#f5f5f5", borderRadius: 6,
-        padding: "9px 12px", fontSize: 13, color: "#333",
-        border: "1px solid #e8e8e8", minHeight: 36,
-      }}>
-        {value || "—"}
-      </div>
-    </div>
-  );
-
-  const SectionTitle = ({ title }) => (
-    <div style={{
-      fontWeight: 800, fontSize: 13, letterSpacing: ".06em",
-      color: "#222", marginBottom: 12, textTransform: "uppercase",
-    }}>{title}</div>
-  );
-
-  return (
-    <>
-      <div onClick={onClose} style={{
-        position: "fixed", inset: 0,
-        background: "rgba(0,0,0,.55)", zIndex: 999,
-        display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
-      }}>
-        <div onClick={e => e.stopPropagation()} style={{
-          background: "#f4f4f4", borderRadius: 12,
-          width: "min(820px, 96vw)", maxHeight: "92vh",
-          overflow: "hidden",
-          boxShadow: "0 24px 80px rgba(0,0,0,.3)",
-          display: "flex", flexDirection: "column",
-        }}>
-          {action ? (
-            <div style={{ padding: 48 }}><ResultScreen action={action} /></div>
-          ) : (
-            <>
-              <div style={{
-                display: "grid", gridTemplateColumns: "220px 1fr",
-                flex: 1, overflow: "hidden", minHeight: 0,
-              }}>
-                {/* LEFT — orange panel */}
-                <div style={{
-                  background: "linear-gradient(160deg, #FF8C00 0%, #FF6B00 50%, #e85d00 100%)",
-                  padding: "24px 18px",
-                  display: "flex", flexDirection: "column",
-                  alignItems: "center", gap: 14,
-                }}>
-                  <div style={{
-                    width: 150, height: 150, borderRadius: "50%",
-                    background: "rgba(0,0,0,.15)", overflow: "hidden",
-                    flexShrink: 0, border: "4px solid #fff",
-                    boxShadow: "0 4px 16px rgba(0,0,0,.2)",
-                  }}>
-                    <svg viewBox="0 0 150 150" width="150" height="150">
-                      <rect width="150" height="150" fill="rgba(0,0,0,0.15)"/>
-                      <circle cx="75" cy="55" r="28" fill="rgba(255,255,255,0.35)"/>
-                      <ellipse cx="75" cy="135" rx="48" ry="32" fill="rgba(255,255,255,0.35)"/>
-                    </svg>
-                  </div>
-                  <div style={{ width: "100%" }}>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,.8)", marginBottom: 4 }}>username</div>
-                    <div style={{ background: "#fff", borderRadius: 6, padding: "8px 10px", fontSize: 13, color: "#333", boxShadow: "0 1px 4px rgba(0,0,0,.15)" }}>
-                      {user.username || "—"}
-                    </div>
-                  </div>
-                  <div style={{ width: "100%" }}>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,.8)", marginBottom: 4 }}>password</div>
-                    <div style={{ background: "#fff", borderRadius: 6, padding: "8px 10px", fontSize: 13, color: "#333", boxShadow: "0 1px 4px rgba(0,0,0,.15)" }}>
-                      {user.password || "—"}
-                    </div>
-                  </div>
-                  <div style={{ marginTop: "auto" }}>
-                    <StatusBadge status={user.status} />
-                  </div>
-                </div>
-
-                {/* RIGHT */}
-                <div style={{
-                  background: "#fff", padding: "20px 22px",
-                  display: "flex", flexDirection: "column", gap: 14, overflow: "hidden",
-                }}>
-                  {/* Personal info */}
-                  <div style={{ border: "1px solid #e8e8e8", borderRadius: 8, padding: "14px 16px" }}>
-                    <SectionTitle title="Personal Information" />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
-                      <Field label="Last Name"    value={user.lastName}    />
-                      <Field label="First Name"   value={user.firstName}   />
-                      <Field label="Middle Name"  value={user.middleName}  />
-                      <Field label="Employee ID"  value={user.employeeId}  />
-                      <Field label="Date of Birth" value={user.dateOfBirth} />
-                      <Field label="Job Title"    value={user.jobTitle}    />
-                      <Field label="Gender"       value={user.gender}      />
-                      <Field label="Department"   value={user.department}  />
-                    </div>
-                  </div>
-
-                  {/* Contact */}
-                  <div style={{ border: "1px solid #e8e8e8", borderRadius: 8, padding: "14px 16px" }}>
-                    <SectionTitle title="Contact" />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
-                      <Field label="Email"   value={user.email} />
-                      <Field label="Number"  value={user.phone} />
-                    </div>
-                  </div>
-
-                  {/* Access Control */}
-                  <div style={{
-                    border: "1px solid #ffe0c0", background: "#fff8f0",
-                    borderRadius: 8, padding: "14px 16px", flex: 1, minHeight: 0,
-                  }}>
-                    <div style={{
-                      display: "flex", alignItems: "center",
-                      justifyContent: "space-between", marginBottom: 10,
-                    }}>
-                      <div style={{
-                        fontSize: 11, fontWeight: 700, color: "#FF6B00",
-                        letterSpacing: ".1em", textTransform: "uppercase",
-                      }}>
-                        Access Control
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        {canReactivate && (
-                          <button onClick={handleReactivate} style={{
-                            padding: "7px 14px", borderRadius: 8, fontSize: 12,
-                            fontWeight: 700, cursor: "pointer", fontFamily: "'Barlow', sans-serif",
-                            background: "#27ae60", color: "#fff", border: "none",
-                            transition: "opacity .15s",
-                          }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
-                            onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                            ✓ Reactivate
-                          </button>
-                        )}
-                        {canSuspend && (
-                          <button onClick={() => setShowReason("suspend")} style={{
-                            padding: "7px 14px", borderRadius: 8, fontSize: 12,
-                            fontWeight: 700, cursor: "pointer", fontFamily: "'Barlow', sans-serif",
-                            background: "#fff", color: "#d4ac0d", border: "1.5px solid #d4ac0d",
-                            transition: "background .15s",
-                          }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#fef9e7"}
-                            onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
-                            ⏸ Suspend
-                          </button>
-                        )}
-                        {canBan && (
-                          <button onClick={() => setShowReason("ban")} style={{
-                            padding: "7px 14px", borderRadius: 8, fontSize: 12,
-                            fontWeight: 700, cursor: "pointer", fontFamily: "'Barlow', sans-serif",
-                            background: "#fff", color: "#922b21", border: "1.5px solid #922b21",
-                            transition: "background .15s",
-                          }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#fde8e8"}
-                            onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
-                            🚫 Ban
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ fontSize: 11, color: "#aaa", lineHeight: 1.6 }}>
-                      {canSuspend && "Suspend temporarily removes access. Ban permanently blocks the user."}
-                      {canReactivate && "Reactivating will restore this user's access to the system."}
-                      {user.status === "Banned" && "This user has been permanently banned from the system."}
-                    </div>
-
-                    {(user.suspendReason || user.banReason) && (
-                      <div style={{
-                        marginTop: 10, padding: "8px 12px",
-                        background: "#fff", borderRadius: 6,
-                        border: "1px solid #e8e8e8", fontSize: 12, color: "#555",
-                      }}>
-                        <span style={{ color: "#aaa", marginRight: 6 }}>
-                          {user.suspendReason ? "Suspend reason:" : "Ban reason:"}
-                        </span>
-                        {user.suspendReason || user.banReason}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div style={{
-                display: "flex", justifyContent: "flex-end",
-                padding: "12px 22px", background: "#fff",
-                borderTop: "1px solid #eee", flexShrink: 0,
-              }}>
-                <button onClick={onClose} style={{
-                  padding: "9px 28px", background: "#f5f5f5", color: "#555",
-                  border: "none", borderRadius: 6, fontWeight: 600, fontSize: 13,
-                  cursor: "pointer", fontFamily: "'Barlow', sans-serif",
-                }}>
-                  Close
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {showReason === "suspend" && (
-        <ReasonModal actionLabel="Suspend" actionColor="#d4ac0d"
-          onConfirm={handleSuspend} onCancel={() => setShowReason(null)} />
-      )}
-      {showReason === "ban" && (
-        <ReasonModal actionLabel="Ban" actionColor="#922b21"
-          onConfirm={handleBan} onCancel={() => setShowReason(null)} />
-      )}
-    </>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────
-// Main SparkUsers page
-// ─────────────────────────────────────────────────────────────
-
-const SparkUsers = () => {
-  const [users, setUsers]           = useState(MOCK_ALL_USERS);
-  const [manageUser, setManageUser] = useState(null);
-  const [page, setPage]             = useState(1);
-
-  // Filters
-  const [search, setSearch]         = useState("");
-  const [companyFilter, setCompany] = useState("");
-  const [deptFilter, setDept]       = useState("");
-  const [statusFilter, setStatus]   = useState("");
-  const [dateFilter, setDate]       = useState("");
-
-  const filtered = useMemo(() => {
-    let r = users;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      r = r.filter(u =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.username.toLowerCase().includes(q) ||
-        u.employeeId?.toLowerCase().includes(q)
-      );
-    }
-    if (companyFilter) r = r.filter(u => u.companyId === Number(companyFilter));
-    if (deptFilter)    r = r.filter(u => u.department === deptFilter);
-    if (statusFilter)  r = r.filter(u => u.status === statusFilter);
-    if (dateFilter) {
-      const now = new Date();
-      const days = Number(dateFilter);
-      r = r.filter(u => {
-        if (!u.approvedOn) return false;
-        const approved = new Date(u.approvedOn);
-        return (now - approved) / 86400000 <= days;
-      });
-    }
-    return r;
-  }, [users, search, companyFilter, deptFilter, statusFilter, dateFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const safePage   = Math.min(page, totalPages);
-  const paged      = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
-
-  // Stats
-  const total     = users.length;
-  const active    = users.filter(u => u.status === "Active" || u.status === "Reactivated").length;
-  const pending   = users.filter(u => u.status === "Pending").length;
-  const suspended = users.filter(u => u.status === "Suspended").length;
-  const banned    = users.filter(u => u.status === "Banned").length;
-
-  const updateUser = (id, patch) =>
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...patch } : u));
-
-  const handleSuspend    = (u, reason, duration) => updateUser(u.id, { status: "Suspended", suspendReason: reason, suspendDuration: duration });
-  const handleBan        = (u, reason)            => updateUser(u.id, { status: "Banned",    banReason: reason });
-  const handleReactivate = (u)                    => updateUser(u.id, { status: "Reactivated", suspendReason: null });
-
-  const getPages = () => {
-    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    if (safePage <= 3)   return [1, 2, 3, "...", totalPages];
-    if (safePage >= totalPages - 2) return [1, "...", totalPages - 2, totalPages - 1, totalPages];
-    return [1, "...", safePage - 1, safePage, safePage + 1, "...", totalPages];
-  };
-
-  const pgBtn = (disabled) => ({
-    minWidth: 32, height: 32, padding: "0 10px",
-    border: "1px solid #ddd", background: "#fff",
-    borderRadius: 6, cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 12, fontWeight: 500,
-    color: disabled ? "#ccc" : "#555",
-    opacity: disabled ? .5 : 1,
-    fontFamily: "'Barlow', sans-serif",
-  });
-
-  const hasFilters = companyFilter || deptFilter || statusFilter || dateFilter || search;
-
-  return (
-    <div style={{ padding: 24, minHeight: "100%", background: "#f4f4f4",
-      fontFamily: "'Barlow', sans-serif" }}>
-
-      {/* ── Page title ── */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900, fontSize: 26, color: "#222",
-          textTransform: "uppercase", letterSpacing: ".05em",
-        }}>
-          User Management
-        </div>
-        <div style={{ fontSize: 13, color: "#aaa", marginTop: 2 }}>
-          All users across all tenant companies
-        </div>
-      </div>
-
-      {/* ── Stat cards ── */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-        gap: 14, marginBottom: 20,
-      }}>
-        <StatCard
-          label="Total Users" value={total} accent="#FF6B00"
-          sub={`↑ ${Math.floor(total * 0.12)} this month`} subColor="#27ae60"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-          }
-        />
-        <StatCard
-          label="Active" value={active} accent="#27ae60"
-          sub={`↑ ${Math.floor(active * 0.15)} this week`} subColor="#27ae60"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-          }
-        />
-        <StatCard
-          label="Pending" value={pending} accent="#FF6B00"
-          sub={`${pending} awaiting review`} subColor="#FF6B00"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-          }
-        />
-        <StatCard
-          label="Suspended" value={suspended} accent="#d4ac0d"
-          sub={suspended > 0 ? `${suspended} temporarily blocked` : "None suspended"} subColor="#d4ac0d"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="10" y1="15" x2="10" y2="9"/>
-              <line x1="14" y1="15" x2="14" y2="9"/>
-            </svg>
-          }
-        />
-        <StatCard
-          label="Banned" value={banned} accent="#922b21"
-          sub={banned > 0 ? `${banned} permanently blocked` : "None banned"} subColor="#922b21"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-            </svg>
-          }
-        />
-      </div>
-
-      {/* ── Search + Filters ── */}
-      <div style={{
-        background: "#fff", borderRadius: 14,
-        boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
-        padding: "16px 20px", marginBottom: 16,
-      }}>
-        {/* Row 1 — Search */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#888",
-            letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6 }}>
-            Search Users
-          </div>
-          <div style={{
-            display: "flex", alignItems: "center",
-            border: "1.5px solid #e0e0e0", borderRadius: 8,
-            padding: "9px 14px", gap: 10,
-            transition: "border-color .2s",
+        {/* Filter Controls */}
+        <div
+          style={{
+            background: "var(--card)",
+            borderRadius: 14,
+            border: "1px solid var(--line)",
+            padding: "16px 20px",
+            marginBottom: 16,
+            display: "grid",
+            gridTemplateColumns: "minmax(240px, 1.5fr) minmax(180px, 1fr) minmax(150px, 1fr) auto",
+            gap: 12,
+            alignItems: "center",
           }}
-            onFocusCapture={e => e.currentTarget.style.borderColor = "#FF6B00"}
-            onBlurCapture={e => e.currentTarget.style.borderColor = "#e0e0e0"}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-              stroke="#bbb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input type="text"
-              placeholder="Search by name, email, username, or employee ID..."
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
-              style={{
-                border: "none", outline: "none", flex: 1,
-                fontSize: 13, fontFamily: "'Barlow', sans-serif",
-                color: "#333", background: "transparent",
-              }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{
-                background: "none", border: "none",
-                cursor: "pointer", color: "#bbb", fontSize: 18, lineHeight: 1,
-              }}>×</button>
-            )}
-          </div>
-        </div>
-
-        {/* Row 2 — Filters */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr 1fr auto",
-          gap: 12, alignItems: "flex-end",
-        }}>
-          {/* Company filter */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#888",
-              letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6 }}>
-              Company
-            </div>
-            <Select value={companyFilter} onChange={v => { setCompany(v); setPage(1); }}
-              placeholder="All Companies"
-              options={COMPANIES_LIST.map(c => ({ value: String(c.id), label: c.name }))} />
-          </div>
-
-          {/* Department / Faculty filter */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#888",
-              letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6 }}>
-              Department / Faculty
-            </div>
-            <Select value={deptFilter} onChange={v => { setDept(v); setPage(1); }}
-              placeholder="All Departments"
-              options={DEPARTMENTS_LIST.map(d => ({ value: d, label: d }))} />
-          </div>
-
-          {/* Approval date filter */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#888",
-              letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6 }}>
-              Approval Date
-            </div>
-            <Select value={dateFilter} onChange={v => { setDate(v); setPage(1); }}
-              placeholder="Any Time"
-              options={[
-                { value: "7",   label: "Last 7 days"   },
-                { value: "14",  label: "Last 14 days"  },
-                { value: "30",  label: "Last 30 days"  },
-                { value: "90",  label: "Last 3 months" },
-              ]} />
-          </div>
-
-          {/* Status filter — my addition */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#888",
-              letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6 }}>
-              Status
-            </div>
-            <Select value={statusFilter} onChange={v => { setStatus(v); setPage(1); }}
-              placeholder="All Statuses"
-              options={[
-                { value: "Active",      label: "Active"      },
-                { value: "Pending",     label: "Pending"     },
-                { value: "Suspended",   label: "Suspended"   },
-                { value: "Banned",      label: "Banned"      },
-                { value: "Rejected",    label: "Rejected"    },
-                { value: "Reactivated", label: "Reactivated" },
-              ]} />
-          </div>
-
-          {/* Clear filters */}
-          {hasFilters && (
-            <button onClick={() => {
-              setSearch(""); setCompany(""); setDept("");
-              setStatus(""); setDate(""); setPage(1);
-            }} style={{
-              padding: "9px 16px", borderRadius: 8,
-              background: "#fff", color: "#888",
-              border: "1.5px solid #ddd", fontSize: 12,
-              fontWeight: 600, cursor: "pointer",
-              fontFamily: "'Barlow', sans-serif",
-              whiteSpace: "nowrap",
-              transition: "all .15s",
+        >
+          {/* Search */}
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
             }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = "#FF6B00";
-                e.currentTarget.style.color = "#FF6B00";
+            placeholder="Search by name, email, employee ID..."
+            style={{
+              padding: "9px 14px",
+              borderRadius: 10,
+              border: "1.5px solid var(--line)",
+              background: "var(--bg)",
+              color: "var(--text)",
+              fontSize: 13,
+              outline: "none",
+            }}
+          />
+
+          {/* Company Filter */}
+          <Select
+            value={companyFilter}
+            onChange={(val) => {
+              setCompanyFilter(val);
+              setPage(1);
+            }}
+            placeholder="All Organizations"
+            isDark={isDark}
+            options={companies.map((c) => ({ value: c.id, label: c.name }))}
+          />
+
+          {/* Status Filter */}
+          <Select
+            value={statusFilter}
+            onChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+            placeholder="All Statuses"
+            isDark={isDark}
+            options={[
+              { value: "active", label: "Active" },
+              { value: "pending", label: "Pending" },
+              { value: "suspended", label: "Suspended" },
+            ]}
+          />
+
+          {/* Clear button */}
+          {(search || companyFilter || statusFilter) && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setCompanyFilter("");
+                setStatusFilter("");
+                setPage(1);
               }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = "#ddd";
-                e.currentTarget.style.color = "#888";
+              style={{
+                padding: "9px 16px",
+                borderRadius: 8,
+                background: "var(--bg)",
+                color: "var(--muted)",
+                border: "1px solid var(--line)",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
               }}
             >
-              ✕ Clear
+              Clear
             </button>
           )}
         </div>
 
-        {/* Result count */}
-        <div style={{ marginTop: 12, fontSize: 12, color: "#aaa" }}>
-          Showing <strong style={{ color: "#333" }}>{filtered.length}</strong> of{" "}
-          <strong style={{ color: "#333" }}>{total}</strong> users
-        </div>
-      </div>
-
-      {/* ── Table ── */}
-      <div style={{
-        background: "#fff", borderRadius: 14,
-        boxShadow: "0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
-        overflow: "hidden",
-      }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#fff" }}>
-              {["User", "Company", "Department", "Status", "Approved On", "Action"].map(h => (
-                <th key={h} style={{
-                  padding: "13px 18px", textAlign: "left",
-                  fontSize: 11, fontWeight: 700, color: "#888",
-                  letterSpacing: ".12em", textTransform: "uppercase",
-                  borderBottom: "1px solid #eee",
-                  whiteSpace: "nowrap",
-                }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {paged.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{
-                  padding: "48px 20px", textAlign: "center",
-                  color: "#bbb", fontSize: 14,
-                }}>
-                  No users found matching your filters.
-                </td>
-              </tr>
-            ) : paged.map((user, i) => (
-              <tr key={user.id}
-                style={{ borderBottom: i < paged.length - 1 ? "1px solid #f5f5f5" : "none",
-                  transition: "background .15s" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-              >
-                {/* User */}
-                <td style={{ padding: "13px 18px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <Avatar size={38} color={user.companyColor} abbr={user.companyAbbr} />
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: "#222" }}>
-                        {user.name}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#aaa", marginTop: 1 }}>
-                        {user.email}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Company */}
-                <td style={{ padding: "13px 18px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: user.companyColor, flexShrink: 0,
-                    }} />
-                    <span style={{ fontSize: 13, color: "#555", fontWeight: 500 }}>
-                      {user.company}
-                    </span>
-                  </div>
-                </td>
-
-                {/* Department */}
-                <td style={{ padding: "13px 18px", fontSize: 13, color: "#555" }}>
-                  {user.department}
-                </td>
-
-                {/* Status */}
-                <td style={{ padding: "13px 18px" }}>
-                  <StatusBadge status={user.status} />
-                </td>
-
-                {/* Approved on */}
-                <td style={{ padding: "13px 18px", fontSize: 13, color: "#555" }}>
-                  {user.approvedOn || <span style={{ color: "#ccc" }}>—</span>}
-                </td>
-
-                {/* Action */}
-                <td style={{ padding: "13px 18px" }}>
-                  {["Active", "Suspended", "Reactivated", "Banned"].includes(user.status) ? (
-                    <button onClick={() => setManageUser(user)} style={{
-                      background: user.status === "Suspended" ? "#d4ac0d"
-                                : user.status === "Banned"    ? "#922b21"
-                                : "#FF6B00",
-                      color: "#fff", border: "none", borderRadius: 8,
-                      padding: "7px 16px", fontWeight: 700, fontSize: 12,
-                      cursor: "pointer", fontFamily: "'Barlow', sans-serif",
-                      display: "flex", alignItems: "center", gap: 5,
-                      transition: "opacity .15s",
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
-                      onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-                      </svg>
-                      MANAGE
-                    </button>
+        {/* Directory Table */}
+        <div
+          style={{
+            background: "var(--card)",
+            borderRadius: 14,
+            border: "1px solid var(--line)",
+            overflow: "hidden",
+            boxShadow: "var(--shadow, 0 2px 12px rgba(0,0,0,.07))",
+          }}
+        >
+          {isLoading ? (
+            <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--muted)" }}>
+              <Loader2 className="animate-spin" size={32} color="#FF6B00" style={{ margin: "0 auto 12px" }} />
+              <div>Loading directory from Supabase...</div>
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+                <thead>
+                  <tr style={{ background: "var(--card-2)" }}>
+                    {["User & Email", "Organization", "Role", "Status & Registered", "Action"].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: "13px 18px",
+                          textAlign: "left",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "var(--muted)",
+                          letterSpacing: ".12em",
+                          textTransform: "uppercase",
+                          borderBottom: "1px solid var(--line)",
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ padding: "48px 20px", textAlign: "center", color: "var(--muted)", fontSize: 14 }}>
+                        No records found matching your filters.
+                      </td>
+                    </tr>
                   ) : (
-                    <span style={{ fontSize: 12, color: "#ccc", fontStyle: "italic" }}>
-                      {user.status}
-                    </span>
+                    paged.map((u) => {
+                      const isStaff = u.roleName === "admin" || u.roleName === "course creator" || u.roleName === "creator";
+                      return (
+                        <tr key={u.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                          {/* User info */}
+                          <td style={{ padding: "13px 18px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: "50%",
+                                  background: u.companyColor || "#FF6B00",
+                                  color: "#fff",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontWeight: 800,
+                                  fontSize: 13,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {u.firstname?.[0]?.toUpperCase() || "U"}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>{u.name}</div>
+                                <div style={{ fontSize: 12, color: "var(--muted)" }}>{u.email}</div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Organization */}
+                          <td style={{ padding: "13px 18px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ width: 8, height: 8, borderRadius: "50%", background: u.companyColor || "#FF6B00" }} />
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{u.companyName}</span>
+                            </div>
+                          </td>
+
+                          {/* Role */}
+                          <td style={{ padding: "13px 18px" }}>
+                            <span
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                background: isStaff ? "rgba(255, 107, 0, 0.12)" : "rgba(59, 130, 246, 0.12)",
+                                color: isStaff ? "#FF6B00" : "#3b82f6",
+                              }}
+                            >
+                              {u.roleName}
+                            </span>
+                          </td>
+
+                          {/* Status & Date */}
+                          <td style={{ padding: "13px 18px" }}>
+                            <StatusAndDateCell
+                              status={u.status === "active" ? "Active" : u.status}
+                              date={u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}
+                            />
+                          </td>
+
+                          {/* Action Button */}
+                          <td style={{ padding: "13px 18px" }}>
+                            <button
+                              onClick={() => setInspectUser(u)}
+                              style={{
+                                background: isStaff ? "rgba(255, 107, 0, 0.08)" : "var(--card-2)",
+                                color: isStaff ? "#FF6B00" : "var(--text)",
+                                border: `1.5px solid ${isStaff ? "rgba(255, 107, 0, 0.35)" : "var(--line)"}`,
+                                borderRadius: 8,
+                                padding: "6px 14px",
+                                fontWeight: 700,
+                                fontSize: 12,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                transition: "all .15s ease",
+                              }}
+                              title={isStaff ? "Manage staff account" : "View learner profile"}
+                            >
+                              {isStaff ? <UserCog size={14} /> : <Eye size={14} />}
+                              <span>{isStaff ? "Manage" : "View"}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Pagination */}
-        <div style={{
-          display: "flex", justifyContent: "flex-end",
-          alignItems: "center", gap: 4,
-          padding: "12px 18px", borderTop: "1px solid #f0f0f0",
-        }}>
-          <button onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={safePage === 1} style={pgBtn(safePage === 1)}>
-            ‹ Previous
-          </button>
-          {getPages().map((p, i) =>
-            p === "..." ? (
-              <span key={`d${i}`} style={{ color: "#aaa", fontSize: 13, padding: "0 4px" }}>...</span>
-            ) : (
-              <button key={p} onClick={() => setPage(p)} style={{
-                ...pgBtn(false), minWidth: 34,
-                background: safePage === p ? "#FF6B00" : "#fff",
-                color: safePage === p ? "#fff" : "#555",
-                borderColor: safePage === p ? "#FF6B00" : "#ddd",
-                fontWeight: safePage === p ? 700 : 500,
-              }}>{p}</button>
-            )
+                </tbody>
+              </table>
+            </div>
           )}
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={safePage === totalPages} style={pgBtn(safePage === totalPages)}>
-            Next ›
-          </button>
-        </div>
-      </div>
 
-      {/* Manage modal */}
-      {manageUser && (
-        <UserManageModal
-          user={manageUser}
-          onClose={() => setManageUser(null)}
-          onSuspend={handleSuspend}
-          onBan={handleBan}
-          onReactivate={handleReactivate}
-        />
-      )}
-    </div>
+          {/* Pagination */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "12px 18px",
+              borderTop: "1px solid var(--line)",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              Showing <strong>{paged.length}</strong> of <strong>{filtered.length}</strong> accounts
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: "1px solid var(--line)",
+                  background: "var(--bg)",
+                  color: "var(--text)",
+                  fontSize: 12,
+                  cursor: safePage === 1 ? "not-allowed" : "pointer",
+                  opacity: safePage === 1 ? 0.4 : 1,
+                }}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: "1px solid var(--line)",
+                  background: "var(--bg)",
+                  color: "var(--text)",
+                  fontSize: 12,
+                  cursor: safePage === totalPages ? "not-allowed" : "pointer",
+                  opacity: safePage === totalPages ? 0.4 : 1,
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Add Staff Modal */}
+        {showAddStaffModal && (
+          <AddStaffModal
+            companies={companies}
+            roles={roles}
+            onClose={() => setShowAddStaffModal(false)}
+            onSuccess={() => {
+              setShowAddStaffModal(false);
+              loadData();
+            }}
+            theme={theme}
+          />
+        )}
+
+        {/* Inspect / Manage User Modal */}
+        {inspectUser && (
+          <UserModal
+            user={inspectUser}
+            companies={companies}
+            roles={roles}
+            onClose={() => setInspectUser(null)}
+            onSuccess={() => {
+              loadData();
+            }}
+            theme={theme}
+          />
+        )}
+      </div>
+    </PageTransition>
   );
 };
 

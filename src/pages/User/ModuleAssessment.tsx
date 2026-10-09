@@ -10,14 +10,15 @@ import AssessmentCard from "../../components/common/AssessmentCard/AssessmentCar
 import SubmitAssessmentModal from "../../components/common/Modal/SubmitAssessmentModal";
 import TimeUpModal from "../../components/common/Modal/TimeUpModal";
 import AssessmentSuccessModal from "../../components/common/Modal/AssessmentSuccessModal";
-import { ArrowLeft, Timer } from "lucide-react";
+import { ArrowLeft, Timer, Lock } from "lucide-react";
 import { useCourseById } from "../../hooks/useCourses";
 import { supabase } from "../../lib/supabase";
 import PageTransition from "../../components/common/PageTransition";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
-// ── Timer Config ──────────────────────────────────────────────
+// ── Timer & Attempts Config ────────────────────────────────────
 const DEFAULT_TIME_SECONDS = 15 * 60; // 15 minutes fallback
+const MAX_ATTEMPTS = 3;
 
 const ModuleAssessment = () => {
   const { user, company, logout } = useAuth();
@@ -39,6 +40,8 @@ const ModuleAssessment = () => {
   const [assessmentTitle, setAssessmentTitle] = useState<string>("");
   const [assessmentTimeLimit, setAssessmentTimeLimit] = useState(DEFAULT_TIME_SECONDS);
   const [loadingAssessment, setLoadingAssessment] = useState(true);
+  const [pastAttempts, setPastAttempts] = useState<any[]>([]);
+  const [isLockedOut, setIsLockedOut] = useState(false);
 
   // Assessment state
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -92,6 +95,25 @@ const ModuleAssessment = () => {
         setAssessmentTimeLimit(timeLimitSeconds);
         setTimeLeft(timeLimitSeconds);
 
+        // Check user's previous attempts for lockout enforcement
+        if (user?.id) {
+          const { data: userAttempts, error: attemptsErr } = await supabase
+            .from('assessment_attempts')
+            .select('id, score, passed, attempted_at')
+            .eq('assessment_id', assessmentData.id)
+            .eq('user_id', user.id)
+            .order('attempted_at', { ascending: false });
+
+          if (!attemptsErr && userAttempts) {
+            setPastAttempts(userAttempts);
+            if (userAttempts.length >= MAX_ATTEMPTS) {
+              setIsLockedOut(true);
+              setLoadingAssessment(false);
+              return;
+            }
+          }
+        }
+
         // Get questions with choices
         const { data: questionData, error: qErr } = await supabase
           .from('assessment_questions')
@@ -133,7 +155,7 @@ const ModuleAssessment = () => {
 
   // Start countdown
   useEffect(() => {
-    if (loadingAssessment || questions.length === 0) return;
+    if (loadingAssessment || isLockedOut || questions.length === 0) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -144,7 +166,7 @@ const ModuleAssessment = () => {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [loadingAssessment, questions.length]);
+  }, [loadingAssessment, isLockedOut, questions.length]);
 
   // When time hits 0
   useEffect(() => {
@@ -191,7 +213,7 @@ const ModuleAssessment = () => {
         if (ans === q.correctIndex) correct++;
       } else if (q.type === 'identification') {
         const isCorrect = q.correct_answers.some((ca: string) => 
-          ca.trim().toLowerCase() === (ans || "").trim().toLowerCase()
+          ca.trim().toLowerCase() === String(ans || "").trim().toLowerCase()
         );
         if (isCorrect) correct++;
       } else if (q.type === 'enumeration') {
@@ -246,9 +268,105 @@ const ModuleAssessment = () => {
     });
   };
 
+  if (isLockedOut) {
+    const bestScore = pastAttempts.length > 0 ? Math.max(...pastAttempts.map(a => a.score || 0)) : 0;
+    const hasPassed = pastAttempts.some(a => a.passed);
+    return (
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+        <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search courses, lessons ..." role="User" />
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
+            <div style={{
+              background: "var(--color-surface)",
+              borderRadius: 16,
+              border: "1px solid var(--color-border)",
+              boxShadow: "var(--shadow)",
+              maxWidth: 520,
+              width: "100%",
+              padding: "40px 32px",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16
+            }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: "50%",
+                background: "#fee2e2",
+                color: "#dc2626",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <Lock size={36} />
+              </div>
+
+              <div>
+                <h2 style={{ margin: "0 0 8px 0", fontSize: 22, fontWeight: 700, color: "var(--color-text-header)" }}>
+                  Assessment Locked Out
+                </h2>
+                <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.5 }}>
+                  You have reached the maximum limit of <strong>3 attempts</strong> for this assessment. You can no longer retake this exam.
+                </p>
+              </div>
+
+              <div style={{
+                width: "100%",
+                background: "var(--color-bg)",
+                borderRadius: 12,
+                padding: "16px 20px",
+                border: "1px solid var(--color-border)",
+                display: "flex",
+                justifyContent: "space-around",
+                margin: "8px 0"
+              }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Attempts</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#dc2626", marginTop: 2 }}>3 / 3</div>
+                </div>
+                <div style={{ width: 1, background: "var(--color-border)" }} />
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Best Score</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: hasPassed ? "#27ae60" : "#FF6B00", marginTop: 2 }}>{bestScore}%</div>
+                </div>
+                <div style={{ width: 1, background: "var(--color-border)" }} />
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Status</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: hasPassed ? "#27ae60" : "#dc2626", marginTop: 4 }}>
+                    {hasPassed ? "Passed" : "Locked Out"}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, width: "100%", marginTop: 8 }}>
+                <Button
+                  variant="outline"
+                  rounded="pill"
+                  onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId } })}
+                  style={{ flex: 1, justifyContent: "center" }}
+                >
+                  Back to Modules
+                </Button>
+                <Button
+                  variant="primary"
+                  rounded="pill"
+                  onClick={() => navigate(`/${slug}/courses/attempts`, { state: { courseId, moduleId } })}
+                  style={{ flex: 1, justifyContent: "center" }}
+                >
+                  View Attempts
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (totalQuestions === 0) {
     return (
-      <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search courses, lessons ..." role="User" />
@@ -265,7 +383,7 @@ const ModuleAssessment = () => {
 
   return (
     <>
-      <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -292,17 +410,31 @@ const ModuleAssessment = () => {
                 )}
               </div>
 
-              {/* Timer Badge */}
+              {/* Attempt Counter + Timer Badges */}
               {isReady && totalQuestions > 0 && (
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  background: timeLeft <= 60 ? "#FF6B00" : "#FF6B00",
-                  color: "white", padding: "8px 20px", borderRadius: 99,
-                  fontSize: 16, fontWeight: 700,
-                  boxShadow: "0 4px 12px rgba(255, 107, 0, 0.3)"
-                }}>
-                  <Timer size={18} />
-                  {formatTime(timeLeft)}
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: pastAttempts.length === 2 ? "rgba(220, 38, 38, 0.1)" : "var(--color-surface)",
+                    color: pastAttempts.length === 2 ? "#dc2626" : "var(--color-text-header)",
+                    border: `1px solid ${pastAttempts.length === 2 ? "#fca5a5" : "var(--color-border)"}`,
+                    padding: "8px 16px", borderRadius: 99,
+                    fontSize: 13, fontWeight: 700, boxShadow: "var(--shadow)"
+                  }}>
+                    <span style={{ color: "#FF6B00" }}>Attempt</span> {pastAttempts.length + 1} of {MAX_ATTEMPTS}
+                    {pastAttempts.length === 2 && <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 800 }}> (Final)</span>}
+                  </div>
+
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    background: timeLeft <= 60 ? "#dc2626" : "#FF6B00",
+                    color: "white", padding: "8px 20px", borderRadius: 99,
+                    fontSize: 16, fontWeight: 700,
+                    boxShadow: "0 4px 12px rgba(255, 107, 0, 0.3)"
+                  }}>
+                    <Timer size={18} />
+                    {formatTime(timeLeft)}
+                  </div>
                 </div>
               )}
             </div>
