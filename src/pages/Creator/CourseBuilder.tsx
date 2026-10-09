@@ -19,7 +19,7 @@ import "./CourseBuilder.css";
 type BuilderLesson = {
   id: number;
   title: string;
-  type: "video" | "reading" | "assessment";
+  type: "video" | "reading" | "assessment" | "hybrid";
   content: string | null;
   video_url: string | null;
   position: number;
@@ -30,7 +30,7 @@ type BuilderModule = {
   title: string;
   description: string | null;
   order: number;
-  status: "draft" | "published";
+  status?: "draft" | "published";
   lessons: BuilderLesson[];
 };
 

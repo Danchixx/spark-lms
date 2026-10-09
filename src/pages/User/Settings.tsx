@@ -13,7 +13,6 @@ import {
 import useSidebar from "../../hooks/useSidebar";
 import PageTransition from "../../components/common/PageTransition";
 import { useTheme } from "../../context/ThemeContext";
-import { useSATheme } from "../SuperAdmin/SAThemeContext";
 import {
   Building2, Bell, ShieldCheck, Palette,
   Lock, Eye, EyeOff, Globe, Mail, Phone, MapPin, User, Calendar, Copy, Check, X
@@ -416,16 +415,6 @@ const SecurityPanel = () => {
 
 const AppearancePanel = () => {
   const { theme, setTheme, sidebarTheme, setSidebarTheme, showSidebarIcons, setShowSidebarIcons } = useTheme();
-  const saTheme = useSATheme();
-  const activeTheme = saTheme ? saTheme.theme : theme;
-  const handleThemeChange = (newTheme: "light" | "dark") => {
-    if (saTheme) {
-      saTheme.setTheme(newTheme);
-    } else {
-      setTheme(newTheme);
-    }
-  };
-
   const [font, setFont] = useState("DM Sans");
   const [collapseSidebar, setCollapseSidebar] = useState(false);
 
@@ -444,7 +433,7 @@ const AppearancePanel = () => {
             { key: "light", label: "Light (Default)" },
             { key: "dark", label: "Dark" },
           ].map((t) => (
-            <div key={t.key} className={`theme-card ${activeTheme === t.key ? "selected" : ""}`} onClick={() => handleThemeChange(t.key as "light" | "dark")}>
+            <div key={t.key} className={`theme-card ${theme === t.key ? "selected" : ""}`} onClick={() => setTheme(t.key as "light" | "dark")}>
               <div className={`theme-card-preview ${t.key}`}>
                 <div className="theme-preview-sidebar" />
                 <div className="theme-preview-content">
@@ -459,7 +448,7 @@ const AppearancePanel = () => {
         </div>
       </div>
 
-      {activeTheme === 'light' && (
+      {theme === 'light' && (
         <div className="card-inner" style={{ marginBottom: 20 }}>
           <div className="settings-card-header">Sidebar Theme</div>
           <div className="theme-options">

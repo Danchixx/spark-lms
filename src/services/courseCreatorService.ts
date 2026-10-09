@@ -28,7 +28,7 @@ export type ModulePayload = {
 
 export type LessonPayload = {
   title: string;
-  type: 'video' | 'reading' | 'assessment';
+  type: 'video' | 'reading' | 'assessment' | 'hybrid';
   content?: string | null;
   video_url?: string | null;
   position: number;

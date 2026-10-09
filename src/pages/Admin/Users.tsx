@@ -104,7 +104,7 @@ const AdminUsers = () => {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [isUploadingBatch, setIsUploadingBatch] = useState(false);
   const [batchProgress, setBatchProgress] = useState(0);
-  const [batchResultMsg, setBatchResultMsg] = useStlyte("");
+  const [batchResultMsg, setBatchResultMsg] = useState("");
 
   const handleBatchFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,7 +128,9 @@ const AdminUsers = () => {
     
     const parsedUsers = [];
     for (let i = 1; i < rows.length; i++) {
-       const vals = parseRow(rows[i]).map(v => v.replace(/^"|"$/g, ''));
+       const row = rows[i];
+       if (!row) continue;
+       const vals = parseRow(row).map(v => v.replace(/^"|"$/g, ''));
        parsedUsers.push({
          firstName: vals[0] || "",
          lastName: vals[1] || "",

@@ -702,6 +702,7 @@ const AdminAddUser = () => {
                         setFormData({
                           firstName: "", lastName: "", middleName: "", email: "", contact: "", dob: "", gender: "Select",
                           address: "", employeeId: "", jobTitle: "", department: "Select Department", dateHired: "",
+                          prcId: "", position: "", schoolName: "",
                           sendEmail: true, selectedCourses: []
                         });
                         setAvatarPreview(null);

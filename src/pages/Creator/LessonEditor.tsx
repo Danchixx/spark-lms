@@ -547,8 +547,8 @@ const LessonEditor = () => {
                                 value={block.question.question_type}
                                 onChange={(e) => {
                                   const type = e.target.value;
-                                  let newChoices = [];
-                                  let newAnswers = [];
+                                  let newChoices: any[] = [];
+                                  let newAnswers: any[] = [];
                                   if (type === 'true_false') {
                                     newChoices = [{ id: 1, choice_text: 'True', is_correct: true }, { id: 2, choice_text: 'False', is_correct: false }];
                                   } else if (type === 'multiple_choice') {

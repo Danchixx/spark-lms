@@ -191,7 +191,7 @@ const ModuleAssessment = () => {
         if (ans === q.correctIndex) correct++;
       } else if (q.type === 'identification') {
         const isCorrect = q.correct_answers.some((ca: string) => 
-          ca.trim().toLowerCase() === (ans || "").trim().toLowerCase()
+          ca.trim().toLowerCase() === String(ans || "").trim().toLowerCase()
         );
         if (isCorrect) correct++;
       } else if (q.type === 'enumeration') {
