@@ -185,7 +185,7 @@ const CourseBuilder = () => {
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [showAddLessonModal, setShowAddLessonModal] = useState<number | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState("");
-  const [newLessonType, setNewLessonType] = useState<"video" | "reading" | "assessment">("video");
+  const [newLessonType, setNewLessonType] = useState<"video" | "hybrid" | "assessment">("video");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: "module" | "lesson"; moduleId: number; lessonId?: number } | null>(null);
   const [showDraftCourseConfirm, setShowDraftCourseConfirm] = useState(false);
   const [showDraftModuleConfirm, setShowDraftModuleConfirm] = useState<number | null>(null);
@@ -932,7 +932,7 @@ const CourseBuilder = () => {
               <div style={{ marginBottom: 24 }}>
                 <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 10, display: "block" }}>Lesson Type</label>
                 <div className="builder-lesson-type-grid">
-                  {(["video", "reading", "assessment"] as const).map((type) => (
+                  {(["video", "hybrid", "assessment"] as const).map((type) => (
                     <div
                       key={type}
                       className={`builder-lesson-type-card ${newLessonType === type ? "selected" : ""}`}
