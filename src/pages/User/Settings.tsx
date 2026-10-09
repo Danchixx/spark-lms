@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
@@ -57,6 +57,14 @@ const MessageModal = ({ title, message, type = "success", onConfirm, confirmText
 const CompanyPanel = () => {
   const { company } = useAuth();
   const [copied, setCopied] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [company?.description]);
 
   if (!company) return null;
 
@@ -124,7 +132,13 @@ const CompanyPanel = () => {
           </div>
           <div className="form-field full-width">
             <label>Company Description</label>
-            <textarea rows={3} value={company.description || ""} readOnly />
+            <textarea 
+              ref={textareaRef} 
+              rows={3} 
+              value={company.description || ""} 
+              readOnly 
+              style={{ overflow: "hidden", resize: "none" }} 
+            />
           </div>
           <div className="form-field full-width">
             <label>Workspace URL</label>
