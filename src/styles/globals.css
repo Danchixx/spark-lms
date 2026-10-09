@@ -1,4 +1,4 @@
-@import "tailwindcss";
+ @import "tailwindcss";
 
 * {
   box-sizing: border-box;
@@ -7,7 +7,7 @@
 }
 
 body {
-  font-family: 'DM Sans', 'Inter', sans-serif;
+  font-family: var(--font-primary, 'DM Sans', 'Inter', sans-serif);
   background-color: var(--color-bg);
   color: var(--color-text);
   transition: background-color 0.3s ease, color 0.3s ease;

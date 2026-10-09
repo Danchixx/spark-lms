@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Check, X } from "lucide-react";
 
 /* ── Toggle Switch ── */
-export const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (val: boolean) => void }) => (
-  <label className="toggle-switch">
-    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-    <span className="toggle-track" />
+export const Toggle = ({ checked, onChange, disabled }: { checked: boolean; onChange: (val: boolean) => void; disabled?: boolean }) => (
+  <label className={`toggle-switch ${disabled ? "disabled" : ""}`} style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} disabled={disabled} style={{ cursor: disabled ? "not-allowed" : "pointer" }} />
+    <span className="toggle-track" style={{ cursor: disabled ? "not-allowed" : "pointer" }} />
   </label>
 );
 
