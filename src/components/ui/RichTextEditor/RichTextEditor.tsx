@@ -15,11 +15,18 @@ const SunEditorComponent = (SunEditor as any).default || SunEditor;
 const RichTextEditor = ({ content, onChange, placeholder }: RichTextEditorProps) => {
 
   const handleChange = (html: string) => {
-    // Automatically convert Google Drive /view to /preview for embedded iframes
-    const modifiedHtml = html.replace(
-      /src="https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)\/(?:view|edit)[^"]*"/gi,
-      'src="https://drive.google.com/file/d/$1/preview"'
+    // 1. If SunEditor mistakenly wrapped the Google Drive link in a <video> tag, convert the whole tag to an <iframe>
+    let modifiedHtml = html.replace(
+      /<video[^>]*src="https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)\/(?:view|edit|preview)[^"]*"[^>]*>[\s\S]*?<\/video>/gi,
+      '<iframe src="https://drive.google.com/file/d/$1/preview" allow="autoplay; fullscreen" allowfullscreen="true" frameborder="0" style="width: 100%; height: 400px; border: none; border-radius: 8px;"></iframe>'
     );
+    
+    // 2. If it's already an <iframe> but still has /view or /edit, change it to /preview
+    modifiedHtml = modifiedHtml.replace(
+      /<iframe([^>]*src="https:\/\/drive\.google\.com\/file\/d\/[a-zA-Z0-9_-]+)\/(?:view|edit)([^"]*"[^>]*)>/gi,
+      '<iframe$1/preview$2>'
+    );
+
     onChange(modifiedHtml);
   };
 
