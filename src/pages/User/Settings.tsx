@@ -403,11 +403,14 @@ const SecurityPanel = () => {
 };
 
 const AppearancePanel = () => {
-  const { theme, setTheme, sidebarTheme, setSidebarTheme, showSidebarIcons, setShowSidebarIcons } = useTheme();
-  const [font, setFont] = useState("DM Sans");
-  const [collapseSidebar, setCollapseSidebar] = useState(false);
+  const { 
+    theme, setTheme, 
+    sidebarTheme, setSidebarTheme, 
+    showSidebarIcons, setShowSidebarIcons,
+    font, setFont
+  } = useTheme();
 
-  const fonts = ["DM Sans", "Inter", "Georgia", "DM Mono"];
+  const fonts = ["Barlow", "DM Sans", "Inter", "Georgia", "DM Mono"];
 
   return (
     <div className="section-card">
@@ -475,13 +478,6 @@ const AppearancePanel = () => {
         <div className="settings-card-header">Sidebar Behavior</div>
         <div className="toggle-row">
           <div className="toggle-info">
-            <div className="toggle-label">Collapse Sidebar <span style={{ color: "gray" }}>(Only for Desktop)</span> </div>
-            <div className="toggle-desc">Show only icons until hovered — saves horizontal space</div>
-          </div>
-          <Toggle checked={collapseSidebar} onChange={setCollapseSidebar} />
-        </div>
-        <div className="toggle-row">
-          <div className="toggle-info">
             <div className="toggle-label">Show Icons</div>
             <div className="toggle-desc">Display icons alongside text labels</div>
           </div>
@@ -510,7 +506,7 @@ const Settings = () => {
   const defaultTab = location.state?.activeTab || "company";
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
       <Sidebar isOpen={sidebarOpen} activePage="Settings" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>

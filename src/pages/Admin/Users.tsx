@@ -354,7 +354,7 @@ const AdminUsers = () => {
   }, [dbUsers]);
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
       {showSuccessModal && <SuccessModal message={batchResultMsg || "User successfully deleted."} onClose={() => { setShowSuccessModal(false); setBatchResultMsg(""); }} />}
       {showBatchModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>

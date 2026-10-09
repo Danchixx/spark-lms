@@ -355,7 +355,10 @@ const Sidebar = ({ isOpen, activePage, onNavigate, user, onLogout, onClose }: Si
   /* ── Desktop: smooth width push sidebar ── */
   if (typeof window !== "undefined" && window.innerWidth > BREAKPOINT) {
     return (
-      <div className="sidebar-container" style={{ width: isOpen ? 210 : 0, flexShrink: 0, overflow: "hidden", transition: "width 0.3s ease", boxShadow: "var(--sidebar-shadow)", zIndex: 100 }}>
+      <div 
+        className="sidebar-container" 
+        style={{ width: isOpen ? 210 : 0, flexShrink: 0, overflow: "hidden", transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "var(--sidebar-shadow)", zIndex: 100 }}
+      >
         <div style={{ width: 210, height: "100%", background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           {navContent(false)}
         </div>

@@ -37,7 +37,7 @@ const Header = ({
   role = "User",
 }: HeaderProps) => {
   const { company, user: authUser } = useAuth();
-  const { theme, sidebarTheme } = useTheme();
+  const { theme, sidebarTheme, setIsSidebarHovered } = useTheme();
   const isMobile = typeof window !== "undefined" && window.innerWidth <= BREAKPOINT;
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -195,7 +195,11 @@ const Header = ({
         {isMobile ? (
           <Hamburger toggled={isOpen} toggle={onToggleSidebar} size={20} color={(isMobile && isOpen && sidebarTheme === 'black' && theme === 'light') ? '#fff' : "#555"} duration={0.4} label="Toggle menu" />
         ) : (
-          <button className={`desk-burger${isOpen ? " desk-burger--open" : ""}`} onClick={onToggleSidebar} aria-label="Toggle menu">
+          <button 
+            className={`desk-burger${isOpen ? " desk-burger--open" : ""}`} 
+            onClick={onToggleSidebar} 
+            aria-label="Toggle menu"
+          >
             <div className="desk-burger-icon">
               <span className="desk-burger-line" />
               <span className="desk-burger-line" />
