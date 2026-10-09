@@ -12,7 +12,11 @@ import { supabase } from "../../lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import "./Contact.css";
 
-const Contact = () => {
+type ContactProps = {
+  embedded?: boolean;
+};
+
+const Contact = ({ embedded = false }: ContactProps) => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
@@ -195,10 +199,29 @@ const Contact = () => {
                     <div className="contact-info-value">5th Floor, Phinma Plaza, 39 Plaza Drive, Rockwell Center, Makati City</div>
                   </div>
                 </div>
-              </div>
-            </div>
           </div>
-          </PageTransition>
+        </div>
+      </div>
+    </PageTransition>
+  );
+
+  if (embedded) {
+    return (
+      <div style={{ padding: "24px 28px", maxWidth: 1200, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+      <Sidebar isOpen={sidebarOpen} activePage="Contact" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search ..." role="User" />
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+          {content}
         </div>
       </div>
 
@@ -240,11 +263,6 @@ const Contact = () => {
         )}
       </AnimatePresence>
     </div>
-  );
-};
-
-export default Contact;
-
   );
 };
 
