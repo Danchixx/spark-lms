@@ -218,6 +218,9 @@ const ModuleLessons = () => {
                 onProceedAssessment={() => navigate(`/${slug}/courses/assessment`, {
                   state: { courseId, moduleId }
                 })}
+                onViewAttempts={() => navigate(`/${slug}/courses/attempts`, {
+                  state: { courseId, moduleId }
+                })}
               />
 
               {/* Right Column: Sidebar Panels */}

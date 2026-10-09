@@ -1,4 +1,4 @@
-import { Play, ArrowRight } from "lucide-react";
+import { Play, ArrowRight, Lock } from "lucide-react";
 import Button from "../../ui/Button/Button";
 import HybridLessonViewer from "./HybridLessonViewer";
 import "../../ui/RichTextEditor/RichTextEditor.css";
@@ -14,6 +14,7 @@ interface LessonCardProps {
   currentIndex: number;
   totalLessons: number;
   onProceedAssessment?: () => void;
+  onViewAttempts?: () => void;
 }
 
 const convertVideoUrl = (url?: string | null): string | null => {
@@ -84,25 +85,51 @@ const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModul
       )}
 
       {lesson.type === "assessment" && (
-        <div style={{
-          background: "linear-gradient(90deg, #ffeed3, #ffd2ae)",
-          borderRadius: 8,
-          border: "1px solid #ffb27f",
-          padding: "20px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginTop: 24,
-          boxShadow: "0 4px 12px rgba(255, 107, 0, 0.15)"
-        }}>
-          <div>
-            <h3 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700, color: "#1a1a1a" }}>Unit Assessment: Test Your Knowledge</h3>
-            <div style={{ fontSize: 13, color: "#666", fontWeight: "500" }}>Pass this exam to continue with your learning chapter</div>
-          </div>
-          <Button variant="primary" rounded="pill" rightIcon={<ArrowRight size={16} />} onClick={onProceedAssessment} style={{ fontWeight: "600", padding: "8px 24px" }}>
-            Proceed
-          </Button>
-        </div>
+        (() => {
+          const attemptsUsed = lesson.attemptsCount ?? 0;
+          const isLocked = attemptsUsed >= 3 && lesson.status !== "completed";
+          return (
+            <div style={{
+              background: isLocked ? "#fef2f2" : "linear-gradient(90deg, #ffeed3, #ffd2ae)",
+              borderRadius: 8,
+              border: `1px solid ${isLocked ? "#fca5a5" : "#ffb27f"}`,
+              padding: "20px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 24,
+              boxShadow: isLocked ? "0 4px 12px rgba(220, 38, 38, 0.12)" : "0 4px 12px rgba(255, 107, 0, 0.15)"
+            }}>
+              <div>
+                <h3 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700, color: isLocked ? "#991b1b" : "#1a1a1a", display: "flex", alignItems: "center", gap: 8 }}>
+                  {isLocked && <Lock size={18} color="#dc2626" />}
+                  {isLocked ? "Assessment Locked Out" : "Unit Assessment: Test Your Knowledge"}
+                </h3>
+                <div style={{ fontSize: 13, color: isLocked ? "#b91c1c" : "#666", fontWeight: "500" }}>
+                  {isLocked 
+                    ? "You have reached the maximum limit of 3 attempts for this assessment." 
+                    : attemptsUsed > 0 
+                      ? `Pass this exam to continue (${3 - attemptsUsed} attempt${3 - attemptsUsed === 1 ? '' : 's'} remaining)`
+                      : "Pass this exam to continue with your learning chapter (3 attempts allowed)"}
+                </div>
+              </div>
+              {isLocked ? (
+                <Button
+                  variant="outline"
+                  rounded="pill"
+                  onClick={onViewAttempts || onProceedAssessment}
+                  style={{ fontWeight: "600", padding: "8px 24px", borderColor: "#dc2626", color: "#dc2626" }}
+                >
+                  View Attempts
+                </Button>
+              ) : (
+                <Button variant="primary" rounded="pill" rightIcon={<ArrowRight size={16} />} onClick={onProceedAssessment} style={{ fontWeight: "600", padding: "8px 24px" }}>
+                  Proceed
+                </Button>
+              )}
+            </div>
+          );
+        })()
       )}
 
       <div className="lesson-card-footer">

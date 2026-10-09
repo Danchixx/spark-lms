@@ -15,6 +15,7 @@ import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import RichTextEditor from "../../components/ui/RichTextEditor/RichTextEditor";
+import { FileBlockEditor, createEmptyFileBlock } from "../../components/common/LessonCard/FileBlock";
 import * as courseService from "../../services/courseCreatorService";
 import "./LessonEditor.css";
 
@@ -506,7 +507,7 @@ const LessonEditor = () => {
                         <div key={block.id} style={{ padding: 16, border: '1px solid var(--color-border)', borderRadius: 8, background: 'var(--color-surface)', position: 'relative' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                             <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
-                              {block.type === 'reading' ? 'Editor Block' : 'Question Block'}
+                              {block.type === 'reading' ? 'Editor Block' : block.type === 'file' ? 'File Block' : 'Question Block'}
                             </span>
                             <button 
                               onClick={() => {
@@ -530,6 +531,18 @@ const LessonEditor = () => {
                                 setHybridBlocks(newBlocks);
                               }} 
                               placeholder="Write your lesson content here..." 
+                            />
+                          ) : block.type === 'file' ? (
+                            <FileBlockEditor
+                              block={block}
+                              onChange={(updated) => {
+                                const newBlocks = [...hybridBlocks];
+                                newBlocks[index] = updated;
+                                setHybridBlocks(newBlocks);
+                              }}
+                              companyId={company?.id || 1}
+                              courseId={courseId}
+                              lessonId={lessonId}
                             />
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -696,11 +709,16 @@ const LessonEditor = () => {
                         </div>
                       ))}
 
-                      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12 }}>
+                      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12, flexWrap: 'wrap' }}>
                         <Button variant="outline" rounded="pill" onClick={() => {
                           setHybridBlocks([...hybridBlocks, { id: Date.now().toString(), type: 'reading', content: '' }]);
                         }}>
                           <Plus size={16} /> Add Editor Block
+                        </Button>
+                        <Button variant="outline" rounded="pill" onClick={() => {
+                          setHybridBlocks([...hybridBlocks, createEmptyFileBlock()]);
+                        }}>
+                          <Plus size={16} /> Add File Block
                         </Button>
                         <Button variant="outline" rounded="pill" onClick={() => {
                           setHybridBlocks([...hybridBlocks, { 
