@@ -150,6 +150,16 @@
   transition: background 0.25s;
 }
 
+.toggle-switch.disabled .toggle-track {
+  background: #d1d5db; /* A solid gray for light mode visibility */
+  border-color: #9ca3af;
+}
+
+:root[data-theme="dark"] .toggle-switch.disabled .toggle-track {
+  background: #374151; /* Darker gray for dark mode */
+  border-color: #4b5563;
+}
+
 .toggle-track::after {
   content: "";
   position: absolute;

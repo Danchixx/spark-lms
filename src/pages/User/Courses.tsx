@@ -32,7 +32,7 @@ const Courses = () => {
   const lastOngoing = allCourses.find((c) => c.status === "Ongoing");
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
       <style>{`
         .courses-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 28px; }
         @media (max-width: 1024px) { .courses-grid { grid-template-columns: repeat(2, 1fr); } }

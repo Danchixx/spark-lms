@@ -248,7 +248,7 @@ const CreatorCourses = () => {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
       <style>{`
         .creator-courses-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding-bottom: 24px; }
         @media (max-width: 1024px) { .creator-courses-grid { grid-template-columns: repeat(2, 1fr); } }
