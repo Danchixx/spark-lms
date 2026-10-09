@@ -1,22 +1,88 @@
 // src/pages/SuperAdmin/Courses/SparkCourses.jsx
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "../../../lib/supabase";
 import { MOCK_COURSES, MOCK_COMPANIES_COURSES } from "../../../data/mockCourses";
 import CourseCard from "./components/CourseCard";
 import CourseDetail from "./components/CourseDetail";
 import PageTransition from "../../../components/common/PageTransition";
 
-// ── SUPABASE INTEGRATION (uncomment when ready):
-// import { fetchCourses } from '../../../data/mockCourses';
-// useEffect(() => { fetchCourses().then(setCourses); }, []);
-
 const SparkCourses = () => {
-  const [courses]         = useState(MOCK_COURSES);
-  const [view, setView]   = useState("list");   // "list" | "detail"
+  const [courses, setCourses] = useState(MOCK_COURSES);
+  const [companies, setCompanies] = useState(MOCK_COMPANIES_COURSES);
+  const [view, setView] = useState("list");   // "list" | "detail"
   const [selected, setSelected] = useState(null);
-  const [companyId, setCompanyId]   = useState(0);    // 0 = SPARK
-  const [tab, setTab]     = useState("all");    // "all" | "active" | "pending"
+  const [companyId, setCompanyId] = useState(0);    // 0 = SPARK
+  const [tab, setTab] = useState("all");    // "all" | "active" | "pending"
   const [dropdown, setDropdown] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCoursesAndCompanies = async () => {
+      try {
+        // Fetch active companies
+        const { data: compData } = await supabase
+          .from("companies")
+          .select("id, name")
+          .eq("is_archived", false);
+
+        if (isMounted && compData && compData.length > 0) {
+          setCompanies([{ id: 0, name: "All Companies / SPARK" }, ...compData]);
+        }
+
+        // Fetch courses joined with company
+        const { data: dbCourses, error } = await supabase
+          .from("courses")
+          .select(`
+            id,
+            title,
+            description,
+            status,
+            company_id,
+            created_by,
+            thumbnail_url,
+            companies(id, name)
+          `);
+
+        if (error) throw error;
+
+        if (isMounted && dbCourses && dbCourses.length > 0) {
+          const { data: modulesData } = await supabase.from("modules").select("id, course_id");
+          const { data: enrollmentsData } = await supabase.from("course_assignments").select("id, course_id");
+
+          const colors = ["#e8c9a0", "#a0c4e8", "#a0e8c4", "#d2a0e8", "#e8a0a0"];
+          const mapped = dbCourses.map((c, i) => {
+            const comp = Array.isArray(c.companies) ? c.companies[0] : c.companies;
+            const cModules = modulesData?.filter((m) => m.course_id === c.id) || [];
+            const cEnrolled = enrollmentsData?.filter((e) => e.course_id === c.id) || [];
+
+            return {
+              id: c.id,
+              title: c.title,
+              description: c.description || "Course modules and training assessments.",
+              companyId: c.company_id || 0,
+              companyName: comp?.name || "SPARK",
+              status: c.status === "published" ? "active" : "pending",
+              modules: cModules.length || 3,
+              units: (cModules.length || 3) * 3,
+              enrolled: cEnrolled.length,
+              avgCompletion: c.status === "published" ? 75 : 0,
+              createdBy: c.created_by ? "Staff Author" : "SuperAdmin",
+              thumbColor: colors[i % colors.length],
+              enrolledUsers: [],
+            };
+          });
+
+          setCourses(mapped);
+        }
+      } catch (err) {
+        console.warn("Could not fetch live courses, keeping mock catalog:", err);
+      }
+    };
+
+    fetchCoursesAndCompanies();
+    return () => { isMounted = false; };
+  }, []);
 
   // Filter courses
   const filtered = useMemo(() => {
@@ -30,7 +96,7 @@ const SparkCourses = () => {
   const activeCnt  = courses.filter(c => (companyId === 0 || c.companyId === companyId) && c.status === "active").length;
   const pendingCnt = courses.filter(c => (companyId === 0 || c.companyId === companyId) && c.status === "pending").length;
 
-  const selectedCompany = MOCK_COMPANIES_COURSES.find(c => c.id === companyId);
+  const selectedCompany = companies.find(c => c.id === companyId);
 
   const handleViewDetail = (course) => {
     setSelected(course);
@@ -112,7 +178,7 @@ const SparkCourses = () => {
                 boxShadow: "var(--shadow, 0 8px 28px rgba(0,0,0,.12))",
                 overflow: "hidden",
               }}>
-                {MOCK_COMPANIES_COURSES.map(c => (
+                {companies.map(c => (
                   <div
                     key={c.id}
                     onClick={() => { setCompanyId(c.id); setDropdown(false); setTab("all"); }}

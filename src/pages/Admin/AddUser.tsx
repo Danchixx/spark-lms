@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
 import { useAdminCourseContext } from "../../context/AdminCourseContext";
 import { supabase } from "../../lib/supabase";
+import { logAuditEvent } from "../../services/auditService";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
 import Header from "../../components/layout/Header/Header";
 import useSidebar from "../../hooks/useSidebar";
@@ -228,6 +229,20 @@ const AdminAddUser = () => {
           // as the user was successfully created, but we could notify them.
         }
       }
+
+      // Log audit event for SuperAdmin monitoring
+      await logAuditEvent({
+        action: 'CREATE_LEARNER',
+        tableName: 'users',
+        userId: user?.id || null,
+        newValue: {
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          company: company.name,
+          company_id: company.id,
+          assigned_courses: formData.selectedCourses?.length || 0,
+        },
+      });
 
       setShowSuccessModal(true);
     } catch (err: any) {

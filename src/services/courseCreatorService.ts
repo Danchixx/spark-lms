@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { logAuditEvent } from './auditService';
 
 // ─── Types ──────────────────────────────────────────────────
 export type CourseCreatePayload = {
@@ -67,6 +68,21 @@ export async function createCourse(data: CourseCreatePayload) {
     .single();
 
   if (error) throw error;
+
+  if (course) {
+    await logAuditEvent({
+      action: 'CREATE_COURSE',
+      tableName: 'courses',
+      recordId: course.id,
+      userId: data.created_by || null,
+      newValue: {
+        title: course.title,
+        company_id: course.company_id,
+        status: course.status,
+      },
+    });
+  }
+
   return course;
 }
 
@@ -80,6 +96,20 @@ export async function updateCourse(courseId: number, data: CourseUpdatePayload) 
     .single();
 
   if (error) throw error;
+
+  if (course) {
+    const isPublishing = data.status === 'published';
+    await logAuditEvent({
+      action: isPublishing ? 'PUBLISH_COURSE' : 'UPDATE_COURSE',
+      tableName: 'courses',
+      recordId: course.id,
+      newValue: {
+        title: course.title,
+        status: course.status,
+      },
+    });
+  }
+
   return course;
 }
 
@@ -91,6 +121,12 @@ export async function deleteCourse(courseId: number) {
     .eq('id', courseId);
 
   if (error) throw error;
+
+  await logAuditEvent({
+    action: 'DELETE_COURSE',
+    tableName: 'courses',
+    recordId: courseId,
+  });
 }
 
 /** Fetch a course with all its modules and lessons (for CourseBuilder) */

@@ -5,6 +5,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../../context/ThemeContext";
+import { useAuth } from "../../../context/AuthContext";
+import SparkLogo from "../../common/SparkLogo/sparklogo.png";
+import LogoutModal from "../../common/Modal/LogoutModal";
 
 const NAV = {
   overview: [
@@ -144,40 +147,6 @@ const SectionLabel = ({ label }) => (
   </div>
 );
 
-// ── User chip ─────────────────────────────────────────────────
-const UserChip = ({ user }) => (
-  <div style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "14px 16px",
-    margin: "12px",
-    borderRadius: 14,
-    background: "var(--card-2, #f6f8fc)",
-    border: "1px solid var(--line, #e2e8f0)",
-  }}>
-    <div style={{
-      width: 36, height: 36, borderRadius: "50%",
-      background: "var(--card, #ffffff)",
-      border: "1px solid var(--line, #e2e8f0)",
-      display: "flex", alignItems: "center",
-      justifyContent: "center", fontSize: 18, flexShrink: 0,
-    }}>
-      🔥
-    </div>
-    <div style={{ minWidth: 0, overflow: "hidden" }}>
-      <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {user?.name || "Ian Palabrica"}
-      </div>
-      <div style={{
-        fontSize: 10, color: "var(--accent-text, #d84e04)", fontWeight: 700,
-        letterSpacing: ".1em", textTransform: "uppercase"
-      }}>
-        SUPER ADMIN
-      </div>
-    </div>
-  </div>
-);
 
 // ── Nav content (shared between desktop + mobile) ─────────────
 const NavContent = ({ activePage, showSidebarIcons, onItemClick }) => (
@@ -301,9 +270,32 @@ const MobileDropdown = ({ open, activePage, onClose, user }) => {
           showSidebarIcons={showSidebarIcons}
         />
 
-        {/* User chip */}
+        {/* Footer */}
         <div style={{ borderTop: "1px solid var(--line, #e2e8f0)" }}>
-          <UserChip user={user} />
+          <div style={{
+            padding: "16px 20px", display: "flex", alignItems: "center", gap: 12
+          }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: "50%",
+              background: "#ffffff",
+              border: "1.5px solid var(--line, #e2e8f0)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0, overflow: "hidden"
+            }}>
+              <img src={SparkLogo} alt="Spark Logo" style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+            </div>
+
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("sa-open-logout"))}
+              style={{
+                background: "#ff0000", color: "white", padding: "8px 16px",
+                fontSize: 11, borderRadius: 20, flex: 1, border: "none", cursor: "pointer",
+                fontWeight: 700, letterSpacing: 1
+              }}
+            >
+              LOGOUT
+            </button>
+          </div>
         </div>
       </div>
     </>
@@ -313,6 +305,15 @@ const MobileDropdown = ({ open, activePage, onClose, user }) => {
 // ── Main SASidebar ────────────────────────────────────────────
 const SASidebar = ({ open, activePage, onNavigate, user }) => {
   const { showSidebarIcons } = useTheme();
+  const { logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  useEffect(() => {
+    const handleOpenLogout = () => setShowLogoutModal(true);
+    window.addEventListener("sa-open-logout", handleOpenLogout);
+    return () => window.removeEventListener("sa-open-logout", handleOpenLogout);
+  }, []);
+
   return (
     <>
       <style>{`
@@ -372,8 +373,32 @@ const SASidebar = ({ open, activePage, onNavigate, user }) => {
           flexShrink: 0,
           opacity: open ? 1 : 0,
           transition: "opacity 0.2s ease",
+          padding: "16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12
         }}>
-          <UserChip user={user} />
+          {/* Spark Logo Circle */}
+          <div style={{
+            width: 42, height: 42, borderRadius: "50%",
+            background: "#ffffff",
+            border: "1.5px solid var(--line, #e2e8f0)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0, overflow: "hidden"
+          }}>
+            <img src={SparkLogo} alt="Spark Logo" style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+          </div>
+
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            style={{
+              background: "#ff0000", color: "white", padding: "8px 16px",
+              fontSize: 11, borderRadius: 20, flex: 1, border: "none", cursor: "pointer",
+              fontWeight: 700, letterSpacing: 1
+            }}
+          >
+            LOGOUT
+          </button>
         </div>
       </aside>
 
@@ -397,6 +422,15 @@ const SASidebar = ({ open, activePage, onNavigate, user }) => {
           user={user}
         />
       </div>
+
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          logout();
+        }}
+      />
     </>
   );
 };

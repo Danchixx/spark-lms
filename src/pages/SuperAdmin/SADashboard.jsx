@@ -4,6 +4,8 @@ import "./superadmin-theme.css";
 import { SAThemeProvider, useSATheme } from "./SAThemeContext";
 
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
+import { fetchRecentAuditLogs } from "../../services/auditService";
 import { MOCK_TENANTS } from "../../data/mockTenants";
 import SASidebar, { SIDEBAR_WIDTH, TOPBAR_HEIGHT } from "../../components/layout/Sidebar/SASidebar";
 import SparkLogo from "../../components/common/SparkLogo/sparklogo.png";
@@ -133,20 +135,25 @@ const TopBar = ({ onBurger, sidebarOpen, user }) => {
         )}
       </button>
 
-      {/* User name & avatar */}
-      <span style={{ fontWeight: 700, fontSize: 15, color: "var(--accent-text, #d84e04)" }}>
-        {user?.name?.split(" ")[0] || "Ian"}
-      </span>
-      <div style={{
-        width: 36, height: 36, borderRadius: "50%",
-        background: "var(--card-2, #e8e0d8)", border: "2px solid var(--line, #ddd)", overflow: "hidden"
-      }}>
-        <svg viewBox="0 0 100 100" width="36" height="36">
-          <circle cx="50" cy="50" r="50" fill="#e8e0d8" />
-          <circle cx="50" cy="36" r="18" fill="#b0a090" />
-          <ellipse cx="50" cy="85" rx="28" ry="20" fill="#b0a090" />
-        </svg>
+      {/* Avatar + name — desktop */}
+      <div
+        title="Super Admin Profile"
+        style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 8, padding: "4px 8px", transition: "background 0.2s ease" }}
+      >
+        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#ffffff", border: "1.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt={user?.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          )}
+        </div>
+        <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text, #0f172a)" }}>{user?.name || "Super Admin"}</span>
       </div>
+
+      {/* Role badge */}
+      <span style={{ background: "#FF6B00", color: "white", padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
+        Superadmin
+      </span>
     </div>
   </div>
   );
@@ -347,6 +354,120 @@ const SYSTEM_UPDATES = [
   { icon: "👤", text: "New admin role assigned at DepEd", time: "3d ago", color: "#8e44ad" },
 ];
 
+const formatTimeAgo = (isoDate) => {
+  if (!isoDate) return "recently";
+  const sec = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+  if (sec < 60) return "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.floor(hr / 24);
+  return `${days}d ago`;
+};
+
+const parseNewValue = (val) => {
+  if (!val) return {};
+  if (typeof val === "object") return val;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return { raw: val };
+  }
+};
+
+const formatAuditLog = (log) => {
+  const val = parseNewValue(log.new_value);
+  const time = formatTimeAgo(log.created_at);
+
+  switch (log.action) {
+    case "PROVISION_TENANT_STAFF":
+      return {
+        icon: "👤",
+        text: `Provisioned ${val.role || "staff"}: ${val.staff_name || val.email || "Staff User"}`,
+        time,
+        color: "#FF6B00",
+      };
+    case "CREATE_LEARNER":
+      return {
+        icon: "🎓",
+        text: `Learner added: ${val.name || val.email || "User"} (${val.company || "Tenant"})`,
+        time,
+        color: "#27ae60",
+      };
+    case "BATCH_IMPORT_LEARNERS":
+      return {
+        icon: "👥",
+        text: `Batch upload: ${val.imported_count || ""} learners added at ${val.company || "Tenant"}`,
+        time,
+        color: "#8e44ad",
+      };
+    case "CREATE_COURSE":
+      return {
+        icon: "📚",
+        text: `New course created: ${val.title || "Untitled Course"}`,
+        time,
+        color: "#2980b9",
+      };
+    case "PUBLISH_COURSE":
+      return {
+        icon: "✅",
+        text: `Course published: ${val.title || "Course"}`,
+        time,
+        color: "#27ae60",
+      };
+    case "UPDATE_COURSE":
+      return {
+        icon: "✏️",
+        text: `Course updated: ${val.title || "Course"}`,
+        time,
+        color: "#3498db",
+      };
+    case "DELETE_COURSE":
+      return {
+        icon: "🗑️",
+        text: `Course deleted (ID: ${log.record_id || "N/A"})`,
+        time,
+        color: "#e74c3c",
+      };
+    case "ARCHIVE_LEARNER":
+      return {
+        icon: "📦",
+        text: `Tenant admin archived a learner account`,
+        time,
+        color: "#7f8c8d",
+      };
+    case "RESTORE_LEARNER":
+      return {
+        icon: "🔄",
+        text: `Tenant admin restored a learner account`,
+        time,
+        color: "#16a085",
+      };
+    case "PERMANENT_DELETE_LEARNER":
+      return {
+        icon: "❌",
+        text: `Tenant admin deleted learner permanently`,
+        time,
+        color: "#c0392b",
+      };
+    case "RESET_STAFF_PASSWORD":
+      return {
+        icon: "🔑",
+        text: `Password reset for: ${val.email || "Staff member"}`,
+        time,
+        color: "#d35400",
+      };
+    default:
+      return {
+        icon: "⚡",
+        text: `${log.action ? log.action.replace(/_/g, " ") : "Platform Activity"} (${log.table_name || "system"})`,
+        time,
+        color: "#FF6B00",
+      };
+  }
+};
+
 // ── Subscription Detail Modal ──────────────────────────────
 const SubscriptionDetailModal = ({ sub, onClose, onManage }) => {
   if (!sub) return null;
@@ -492,6 +613,52 @@ export const DashboardHome = () => {
   const [expandedTenants, setExpandedTenants] = useState({});
   const [showAllSubs, setShowAllSubs] = useState(false);
   const [selectedSub, setSelectedSub] = useState(null);
+  const [liveUpdates, setLiveUpdates] = useState(SYSTEM_UPDATES);
+  const [counts, setCounts] = useState({
+    tenants: 24,
+    approvals: 8,
+    courses: 61,
+    subscriptions: 18,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch audit logs
+        const logs = await fetchRecentAuditLogs(6);
+        if (isMounted && logs && logs.length > 0) {
+          const formatted = logs.map(formatAuditLog);
+          if (formatted.length < 5) {
+            setLiveUpdates([...formatted, ...SYSTEM_UPDATES.slice(formatted.length)]);
+          } else {
+            setLiveUpdates(formatted);
+          }
+        }
+
+        // Fetch live counts
+        const [compRes, coursesRes, pendingCoursesRes] = await Promise.all([
+          supabase.from("companies").select("id", { count: "exact", head: true }).eq("is_archived", false),
+          supabase.from("courses").select("id", { count: "exact", head: true }),
+          supabase.from("courses").select("id", { count: "exact", head: true }).eq("status", "draft"),
+        ]);
+
+        if (isMounted) {
+          setCounts({
+            tenants: compRes.count !== null && compRes.count > 0 ? compRes.count : 24,
+            approvals: pendingCoursesRes.count !== null && pendingCoursesRes.count > 0 ? pendingCoursesRes.count : 8,
+            courses: coursesRes.count !== null && coursesRes.count > 0 ? coursesRes.count : 61,
+            subscriptions: compRes.count !== null && compRes.count > 0 ? compRes.count : 18,
+          });
+        }
+      } catch (err) {
+        console.warn("Live dashboard fetch error:", err);
+      }
+    };
+
+    fetchDashboardData();
+    return () => { isMounted = false; };
+  }, []);
 
   const toggleExpand = (id) => {
     setExpandedTenants((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -504,10 +671,10 @@ export const DashboardHome = () => {
   }).length;
 
   const STATS = [
-    { key: "tenants", label: "Tenants", count: 24, sub: "↑ +5 this week", iconKey: "tenants", path: "/superadmin/tenants" },
-    { key: "approvals", label: "Approvals", count: 8, sub: "↑ +3 this week", iconKey: "approvals", path: "/superadmin/approvals" },
-    { key: "courses", label: "Courses", count: 61, sub: "↑ 4 new", iconKey: "courses", path: "/superadmin/courses" },
-    { key: "subscriptions", label: "Subscriptions", count: 18, sub: "↑ +3 this quarter", iconKey: "subscriptions", path: "/superadmin/tenants" },
+    { key: "tenants", label: "Tenants", count: counts.tenants, sub: "Live database", iconKey: "tenants", path: "/superadmin/tenants" },
+    { key: "approvals", label: "Approvals", count: counts.approvals, sub: "Pending review", iconKey: "approvals", path: "/superadmin/approvals" },
+    { key: "courses", label: "Courses", count: counts.courses, sub: "Catalog", iconKey: "courses", path: "/superadmin/courses" },
+    { key: "subscriptions", label: "Subscriptions", count: counts.subscriptions, sub: "Active organizations", iconKey: "subscriptions", path: "/superadmin/tenants" },
   ];
 
   return (
@@ -863,10 +1030,10 @@ export const DashboardHome = () => {
           <Card>
             <CardHeader
               title="System Updates"
-              count={`${SYSTEM_UPDATES.length} updates`}
+              count={`${liveUpdates.length} updates`}
             />
             <div style={{ padding: "0 16px 12px" }}>
-              {SYSTEM_UPDATES.map((u, i) => (
+              {liveUpdates.map((u, i) => (
                 <div
                   key={i}
                   style={{
@@ -1024,7 +1191,7 @@ const SADashboardInner = () => {
         marginLeft: sidebarOpen ? SIDEBAR_WIDTH : 0,
         transition: "margin-left .25s ease",
         minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
-        overflowY: "auto",
+        overflowX: "clip",
         display: "flex",
         flexDirection: "column",
         background: "var(--bg, #f3f5f9)",
