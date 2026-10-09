@@ -37,7 +37,7 @@ type EditorQuestion = {
 type EditorLesson = {
   id: number;
   title: string;
-  type: "video" | "reading" | "assessment";
+  type: "video" | "hybrid" | "assessment";
   content: string | null;
   video_url: string | null;
   position: number;
@@ -79,7 +79,7 @@ let nextChoiceId = 1000;
 const LessonTypeIcon = ({ type, size = 16 }: { type: string; size?: number }) => {
   switch (type) {
     case "video": return <Play size={size} />;
-    case "reading": return <FileText size={size} />;
+    case "hybrid": return <FileText size={size} />;
     case "assessment": return <PenTool size={size} />;
     default: return <FileText size={size} />;
   }
@@ -125,9 +125,21 @@ const LessonEditor = () => {
 
   // ─── State ─────────────────────────────────────────────────
   const [lessonTitle, setLessonTitle] = useState(lessonData?.title || "Untitled Lesson");
-  const [lessonType, setLessonType] = useState<"video" | "reading" | "assessment">(lessonData?.type || "video");
+  const [lessonType, setLessonType] = useState<"video" | "hybrid" | "assessment">(lessonData?.type || "video");
   const [videoUrl, setVideoUrl] = useState(lessonData?.video_url || "");
-  const [readingContent, setReadingContent] = useState(lessonData?.content || "");
+  const initialHybridBlocks = (() => {
+    if (lessonData?.type !== "hybrid" || !lessonData?.content) {
+      return [{ id: Date.now().toString(), type: "reading", content: lessonData?.content || "" }];
+    }
+    try {
+      const parsed = JSON.parse(lessonData.content);
+      if (Array.isArray(parsed)) return parsed;
+      return [{ id: Date.now().toString(), type: "reading", content: lessonData.content }];
+    } catch {
+      return [{ id: Date.now().toString(), type: "reading", content: lessonData.content }];
+    }
+  })();
+  const [hybridBlocks, setHybridBlocks] = useState<any[]>(initialHybridBlocks);
   const [questions, setQuestions] = useState<EditorQuestion[]>([]);
   const [passingScore, setPassingScore] = useState(70);
   const [timeLimit, setTimeLimit] = useState(15);
@@ -282,7 +294,7 @@ const LessonEditor = () => {
       await courseService.updateLesson(Number(lessonId), {
         title: lessonTitle,
         type: lessonType,
-        content: lessonType === "reading" ? readingContent : null,
+        content: lessonType === "hybrid" ? JSON.stringify(hybridBlocks) : null,
         video_url: lessonType === "video" ? videoUrl : null,
       });
 
@@ -303,6 +315,46 @@ const LessonEditor = () => {
           })),
         });
       }
+
+      // 3. Update local state so navigation doesn't revert changes
+      const updatedModules = allModulesList.map((mod: any) => {
+        if (mod.id === currentModule.id) {
+          return {
+            ...mod,
+            lessons: mod.lessons.map((l: any) => {
+              if (l.id === Number(lessonId)) {
+                return {
+                  ...l,
+                  title: lessonTitle,
+                  type: lessonType,
+                  content: lessonType === "hybrid" ? JSON.stringify(hybridBlocks) : null,
+                  video_url: lessonType === "video" ? videoUrl : null,
+                };
+              }
+              return l;
+            })
+          };
+        }
+        return mod;
+      });
+
+      const updatedCurrentModule = updatedModules.find((m: any) => m.id === currentModule.id) || currentModule;
+
+      navigate(location.pathname, {
+        state: {
+          ...location.state,
+          moduleData: updatedCurrentModule,
+          allModules: updatedModules,
+          lessonData: {
+            ...lessonData,
+            title: lessonTitle,
+            type: lessonType,
+            content: lessonType === "hybrid" ? JSON.stringify(hybridBlocks) : null,
+            video_url: lessonType === "video" ? videoUrl : null,
+          }
+        },
+        replace: true
+      });
 
       showToast("Lesson saved successfully!");
     } catch (err: any) {
@@ -336,7 +388,17 @@ const LessonEditor = () => {
     setLessonTitle(lesson.title);
     setLessonType(lesson.type);
     setVideoUrl(lesson.video_url || "");
-    setReadingContent(lesson.content || "");
+    
+    // Parse hybrid blocks
+    let parsedBlocks = [{ id: Date.now().toString(), type: "reading", content: lesson.content || "" }];
+    if (lesson.type === "hybrid" && lesson.content) {
+      try {
+        const parsed = JSON.parse(lesson.content);
+        if (Array.isArray(parsed)) parsedBlocks = parsed;
+      } catch {}
+    }
+    setHybridBlocks(parsedBlocks);
+    
     setQuestions([]);
   };
 
@@ -385,18 +447,12 @@ const LessonEditor = () => {
                     placeholder="Lesson title..."
                   />
 
-                  {/* Type Tabs */}
+                  {/* Lesson Type Indicator */}
                   <div className="editor-type-tabs">
-                    {(["video", "reading", "assessment"] as const).map((type) => (
-                      <button
-                        key={type}
-                        className={`editor-type-tab ${lessonType === type ? "active" : ""}`}
-                        onClick={() => setLessonType(type)}
-                      >
-                        <LessonTypeIcon type={type} />
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </button>
-                    ))}
+                    <button className="editor-type-tab active" style={{ cursor: "default" }}>
+                      <LessonTypeIcon type={lessonType} />
+                      {lessonType.charAt(0).toUpperCase() + lessonType.slice(1)}
+                    </button>
                   </div>
                 </div>
 
@@ -437,18 +493,230 @@ const LessonEditor = () => {
                     </div>
                   )}
 
-                  {/* ─── Reading Editor ────────────────────────── */}
-                  {lessonType === "reading" && (
-                    <div>
-                      <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 12, display: "block" }}>
-                        Lesson Content
-                      </label>
+                  {/* ─── Hybrid Editor ────────────────────────── */}
+                  {lessonType === "hybrid" && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)" }}>
+                          Lesson Content
+                        </label>
+                      </div>
 
-                      <RichTextEditor 
-                        content={readingContent} 
-                        onChange={setReadingContent} 
-                        placeholder="Write your lesson content here..." 
-                      />
+                      {hybridBlocks.map((block, index) => (
+                        <div key={block.id} style={{ padding: 16, border: '1px solid var(--color-border)', borderRadius: 8, background: 'var(--color-surface)', position: 'relative' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
+                              {block.type === 'reading' ? 'Editor Block' : 'Question Block'}
+                            </span>
+                            <button 
+                              onClick={() => {
+                                const newBlocks = [...hybridBlocks];
+                                newBlocks.splice(index, 1);
+                                setHybridBlocks(newBlocks);
+                              }}
+                              style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
+                              title="Delete Block"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+
+                          {block.type === 'reading' ? (
+                            <RichTextEditor 
+                              content={block.content} 
+                              onChange={(val) => {
+                                const newBlocks = [...hybridBlocks];
+                                newBlocks[index] = { ...block, content: val };
+                                setHybridBlocks(newBlocks);
+                              }} 
+                              placeholder="Write your lesson content here..." 
+                            />
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                              <input 
+                                className="editor-question-input"
+                                value={block.question.question_text}
+                                onChange={(e) => {
+                                  const newBlocks = [...hybridBlocks];
+                                  newBlocks[index] = { ...block, question: { ...block.question, question_text: e.target.value } };
+                                  setHybridBlocks(newBlocks);
+                                }}
+                                placeholder="Type your question here..."
+                              />
+                              <select 
+                                value={block.question.question_type}
+                                onChange={(e) => {
+                                  const type = e.target.value;
+                                  let newChoices = [];
+                                  let newAnswers = [];
+                                  if (type === 'true_false') {
+                                    newChoices = [{ id: 1, choice_text: 'True', is_correct: true }, { id: 2, choice_text: 'False', is_correct: false }];
+                                  } else if (type === 'multiple_choice') {
+                                    newChoices = [{ id: 1, choice_text: '', is_correct: true }, { id: 2, choice_text: '', is_correct: false }];
+                                  } else if (type === 'identification') {
+                                    newAnswers = [''];
+                                  } else if (type === 'enumeration') {
+                                    newAnswers = ['', '', ''];
+                                  }
+                                  const newBlocks = [...hybridBlocks];
+                                  newBlocks[index] = { 
+                                    ...block, 
+                                    question: { ...block.question, question_type: type, choices: newChoices, correct_answers: newAnswers } 
+                                  };
+                                  setHybridBlocks(newBlocks);
+                                }}
+                                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--color-border)", outline: "none" }}
+                              >
+                                <option value="multiple_choice">Multiple Choice</option>
+                                <option value="true_false">True / False</option>
+                                <option value="identification">Identification</option>
+                                <option value="enumeration">Enumeration</option>
+                                <option value="essay">Essay</option>
+                              </select>
+
+                              {/* Render Choices based on type */}
+                              {block.question.question_type === 'multiple_choice' && (
+                                <div className="editor-choices">
+                                  {block.question.choices.map((c: any, cIdx: number) => (
+                                    <div key={c.id} className="editor-choice-row">
+                                      <button
+                                        className={`editor-choice-correct-btn ${c.is_correct ? "correct" : ""}`}
+                                        onClick={() => {
+                                          const newBlocks = [...hybridBlocks];
+                                          const choices = block.question.choices.map((ch: any) => ({ ...ch, is_correct: ch.id === c.id }));
+                                          newBlocks[index] = { ...block, question: { ...block.question, choices } };
+                                          setHybridBlocks(newBlocks);
+                                        }}
+                                      >
+                                        {c.is_correct && <Check size={14} />}
+                                      </button>
+                                      <input
+                                        className="editor-choice-input"
+                                        value={c.choice_text}
+                                        onChange={(e) => {
+                                          const newBlocks = [...hybridBlocks];
+                                          const choices = [...block.question.choices];
+                                          choices[cIdx] = { ...choices[cIdx], choice_text: e.target.value };
+                                          newBlocks[index] = { ...block, question: { ...block.question, choices } };
+                                          setHybridBlocks(newBlocks);
+                                        }}
+                                        placeholder="Choice text..."
+                                      />
+                                      <button className="editor-choice-delete" onClick={() => {
+                                        const newBlocks = [...hybridBlocks];
+                                        const choices = block.question.choices.filter((_: any, i: number) => i !== cIdx);
+                                        newBlocks[index] = { ...block, question: { ...block.question, choices } };
+                                        setHybridBlocks(newBlocks);
+                                      }}>
+                                        <X size={14} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button className="editor-add-choice-btn" onClick={() => {
+                                    const newBlocks = [...hybridBlocks];
+                                    const choices = [...block.question.choices, { id: Date.now(), choice_text: '', is_correct: false }];
+                                    newBlocks[index] = { ...block, question: { ...block.question, choices } };
+                                    setHybridBlocks(newBlocks);
+                                  }}>
+                                    <Plus size={14} /> Add Choice
+                                  </button>
+                                </div>
+                              )}
+
+                              {block.question.question_type === 'true_false' && (
+                                <div style={{ display: 'flex', gap: 16 }}>
+                                  {block.question.choices.map((c: any) => (
+                                    <div 
+                                      key={c.id} 
+                                      onClick={() => {
+                                        const newBlocks = [...hybridBlocks];
+                                        const choices = block.question.choices.map((ch: any) => ({ ...ch, is_correct: ch.id === c.id }));
+                                        newBlocks[index] = { ...block, question: { ...block.question, choices } };
+                                        setHybridBlocks(newBlocks);
+                                      }}
+                                      style={{
+                                        flex: 1, padding: "12px", borderRadius: 8, border: `2px solid ${c.is_correct ? "#4CAF50" : "var(--color-border)"}`,
+                                        background: c.is_correct ? "rgba(76, 175, 80, 0.05)" : "var(--color-surface)",
+                                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                                        cursor: "pointer", fontWeight: 600, color: c.is_correct ? "#4CAF50" : "var(--color-text)"
+                                      }}
+                                    >
+                                      {c.is_correct && <CheckCircle size={16} />}
+                                      {c.choice_text}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {(block.question.question_type === 'identification' || block.question.question_type === 'enumeration') && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-muted)" }}>ACCEPTED ANSWER(S)</label>
+                                  {block.question.correct_answers.map((ans: string, ansIdx: number) => (
+                                    <div key={ansIdx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                      <input
+                                        className="editor-choice-input"
+                                        style={{ paddingLeft: 16 }}
+                                        value={ans}
+                                        onChange={(e) => {
+                                          const newBlocks = [...hybridBlocks];
+                                          const correct_answers = [...block.question.correct_answers];
+                                          correct_answers[ansIdx] = e.target.value;
+                                          newBlocks[index] = { ...block, question: { ...block.question, correct_answers } };
+                                          setHybridBlocks(newBlocks);
+                                        }}
+                                        placeholder={`Correct answer ${ansIdx + 1}...`}
+                                      />
+                                      {block.question.question_type === 'enumeration' && (
+                                        <button className="editor-choice-delete" onClick={() => {
+                                          const newBlocks = [...hybridBlocks];
+                                          const correct_answers = block.question.correct_answers.filter((_: any, i: number) => i !== ansIdx);
+                                          newBlocks[index] = { ...block, question: { ...block.question, correct_answers } };
+                                          setHybridBlocks(newBlocks);
+                                        }}>
+                                          <X size={14} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {block.question.question_type === 'enumeration' && (
+                                    <button className="editor-add-choice-btn" onClick={() => {
+                                      const newBlocks = [...hybridBlocks];
+                                      const correct_answers = [...block.question.correct_answers, ''];
+                                      newBlocks[index] = { ...block, question: { ...block.question, correct_answers } };
+                                      setHybridBlocks(newBlocks);
+                                    }}>
+                                      <Plus size={14} /> Add Answer Option
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12 }}>
+                        <Button variant="outline" rounded="pill" onClick={() => {
+                          setHybridBlocks([...hybridBlocks, { id: Date.now().toString(), type: 'reading', content: '' }]);
+                        }}>
+                          <Plus size={16} /> Add Editor Block
+                        </Button>
+                        <Button variant="outline" rounded="pill" onClick={() => {
+                          setHybridBlocks([...hybridBlocks, { 
+                            id: Date.now().toString(), 
+                            type: 'question', 
+                            question: { 
+                              question_text: '', 
+                              question_type: 'multiple_choice', 
+                              choices: [{ id: 1, choice_text: '', is_correct: true }, { id: 2, choice_text: '', is_correct: false }], 
+                              correct_answers: [] 
+                            } 
+                          }]);
+                        }}>
+                          <Plus size={16} /> Add Question Block
+                        </Button>
+                      </div>
                     </div>
                   )}
 

@@ -22,3 +22,19 @@ body {
   from { opacity: 0; transform: scale(0.85); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+@import "suneditor/dist/css/suneditor.min.css";
+
+/* Clearfix for floated components in old tiptap content */
+.tiptap-content::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Ensure iframe border radius still applies cleanly */
+.sun-editor-editable iframe {
+  border-radius: 8px;
+  border: none;
+}
+

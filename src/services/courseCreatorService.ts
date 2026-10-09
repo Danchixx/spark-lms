@@ -23,6 +23,7 @@ export type ModulePayload = {
   title: string;
   description?: string | null;
   order: number;
+  status?: 'draft' | 'published';
 };
 
 export type LessonPayload = {
@@ -150,6 +151,7 @@ export async function createModule(courseId: number, data: ModulePayload) {
       title: data.title,
       description: data.description || null,
       order: data.order,
+      status: data.status || 'published',
     })
     .select()
     .single();
@@ -194,6 +196,16 @@ export async function reorderModules(modules: { id: number; order: number }[]) {
 
 // ─── Lesson CRUD ────────────────────────────────────────────
 
+/** Batch reorder lessons */
+export async function reorderLessons(lessons: { id: number; position: number }[]) {
+  const promises = lessons.map((l) =>
+    supabase.from('course_lessons').update({ position: l.position }).eq('id', l.id)
+  );
+  const results = await Promise.all(promises);
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+}
+
 /** Create a new lesson under a module */
 export async function createLesson(moduleId: number, data: LessonPayload) {
   const { data: lesson, error } = await supabase
@@ -213,7 +225,6 @@ export async function createLesson(moduleId: number, data: LessonPayload) {
   return lesson;
 }
 
-/** Update a lesson */
 export async function updateLesson(lessonId: number, data: Partial<LessonPayload>) {
   const { data: lesson, error } = await supabase
     .from('course_lessons')
@@ -223,6 +234,46 @@ export async function updateLesson(lessonId: number, data: Partial<LessonPayload
     .single();
 
   if (error) throw error;
+  
+  // Clean up orphaned hybrid responses if questions were deleted
+  if (data.type === 'hybrid' && data.content) {
+    try {
+      const blocks = JSON.parse(data.content);
+      const questionIds = blocks.filter((b: any) => b.type === 'question').map((b: any) => String(b.id));
+      
+      if (questionIds.length > 0) {
+        const { data: responses } = await supabase
+          .from('hybrid_lesson_responses')
+          .select('question_id')
+          .eq('lesson_id', lessonId);
+          
+        if (responses) {
+          const toDelete = Array.from(new Set(
+            responses
+              .map((r: any) => r.question_id)
+              .filter((id: string) => !questionIds.includes(id))
+          ));
+            
+          if (toDelete.length > 0) {
+            await supabase
+              .from('hybrid_lesson_responses')
+              .delete()
+              .eq('lesson_id', lessonId)
+              .in('question_id', toDelete);
+          }
+        }
+      } else {
+        // If there are no questions left in the lesson, delete all responses for this lesson
+        await supabase
+          .from('hybrid_lesson_responses')
+          .delete()
+          .eq('lesson_id', lessonId);
+      }
+    } catch (e) {
+      console.error("Failed to parse hybrid blocks for cleanup:", e);
+    }
+  }
+
   return lesson;
 }
 

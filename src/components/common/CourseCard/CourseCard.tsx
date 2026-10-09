@@ -85,7 +85,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
 
       {/* White body */}
       <div style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ fontWeight: 800, fontSize: 15, color: "var(--color-text-header)", lineHeight: 1.3 }}>{course.name}</div>
+        <div title={course.name} style={{ fontWeight: 800, fontSize: 15, color: "var(--color-text-header)", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{course.name}</div>
         <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{course.modulesCount} Modules · {course.unitsCount} Lessons</div>
 
         {/* Progress */}

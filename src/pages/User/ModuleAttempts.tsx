@@ -46,6 +46,10 @@ const ModuleAttempts = () => {
           return;
         }
 
+        if (assessmentLesson.status === 'completed') {
+          setAssessmentCompleted(true);
+        }
+
         // Get assessment ID
         const { data: assessmentData } = await supabase
           .from('assessments')

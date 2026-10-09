@@ -10,6 +10,7 @@ import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
+import Skeleton from "../../components/ui/Skeleton/Skeleton";
 import * as courseService from "../../services/courseCreatorService";
 
 // ─── Filter Nav ─────────────────────────────────────────────
@@ -67,6 +68,39 @@ const CreatorFilterNav = ({ counts, active, onChange }: { counts: { all: number;
   );
 };
 
+// ─── Course Card Skeleton ───────────────────────────────────
+const CreatorCourseCardSkeleton = () => {
+  return (
+    <div style={{
+      background: "var(--color-surface)", borderRadius: 12,
+      overflow: "hidden", boxShadow: "var(--shadow)",
+      border: "1px solid var(--color-border)",
+      display: "flex", flexDirection: "column", height: 320
+    }}>
+      <Skeleton height={150} borderRadius="0" />
+      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <Skeleton height={20} width="80%" borderRadius={4} style={{ marginBottom: 8 }} />
+          <Skeleton height={14} width="100%" borderRadius={4} style={{ marginBottom: 4 }} />
+          <Skeleton height={14} width="90%" borderRadius={4} />
+        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <Skeleton height={14} width="50%" borderRadius={4} />
+        </div>
+      </div>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "12px 16px",
+        background: "var(--color-bg-subtle)",
+        borderTop: "1px solid var(--color-border)",
+      }}>
+        <Skeleton height={14} width={100} borderRadius={4} />
+        <Skeleton height={32} width={110} borderRadius={99} />
+      </div>
+    </div>
+  );
+};
+
 // ─── Course Card ────────────────────────────────────────────
 const CreatorCourseCard = ({ course, onEdit }: { course: any; onEdit: (id: string) => void }) => {
   const isDraft = course.status === "draft";
@@ -102,10 +136,22 @@ const CreatorCourseCard = ({ course, onEdit }: { course: any; onEdit: (id: strin
       {/* Content */}
       <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: "var(--color-text-header)", lineHeight: 1.3, marginBottom: 4 }}>
+          <div 
+            title={course.title}
+            style={{ 
+              fontWeight: 800, fontSize: 16, color: "var(--color-text-header)", lineHeight: 1.3, marginBottom: 4,
+              display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" 
+            }}
+          >
             {course.title}
           </div>
-          <div style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.4 }}>
+          <div 
+            title={course.description}
+            style={{ 
+              fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.4,
+              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" 
+            }}
+          >
             {course.description}
           </div>
         </div>
@@ -227,18 +273,24 @@ const CreatorCourses = () => {
             <CreatorFilterNav counts={counts} active={activeFilter} onChange={setActiveFilter} />
 
             <div className="creator-courses-grid">
-              {filtered.map((course) => (
-                <CreatorCourseCard key={course.id} course={course} onEdit={handleEditCourse} />
-              ))}
-              {filtered.length === 0 && (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)" }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 8 }}>No courses yet</div>
-                  <div style={{ fontSize: 14, marginBottom: 20 }}>Start creating your first course to get started.</div>
-                  <Button variant="primary" rounded="pill" onClick={() => navigate(`/${slug}/courses/create`)}>
-                    <Plus size={16} style={{ marginRight: 6 }} /> Create Your First Course
-                  </Button>
-                </div>
+              {loading ? (
+                Array.from({ length: 6 }).map((_, i) => <CreatorCourseCardSkeleton key={i} />)
+              ) : (
+                <>
+                  {filtered.map((course) => (
+                    <CreatorCourseCard key={course.id} course={course} onEdit={handleEditCourse} />
+                  ))}
+                  {filtered.length === 0 && (
+                    <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)" }}>
+                      <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 8 }}>No courses yet</div>
+                      <div style={{ fontSize: 14, marginBottom: 20 }}>Start creating your first course to get started.</div>
+                      <Button variant="primary" rounded="pill" onClick={() => navigate(`/${slug}/courses/create`)}>
+                        <Plus size={16} style={{ marginRight: 6 }} /> Create Your First Course
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </PageTransition>

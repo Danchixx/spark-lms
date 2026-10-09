@@ -15,6 +15,24 @@ import "./CourseModules.css";
 import PageTransition from "../../components/common/PageTransition";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
+const getOrdinalSuffix = (d: number) => {
+  if (d > 3 && d < 21) return 'th';
+  switch (d % 10) {
+    case 1:  return "st";
+    case 2:  return "nd";
+    case 3:  return "rd";
+    default: return "th";
+  }
+};
+
+const formatCertDate = (dateString?: string) => {
+  const date = dateString ? new Date(dateString) : new Date();
+  const d = date.getDate();
+  const month = date.toLocaleDateString('en-US', { month: 'long' });
+  const year = date.getFullYear();
+  return `${d}${getOrdinalSuffix(d)} of ${month}, ${year}`;
+};
+
 const CourseModules = () => {
   const { user, company, logout } = useAuth();
   const navigate = useNavigate();
@@ -144,7 +162,9 @@ const CourseModules = () => {
                     <span style={{ fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>Your Progress</span>
                     <ProgressBar value={courseData.progress} size="lg" showLabel />
                     {isCompleted ? (
-                      <Button size="sm" rounded="pill" variant="ghost" onClick={() => setShowCertificate(true)}>View Certificate</Button>
+                      slug !== 'spark' && (
+                        <Button size="sm" rounded="pill" variant="ghost" onClick={() => setShowCertificate(true)}>View Certificate</Button>
+                      )
                     ) : (
                       <Button size="sm" rounded="pill">Continue</Button>
                     )}
@@ -236,10 +256,10 @@ const CourseModules = () => {
                             </div>
 
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              {unit.status === "completed" && <Check size={20} color="#FF6B00" strokeWidth={3} />}
-                              {unit.status === "open" && (
+                              {(unit.status === "open" || (unit.status === "completed" && unit.type !== "assessment")) && (
                                 <Button
                                   size="sm"
+                                  variant={unit.status === "completed" ? "outline" : "primary"}
                                   rounded="pill"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -248,7 +268,7 @@ const CourseModules = () => {
                                     });
                                   }}
                                 >
-                                  Open
+                                  {unit.status === "completed" ? "Review" : "Open"}
                                 </Button>
                               )}
                               {unit.type === "assessment" && (unit.status === "completed" || unit.status === "open") && (unit.attemptsCount ?? 0) > 0 && (
@@ -266,6 +286,7 @@ const CourseModules = () => {
                                   View Attempts
                                 </Button>
                               )}
+                              {unit.status === "completed" && <Check size={20} color="#FF6B00" strokeWidth={3} />}
                               {unit.status === "locked" && <Lock size={16} color="#666" />}
                             </div>
                           </div>
@@ -288,7 +309,7 @@ const CourseModules = () => {
         onClose={() => setShowCertificate(false)}
         userName={user?.name || ""}
         courseName={courseData?.name || ""}
-        date="27th of February, 2026"
+        date={formatCertDate(courseData?.completedAt)}
         companyLogo={company?.logo_url}
       />
     </>

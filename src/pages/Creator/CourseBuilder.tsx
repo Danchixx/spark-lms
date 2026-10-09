@@ -12,6 +12,7 @@ import Button from "../../components/ui/Button/Button";
 import PageTransition from "../../components/common/PageTransition";
 import * as courseService from "../../services/courseCreatorService";
 import { supabase } from "../../lib/supabase";
+import Skeleton from "../../components/ui/Skeleton/Skeleton";
 import "./CourseBuilder.css";
 
 // ─── Types (mirrors DB schema) ──────────────────────────────
@@ -29,6 +30,7 @@ type BuilderModule = {
   title: string;
   description: string | null;
   order: number;
+  status: "draft" | "published";
   lessons: BuilderLesson[];
 };
 
@@ -86,6 +88,73 @@ const LessonTypeIcon = ({ type }: { type: string }) => {
   }
 };
 
+const ToggleSwitch = ({ checked, onChange, label, size = "md" }: { checked: boolean, onChange: (c: boolean) => void, label?: string, size?: "sm" | "md" }) => {
+  const w = size === "sm" ? 28 : 36;
+  const h = size === "sm" ? 16 : 20;
+  const dot = size === "sm" ? 12 : 16;
+  const travel = w - dot - 4;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => onChange(!checked)}>
+      <div style={{ 
+        width: w, height: h, borderRadius: h/2, 
+        background: checked ? '#10B981' : 'var(--color-border)', 
+        position: 'relative', transition: '0.2s' 
+      }}>
+        <div style={{ 
+          width: dot, height: dot, borderRadius: '50%', background: '#fff', 
+          position: 'absolute', top: 2, left: checked ? travel + 2 : 2, transition: '0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' 
+        }} />
+      </div>
+      {label && <span style={{ fontSize: 13, fontWeight: 700, color: checked ? '#10B981' : 'var(--color-text-muted)' }}>{label}</span>}
+    </div>
+  );
+};
+
+
+// ─── Course Builder Skeleton ────────────────────────────────
+const CourseBuilderSkeleton = () => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40 }}>
+      {/* Banner Skeleton */}
+      <div style={{ display: "flex", gap: 24, alignItems: "center", background: "var(--color-surface)", padding: 24, borderRadius: 16, border: "1px solid var(--color-border)" }}>
+        <Skeleton height={120} width={220} borderRadius={12} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+          <Skeleton height={32} width="40%" />
+          <Skeleton height={16} width="60%" />
+          <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
+            <Skeleton height={20} width={80} />
+            <Skeleton height={20} width={80} />
+            <Skeleton height={20} width={80} />
+            <Skeleton height={24} width={80} borderRadius={12} />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Layout Skeleton */}
+      <div className="builder-layout">
+        {/* Left Column — Modules */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Skeleton height={60} borderRadius={12} />
+          <Skeleton height={60} borderRadius={12} />
+          <Skeleton height={60} borderRadius={12} />
+          <Skeleton height={44} width={140} borderRadius={8} />
+        </div>
+
+        {/* Right Column — Sidebar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Skeleton height={160} borderRadius={12} />
+          <Skeleton height={120} borderRadius={12} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Skeleton height={44} borderRadius={99} />
+            <Skeleton height={44} borderRadius={99} />
+            <Skeleton height={44} borderRadius={99} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Component ─────────────────────────────────────────
 const CourseBuilder = () => {
   const { user, company, logout } = useAuth();
@@ -118,6 +187,8 @@ const CourseBuilder = () => {
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [newLessonType, setNewLessonType] = useState<"video" | "reading" | "assessment">("video");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: "module" | "lesson"; moduleId: number; lessonId?: number } | null>(null);
+  const [showDraftCourseConfirm, setShowDraftCourseConfirm] = useState(false);
+  const [showDraftModuleConfirm, setShowDraftModuleConfirm] = useState<number | null>(null);
   const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -145,6 +216,7 @@ const CourseBuilder = () => {
           title: m.title,
           description: m.description,
           order: m.order,
+          status: m.status || "published",
           lessons: (m.lessons || []).map((l: any) => ({
             id: l.id,
             title: l.title,
@@ -164,12 +236,6 @@ const CourseBuilder = () => {
     loadCourse();
   }, [courseId]);
 
-  // Auto-expand first module if there's only one
-  useEffect(() => {
-    if (modules.length === 1 && expandedModule === null) {
-      setExpandedModule(modules[0]!.id);
-    }
-  }, [modules, expandedModule]);
 
   // ─── Module Actions ────────────────────────────────────────
   const addModule = async () => {
@@ -179,12 +245,14 @@ const CourseBuilder = () => {
         title: `Module ${newOrder}`,
         description: null,
         order: newOrder,
+        status: "published",
       });
       const newModule: BuilderModule = {
         id: mod.id,
         title: mod.title,
         description: mod.description,
         order: mod.order,
+        status: mod.status || "published",
         lessons: [],
       };
       setModules([...modules, newModule]);
@@ -215,6 +283,14 @@ const CourseBuilder = () => {
 
   const updateModuleDesc = (moduleId: number, newDesc: string) => {
     setModules(modules.map((m) => (m.id === moduleId ? { ...m, description: newDesc } : m)));
+  };
+
+  const handleModuleToggle = (moduleId: number, isCurrentlyPublished: boolean) => {
+    if (isCurrentlyPublished) {
+      setShowDraftModuleConfirm(moduleId);
+    } else {
+      setModules(modules.map((m) => (m.id === moduleId ? { ...m, status: "published" } : m)));
+    }
   };
 
   const [draggedModuleIndex, setDraggedModuleIndex] = useState<number | null>(null);
@@ -370,9 +446,15 @@ const CourseBuilder = () => {
         modules.map((m, i) => ({ id: m.id, order: i + 1 }))
       );
 
-      // 3. Update module titles/descriptions
+      // 3. Update module titles/descriptions/status
       for (const m of modules) {
-        await courseService.updateModule(m.id, { title: m.title, description: m.description });
+        await courseService.updateModule(m.id, { title: m.title, description: m.description, status: m.status });
+      }
+
+      // 4. Reorder lessons
+      const allLessons = modules.flatMap(m => m.lessons.map(l => ({ id: l.id, position: l.position })));
+      if (allLessons.length > 0) {
+        await courseService.reorderLessons(allLessons);
       }
 
       showToast("Course saved successfully!");
@@ -460,7 +542,11 @@ const CourseBuilder = () => {
               <span style={{ color: "var(--color-text-header)" }}>Course Builder</span>
             </div>
 
-            {/* Course Banner */}
+            {loading ? (
+              <CourseBuilderSkeleton />
+            ) : (
+              <>
+                {/* Course Banner */}
             <div className="builder-banner">
               <input 
                 type="file" 
@@ -596,6 +682,12 @@ const CourseBuilder = () => {
                         </div>
 
                         <div className="builder-module-actions">
+                          <ToggleSwitch 
+                            checked={module.status === "published"}
+                            onChange={() => handleModuleToggle(module.id, module.status === "published")}
+                            label={module.status === "published" ? "Published" : "Draft"}
+                            size="sm"
+                          />
                           <button
                             className="builder-module-action-btn"
                             title="Drag to reorder"
@@ -740,17 +832,15 @@ const CourseBuilder = () => {
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600 }}>Status</span>
-                      <button
-                        onClick={() => setCourse({ ...course, status: course.status === "draft" ? "published" : "draft" })}
-                        style={{
-                          padding: "4px 12px", borderRadius: 12, fontSize: 11, fontWeight: 700,
-                          background: course.status === "published" ? "#E8F5E9" : "#FFF3E0",
-                          color: course.status === "published" ? "#2E7D32" : "#E65100",
-                          border: "none", cursor: "pointer", fontFamily: "inherit",
+                      <ToggleSwitch 
+                        checked={course.status === "published"}
+                        onChange={(checked) => {
+                          if (!checked) setShowDraftCourseConfirm(true);
+                          else setCourse({ ...course, status: "published" });
                         }}
-                      >
-                        {course.status === "published" ? "Published" : "Draft"}
-                      </button>
+                        label={course.status === "published" ? "Published" : "Draft"}
+                        size="sm"
+                      />
                     </div>
 
                     {course.thumbnail_url && (
@@ -785,6 +875,8 @@ const CourseBuilder = () => {
                 </div>
               </div>
             </div>
+            </>
+            )}
           </PageTransition>
         </div>
       </div>
@@ -866,6 +958,104 @@ const CourseBuilder = () => {
                   style={{ opacity: !newLessonTitle.trim() ? 0.5 : 1, pointerEvents: !newLessonTitle.trim() ? "none" : "auto" }}
                 >
                   Add Lesson
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Draft Course Confirmation Modal ──────────────────────── */}
+      <AnimatePresence>
+        {showDraftCourseConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999,
+            }}
+            onClick={() => setShowDraftCourseConfirm(false)}
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.98 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 20, scale: 0.98 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "var(--color-surface)", borderRadius: 16, padding: 28,
+                maxWidth: 400, width: "100%", boxShadow: "0 20px 40px rgba(0,0,0,0.15)", textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+              <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "var(--color-text-header)" }}>
+                Revert to Draft?
+              </h3>
+              <p style={{ margin: "0 0 24px", fontSize: 14, color: "var(--color-text-muted)" }}>
+                This will remove the course from the available courses list for all users. They will not be able to access it until it is published again.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <Button variant="outline" rounded="pill" onClick={() => setShowDraftCourseConfirm(false)}>Cancel</Button>
+                <Button
+                  rounded="pill"
+                  style={{ background: "#f57c00", color: "#fff", border: "none" }}
+                  onClick={() => {
+                    setCourse({ ...course, status: "draft" });
+                    setShowDraftCourseConfirm(false);
+                  }}
+                >
+                  Confirm Draft
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Draft Module Confirmation Modal ──────────────────────── */}
+      <AnimatePresence>
+        {showDraftModuleConfirm !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999,
+            }}
+            onClick={() => setShowDraftModuleConfirm(null)}
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.98 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 20, scale: 0.98 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "var(--color-surface)", borderRadius: 16, padding: 28,
+                maxWidth: 400, width: "100%", boxShadow: "0 20px 40px rgba(0,0,0,0.15)", textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+              <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "var(--color-text-header)" }}>
+                Revert Module to Draft?
+              </h3>
+              <p style={{ margin: "0 0 24px", fontSize: 14, color: "var(--color-text-muted)" }}>
+                This will hide the module and all its lessons from users. They will not be able to access this content until you publish it again.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <Button variant="outline" rounded="pill" onClick={() => setShowDraftModuleConfirm(null)}>Cancel</Button>
+                <Button
+                  rounded="pill"
+                  style={{ background: "#f57c00", color: "#fff", border: "none" }}
+                  onClick={() => {
+                    setModules(modules.map((m) => (m.id === showDraftModuleConfirm ? { ...m, status: "draft" } : m)));
+                    setShowDraftModuleConfirm(null);
+                  }}
+                >
+                  Confirm Draft
                 </Button>
               </div>
             </motion.div>

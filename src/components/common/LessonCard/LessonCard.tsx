@@ -1,5 +1,6 @@
 import { Play, ArrowRight } from "lucide-react";
 import Button from "../../ui/Button/Button";
+import HybridLessonViewer from "./HybridLessonViewer";
 import "../../ui/RichTextEditor/RichTextEditor.css";
 import "./LessonCard.css";
 
@@ -7,6 +8,9 @@ interface LessonCardProps {
   lesson: any;
   onBack: () => void;
   onNext: () => void;
+  onNextModule?: () => void;
+  onDone?: () => void;
+  hasNextModule?: boolean;
   currentIndex: number;
   totalLessons: number;
   onProceedAssessment?: () => void;
@@ -27,7 +31,7 @@ const convertVideoUrl = (url?: string | null): string | null => {
   return url;
 };
 
-const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProceedAssessment }: LessonCardProps) => {
+const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModule, currentIndex, totalLessons, onProceedAssessment }: LessonCardProps) => {
   if (!lesson) return null;
 
   const videoUrl = lesson.video_url;
@@ -36,7 +40,7 @@ const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProc
 
   return (
     <div className="lesson-card-wrapper">
-      <h2 className="lesson-card-title">{lesson.title?.replace(/^(Video:|Reading:|Assessment:)\s*/, '')}</h2>
+      <h2 className="lesson-card-title">{lesson.title?.replace(/^(Video:|Hybrid:|Assessment:)\s*/, '')}</h2>
 
       {lesson.type === "video" && (
         <>
@@ -75,11 +79,8 @@ const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProc
         </>
       )}
 
-      {lesson.type === "reading" && (
-        <div 
-          className="lesson-content-body tiptap-content" 
-          dangerouslySetInnerHTML={{ __html: lesson.content || "<p>No content provided for this lesson.</p>" }}
-        />
+      {lesson.type === "hybrid" && (
+        <HybridLessonViewer lesson={lesson} />
       )}
 
       {lesson.type === "assessment" && (
@@ -127,6 +128,24 @@ const LessonCard = ({ lesson, onBack, onNext, currentIndex, totalLessons, onProc
             style={{ width: 100, justifyContent: "center" }}
           >
             Next
+          </Button>
+        ) : hasNextModule ? (
+          <Button 
+            variant="primary" 
+            rounded="pill" 
+            onClick={onNextModule}
+            style={{ minWidth: 100, justifyContent: "center" }}
+          >
+            Next Module
+          </Button>
+        ) : lesson.type !== 'assessment' ? (
+          <Button 
+            variant="primary" 
+            rounded="pill" 
+            onClick={onDone}
+            style={{ minWidth: 100, justifyContent: "center" }}
+          >
+            Done
           </Button>
         ) : (
           <div style={{ width: 100 }}></div>

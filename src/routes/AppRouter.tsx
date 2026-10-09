@@ -113,8 +113,14 @@ const ProtectedRoute = ({ children, role }: ProtectedRouteProps) => {
       </div>
     );
   }
-  if (!user) return <Navigate to="/" replace />;
-  if (role && user.role !== role) return <Navigate to="/" replace />;
+  if (!user) {
+    const lastSlug = localStorage.getItem("spark_last_slug");
+    return <Navigate to={lastSlug ? `/${lastSlug}` : "/"} replace />;
+  }
+  if (role && user.role !== role) {
+    const lastSlug = localStorage.getItem("spark_last_slug");
+    return <Navigate to={lastSlug ? `/${lastSlug}` : "/"} replace />;
+  }
   return <>{children}</>;
 };
 

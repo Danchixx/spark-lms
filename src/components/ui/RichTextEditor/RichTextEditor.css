@@ -239,3 +239,13 @@
   padding: 8px 12px;
 }
 
+.tiptap-content iframe {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border-radius: 8px;
+  border: none;
+  margin: 16px 0;
+}
+

@@ -94,6 +94,7 @@ export type CourseModule = {
   title: string;
   order: number;
   description: string | null;
+  status: 'draft' | 'published';
   created_at: string;
   is_archived: boolean;
   archived_at: string | null;
