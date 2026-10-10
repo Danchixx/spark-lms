@@ -45,8 +45,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           assigner:users!course_assignments_assigned_by_fkey ( firstname, lastname )
         `)
         .eq('user_id', user.id)
-        .eq('is_archived', false)
-        .eq('courses.status', 'published');
+        .eq('is_archived', false);
 
       if (assignErr) throw assignErr;
       if (!assignments || assignments.length === 0) {
