@@ -231,12 +231,48 @@ const ModuleAssessment = () => {
   const saveAttempt = async (score: number) => {
     if (!assessmentId || !user?.id) return;
     try {
-      await supabase.from('assessment_attempts').insert({
+      const { data: attemptData, error: attemptErr } = await supabase.from('assessment_attempts').insert({
         assessment_id: assessmentId,
         user_id: user.id,
         score,
         passed: score >= 70,
-      });
+      }).select('id').single();
+
+      if (attemptErr) throw attemptErr;
+
+      if (attemptData) {
+        const attemptId = attemptData.id;
+        const answerInserts = [];
+
+        for (let i = 0; i < totalQuestions; i++) {
+          const q = questions[i];
+          const ans = answers[i];
+          if (!q || ans === undefined || ans === null) continue;
+
+          let choiceId = null;
+          let textAnswer = null;
+
+          if (q.type === 'multiple_choice' || q.type === 'true_false') {
+             // ans is the index of the selected choice
+             choiceId = q.choiceIds[ans];
+          } else {
+             // For text-based answers
+             textAnswer = typeof ans === 'object' ? JSON.stringify(ans) : String(ans);
+          }
+
+          answerInserts.push({
+            attempt_id: attemptId,
+            question_id: q.id,
+            choice_id: choiceId,
+            text_answer: textAnswer
+          });
+        }
+
+        if (answerInserts.length > 0) {
+          const { error: answersErr } = await supabase.from('attempt_answers').insert(answerInserts);
+          if (answersErr) throw answersErr;
+        }
+      }
     } catch (err) {
       console.error('Error saving attempt:', err);
     }
@@ -366,7 +402,7 @@ const ModuleAssessment = () => {
 
   if (totalQuestions === 0) {
     return (
-      <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search courses, lessons ..." role="User" />
@@ -383,7 +419,7 @@ const ModuleAssessment = () => {
 
   return (
     <>
-      <div style={{ display: "flex", height: "100vh", background: "var(--color-bg)", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
         <Sidebar isOpen={sidebarOpen} activePage="Courses" onNavigate={onNavigate} user={user} onLogout={logout} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
