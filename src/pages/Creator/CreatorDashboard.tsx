@@ -10,7 +10,8 @@ import useSidebar from "../../hooks/useSidebar";
 import DashboardCard from "../../components/ui/DashboardCard/DashboardCard";
 import PageTransition from "../../components/common/PageTransition";
 import Button from "../../components/ui/Button/Button";
-import { Lock, Unlock } from "lucide-react";
+import { Lock, Unlock, CheckCircle2, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import LiftLockoutModal, { LockedOutLearnerData } from "../../components/common/Modal/LiftLockoutModal";
 import "../User/Dashboard.css";
 
@@ -36,6 +37,11 @@ const CreatorDashboard = () => {
   const [lockedOutUsers, setLockedOutUsers] = useState<LockedOutLearnerData[]>([]);
   const [selectedLearnerForLift, setSelectedLearnerForLift] = useState<LockedOutLearnerData | null>(null);
   const [isLifting, setIsLifting] = useState(false);
+  const [toastNotification, setToastNotification] = useState<{
+    type: "success" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -167,7 +173,7 @@ const CreatorDashboard = () => {
 
   const handleLiftLockout = async () => {
     if (!selectedLearnerForLift) return;
-    const { user_id, assessment_id } = selectedLearnerForLift;
+    const { user_id, assessment_id, name } = selectedLearnerForLift;
     setIsLifting(true);
     try {
       const { error: updateErr } = await supabase
@@ -193,8 +199,24 @@ const CreatorDashboard = () => {
       
       setLockedOutUsers(prev => prev.filter(u => !(u.user_id === user_id && u.assessment_id === assessment_id)));
       setSelectedLearnerForLift(null);
+      setToastNotification({
+        type: "success",
+        title: "Lockout Lifted Successfully",
+        message: `Assessment attempts have been reset for ${name || "the learner"}. They can now retake the assessment.`,
+      });
+      setTimeout(() => {
+        setToastNotification(null);
+      }, 5000);
     } catch (err) {
       console.error("Error lifting lockout:", err);
+      setToastNotification({
+        type: "error",
+        title: "Failed to Lift Lockout",
+        message: "An unexpected error occurred while attempting to lift the lockout. Please try again.",
+      });
+      setTimeout(() => {
+        setToastNotification(null);
+      }, 5000);
     } finally {
       setIsLifting(false);
     }
@@ -347,6 +369,89 @@ const CreatorDashboard = () => {
         onClose={() => !isLifting && setSelectedLearnerForLift(null)}
         onConfirm={handleLiftLockout}
       />
+
+      {/* Success / Error Notification Toast */}
+      <AnimatePresence>
+        {toastNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            style={{
+              position: "fixed",
+              top: 24,
+              right: 28,
+              zIndex: 99999,
+              background: "#ffffff",
+              border: `1px solid ${toastNotification.type === "success" ? "#86efac" : "#fca5a5"}`,
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)",
+              borderRadius: 14,
+              padding: "16px 20px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 14,
+              maxWidth: 420,
+              fontFamily: "'Barlow', sans-serif",
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: toastNotification.type === "success" ? "#dcfce7" : "#fee2e2",
+                color: toastNotification.type === "success" ? "#16a34a" : "#dc2626",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              {toastNotification.type === "success" ? (
+                <CheckCircle2 size={20} strokeWidth={2.4} />
+              ) : (
+                <Lock size={18} strokeWidth={2.4} />
+              )}
+            </div>
+
+            <div style={{ flex: 1, paddingRight: 6 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: toastNotification.type === "success" ? "#15803d" : "#991b1b",
+                  marginBottom: 2,
+                }}
+              >
+                {toastNotification.title}
+              </div>
+              <div style={{ fontSize: 13, color: "var(--color-text-muted, #4b5563)", lineHeight: 1.45 }}>
+                {toastNotification.message}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setToastNotification(null)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#9ca3af",
+                cursor: "pointer",
+                padding: 4,
+                borderRadius: 6,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s ease",
+              }}
+              aria-label="Dismiss"
+            >
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
