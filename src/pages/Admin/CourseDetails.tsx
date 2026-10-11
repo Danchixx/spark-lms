@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, User, Search, UserPlus, CheckCircle, X, ChevronRight, Briefcase, UserMinus, Flame } from "lucide-react";
+import { ArrowLeft, User, Search, UserPlus, CheckCircle, X, ChevronLeft, ChevronRight, Briefcase, UserMinus, Flame } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
@@ -43,8 +43,10 @@ const AdminCourseDetails = () => {
   // Toast State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Search Enrolled State
+  // Search Enrolled State & Pagination
   const [searchEnrolled, setSearchEnrolled] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
@@ -214,6 +216,22 @@ const AdminCourseDetails = () => {
     return u.name.toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q) || (u.department || "").toLowerCase().includes(q);
   });
 
+  const totalPages = Math.ceil(filteredEnrolled.length / PAGE_SIZE) || 1;
+  const pagedEnrolled = filteredEnrolled.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 3) {
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
+
   const avgCompletion = enrolledCount > 0 ? Math.round(totalProgress / enrolledCount) : 0;
   
   const creator = Array.isArray(course.users) ? course.users[0] : course.users;
@@ -345,7 +363,10 @@ const AdminCourseDetails = () => {
                        <input 
                          type="text" 
                          value={searchEnrolled}
-                         onChange={(e) => setSearchEnrolled(e.target.value)}
+                         onChange={(e) => {
+                           setSearchEnrolled(e.target.value);
+                           setCurrentPage(1);
+                         }}
                          placeholder={isSparkCpd ? "Search enrolled users, schools ..." : "Search enrolled users ..."} 
                          style={{ padding: "8px 12px 8px 36px", fontSize: 13, borderRadius: 20, border: "1px solid var(--color-border)", outline: "none", width: 220, background: "var(--color-bg-subtle)" }}
                        />
@@ -365,7 +386,7 @@ const AdminCourseDetails = () => {
                        </tr>
                      </thead>
                      <tbody>
-                       {filteredEnrolled.map((u: any, idx: number) => (
+                       {pagedEnrolled.map((u: any, idx: number) => (
                          <tr key={idx} style={{ borderBottom: "1px solid var(--color-border)" }}>
                            <td style={{ padding: "12px 24px" }}>
                              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -408,8 +429,67 @@ const AdminCourseDetails = () => {
                    </table>
                    </div>
                    
-                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px 0 24px" }}>
-                     <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Showing {filteredEnrolled.length} of {enrolledCount} enrolled</span>
+                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px 0 24px", flexWrap: "wrap", gap: 12 }}>
+                     <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                       Showing {filteredEnrolled.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filteredEnrolled.length)} of {filteredEnrolled.length} enrolled
+                     </span>
+
+                     {totalPages > 1 && (
+                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                         <button
+                           disabled={currentPage === 1}
+                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                           style={{
+                             padding: "4px 8px", background: "var(--color-surface)",
+                             border: "1px solid var(--color-border)", borderRadius: 6,
+                             cursor: currentPage === 1 ? "default" : "pointer",
+                             fontSize: 12, opacity: currentPage === 1 ? 0.4 : 1,
+                             display: "flex", alignItems: "center", justifyContent: "center"
+                           }}
+                           title="Previous Page"
+                         >
+                           <ChevronLeft size={14} />
+                         </button>
+
+                         {getPageNumbers().map((pageItem, i) => (
+                           typeof pageItem === 'number' ? (
+                             <button
+                               key={i}
+                               onClick={() => setCurrentPage(pageItem)}
+                               style={{
+                                 minWidth: 28, height: 28, padding: "0 6px",
+                                 background: currentPage === pageItem ? "#FF6B00" : "var(--color-surface)",
+                                 border: `1px solid ${currentPage === pageItem ? "#FF6B00" : "var(--color-border)"}`,
+                                 borderRadius: 6, cursor: "pointer", fontSize: 12,
+                                 color: currentPage === pageItem ? "white" : "var(--color-text)",
+                                 fontWeight: currentPage === pageItem ? 700 : 500,
+                                 display: "flex", alignItems: "center", justifyContent: "center"
+                              }}
+                             >
+                               {pageItem}
+                             </button>
+                           ) : (
+                             <span key={i} style={{ padding: "0 4px", fontSize: 12, color: "var(--color-text-muted)" }}>...</span>
+                           )
+                         ))}
+
+                         <button
+                           disabled={currentPage === totalPages}
+                           onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                           style={{
+                             padding: "4px 8px", background: "var(--color-surface)",
+                             border: "1px solid var(--color-border)", borderRadius: 6,
+                             cursor: currentPage === totalPages ? "default" : "pointer",
+                             fontSize: 12, opacity: currentPage === totalPages ? 0.4 : 1,
+                             display: "flex", alignItems: "center", justifyContent: "center"
+                           }}
+                           title="Next Page"
+                         >
+                           <ChevronRight size={14} />
+                         </button>
+                       </div>
+                     )}
+
                      <Button variant="primary" rounded="pill" onClick={() => setIsAssignModalOpen(true)}>
                        <UserPlus size={14} style={{ marginRight: 6 }} /> Assign Users
                      </Button>
