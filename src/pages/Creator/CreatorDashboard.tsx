@@ -11,6 +11,7 @@ import DashboardCard from "../../components/ui/DashboardCard/DashboardCard";
 import PageTransition from "../../components/common/PageTransition";
 import Button from "../../components/ui/Button/Button";
 import { Lock, Unlock } from "lucide-react";
+import LiftLockoutModal, { LockedOutLearnerData } from "../../components/common/Modal/LiftLockoutModal";
 import "../User/Dashboard.css";
 
 import type { LucideIcon } from "lucide-react";
@@ -32,7 +33,9 @@ const CreatorDashboard = () => {
 
   const [stats, setStats] = useState<StatItem[]>([]);
   const [recentCourses, setRecentCourses] = useState<any[]>([]);
-  const [lockedOutUsers, setLockedOutUsers] = useState<any[]>([]);
+  const [lockedOutUsers, setLockedOutUsers] = useState<LockedOutLearnerData[]>([]);
+  const [selectedLearnerForLift, setSelectedLearnerForLift] = useState<LockedOutLearnerData | null>(null);
+  const [isLifting, setIsLifting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -162,21 +165,24 @@ const CreatorDashboard = () => {
     fetchDashboardData();
   }, [company?.id]);
 
-  const handleLiftLockout = async (userId: any, assessmentId: number) => {
+  const handleLiftLockout = async () => {
+    if (!selectedLearnerForLift) return;
+    const { user_id, assessment_id } = selectedLearnerForLift;
+    setIsLifting(true);
     try {
       const { error: updateErr } = await supabase
         .from('assessment_attempts')
         .update({ is_reset: true })
-        .eq('user_id', userId)
-        .eq('assessment_id', assessmentId);
+        .eq('user_id', user_id)
+        .eq('assessment_id', assessment_id);
       
       if (updateErr) {
         // Fallback when is_reset column is not yet present in DB:
         const { data: attemptsToDelete } = await supabase
           .from('assessment_attempts')
           .select('id')
-          .eq('user_id', userId)
-          .eq('assessment_id', assessmentId);
+          .eq('user_id', user_id)
+          .eq('assessment_id', assessment_id);
 
         if (attemptsToDelete && attemptsToDelete.length > 0) {
           const attemptIds = attemptsToDelete.map((a: any) => a.id);
@@ -185,9 +191,12 @@ const CreatorDashboard = () => {
         }
       }
       
-      setLockedOutUsers(prev => prev.filter(u => !(u.user_id === userId && u.assessment_id === assessmentId)));
+      setLockedOutUsers(prev => prev.filter(u => !(u.user_id === user_id && u.assessment_id === assessment_id)));
+      setSelectedLearnerForLift(null);
     } catch (err) {
       console.error("Error lifting lockout:", err);
+    } finally {
+      setIsLifting(false);
     }
   };
 
@@ -298,7 +307,7 @@ const CreatorDashboard = () => {
                             variant="primary" 
                             size="sm" 
                             rounded="pill" 
-                            onClick={() => handleLiftLockout(u.user_id, u.assessment_id)} 
+                            onClick={() => setSelectedLearnerForLift(u)} 
                             style={{ width: "100%", marginTop: 12, justifyContent: "center", background: "#dc2626", border: "none" }}
                           >
                             <Unlock size={14} style={{ marginRight: 6 }} /> Lift Lockout
@@ -330,6 +339,14 @@ const CreatorDashboard = () => {
           </PageTransition>
         </div>
       </div>
+
+      <LiftLockoutModal
+        isOpen={!!selectedLearnerForLift}
+        learner={selectedLearnerForLift}
+        isLoading={isLifting}
+        onClose={() => !isLifting && setSelectedLearnerForLift(null)}
+        onConfirm={handleLiftLockout}
+      />
     </div>
   );
 };
