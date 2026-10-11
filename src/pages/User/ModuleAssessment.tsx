@@ -99,18 +99,18 @@ const ModuleAssessment = () => {
 
         // Check user's previous attempts for lockout enforcement
         if (user?.id) {
-          const { data: dbAttempts, error: attemptsErr } = await supabase
+          const { data: dbAttempts } = await supabase
             .from('assessment_attempts')
-            .select('id, score, passed, attempted_at, is_reset')
+            .select('*')
             .eq('assessment_id', assessmentData.id)
             .eq('user_id', user.id)
             .order('attempted_at', { ascending: false });
 
-          if (!attemptsErr && dbAttempts) {
+          if (dbAttempts) {
             const activeAttempts = dbAttempts.filter((a: any) => !a.is_reset);
             setPastAttempts(activeAttempts);
             
-            const hasPassed = activeAttempts.some((a: any) => a.passed);
+            const hasPassed = activeAttempts.some((a: any) => a.passed || (a.score != null && a.score >= (assessmentData.passing_score || 70)));
             
             if (activeAttempts.length >= MAX_ATTEMPTS && !hasPassed) {
               setIsLockedOut(true);
@@ -335,7 +335,7 @@ const ModuleAssessment = () => {
                   Assessment Locked Out
                 </h2>
                 <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.5 }}>
-                  You have reached the maximum limit of <strong>3 attempts</strong> for this assessment. You can no longer retake this exam.
+                  You have been locked out of this assessment retake. Please contact SPARK immediately to allow another retake.
                 </p>
               </div>
 

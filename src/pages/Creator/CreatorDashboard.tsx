@@ -114,15 +114,15 @@ const CreatorDashboard = () => {
         const { data: attemptsData } = await supabase
           .from('assessment_attempts')
           .select(`
-            id, user_id, assessment_id, score, passed, is_reset,
-            assessments(title, course_lessons(course_modules(title, courses(title)))),
+            id, user_id, assessment_id, score, passed,
+            assessments(title, passing_score, course_lessons(course_modules(title, courses(title)))),
             users(firstname, lastname, email)
-          `)
-          .eq('is_reset', false);
+          `);
 
         if (attemptsData) {
+          const activeAttempts = (attemptsData || []).filter((a: any) => !a.is_reset);
           const grouped: Record<string, any[]> = {};
-          attemptsData.forEach((a: any) => {
+          activeAttempts.forEach((a: any) => {
             const key = `${a.user_id}_${a.assessment_id}`;
             if (!grouped[key]) grouped[key] = [];
             grouped[key].push(a);
@@ -130,10 +130,10 @@ const CreatorDashboard = () => {
           
           const lockedOut: any[] = [];
           Object.values(grouped).forEach(group => {
-            const hasPassed = group.some(a => a.passed);
+            const hasPassed = group.some(a => a.passed || (a.assessments?.passing_score && a.score >= a.assessments.passing_score));
             if (!hasPassed && group.length >= 3) {
               const bestScore = Math.max(...group.map(a => a.score || 0));
-              const latest = group[group.length - 1]; // or the one we want to show
+              const latest = group[group.length - 1];
               const courseTitle = latest.assessments?.course_lessons?.course_modules?.courses?.title || 'Unknown Course';
               const moduleTitle = latest.assessments?.course_lessons?.course_modules?.title || 'Unknown Module';
               lockedOut.push({
@@ -162,14 +162,28 @@ const CreatorDashboard = () => {
     fetchDashboardData();
   }, [company?.id]);
 
-  const handleLiftLockout = async (userId: number, assessmentId: number) => {
+  const handleLiftLockout = async (userId: any, assessmentId: number) => {
     try {
-      await supabase
+      const { error: updateErr } = await supabase
         .from('assessment_attempts')
         .update({ is_reset: true })
         .eq('user_id', userId)
-        .eq('assessment_id', assessmentId)
-        .eq('is_reset', false);
+        .eq('assessment_id', assessmentId);
+      
+      if (updateErr) {
+        // Fallback when is_reset column is not yet present in DB:
+        const { data: attemptsToDelete } = await supabase
+          .from('assessment_attempts')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('assessment_id', assessmentId);
+
+        if (attemptsToDelete && attemptsToDelete.length > 0) {
+          const attemptIds = attemptsToDelete.map((a: any) => a.id);
+          await supabase.from('attempt_answers').delete().in('attempt_id', attemptIds);
+          await supabase.from('assessment_attempts').delete().in('id', attemptIds);
+        }
+      }
       
       setLockedOutUsers(prev => prev.filter(u => !(u.user_id === userId && u.assessment_id === assessmentId)));
     } catch (err) {

@@ -87,7 +87,44 @@ const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModul
       {lesson.type === "assessment" && (
         (() => {
           const attemptsUsed = lesson.attemptsCount ?? 0;
-          const isLocked = attemptsUsed >= 3 && lesson.status !== "completed";
+          const isPassed = !!lesson.hasPassed || lesson.status === "completed";
+          const isLocked = !isPassed && (lesson.isLockedOut || attemptsUsed >= 3);
+
+          if (isPassed) {
+            return (
+              <div style={{
+                background: "#f0fdf4",
+                borderRadius: 8,
+                border: "1px solid #bbf7d0",
+                padding: "20px 24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: 24,
+                boxShadow: "0 4px 12px rgba(39, 174, 96, 0.12)"
+              }}>
+                <div>
+                  <h3 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700, color: "#166534", display: "flex", alignItems: "center", gap: 8 }}>
+                    Assessment Passed
+                  </h3>
+                  <div style={{ fontSize: 13, color: "#15803d", fontWeight: "500" }}>
+                    You have successfully passed this assessment. You can proceed to the next lesson or module.
+                  </div>
+                </div>
+                {onViewAttempts && (
+                  <Button
+                    variant="outline"
+                    rounded="pill"
+                    onClick={onViewAttempts}
+                    style={{ fontWeight: "600", padding: "8px 24px", borderColor: "#22c55e", color: "#166534" }}
+                  >
+                    View Attempts
+                  </Button>
+                )}
+              </div>
+            );
+          }
+
           return (
             <div style={{
               background: isLocked ? "#fef2f2" : "linear-gradient(90deg, #ffeed3, #ffd2ae)",
@@ -107,7 +144,7 @@ const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModul
                 </h3>
                 <div style={{ fontSize: 13, color: isLocked ? "#b91c1c" : "#666", fontWeight: "500" }}>
                   {isLocked 
-                    ? "You have reached the maximum limit of 3 attempts for this assessment." 
+                    ? "You have been locked out of this assessment retake. Please contact SPARK immediately to allow another retake." 
                     : attemptsUsed > 0 
                       ? `Pass this exam to continue (${3 - attemptsUsed} attempt${3 - attemptsUsed === 1 ? '' : 's'} remaining)`
                       : "Pass this exam to continue with your learning chapter (3 attempts allowed)"}
@@ -152,6 +189,7 @@ const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModul
             variant="primary" 
             rounded="pill" 
             onClick={onNext}
+            disabled={lesson.type === 'assessment' && !lesson.hasPassed && lesson.status !== 'completed'}
             style={{ width: 100, justifyContent: "center" }}
           >
             Next
@@ -161,21 +199,21 @@ const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModul
             variant="primary" 
             rounded="pill" 
             onClick={onNextModule}
+            disabled={lesson.type === 'assessment' && !lesson.hasPassed && lesson.status !== 'completed'}
             style={{ minWidth: 100, justifyContent: "center" }}
           >
             Next Module
           </Button>
-        ) : lesson.type !== 'assessment' ? (
+        ) : (
           <Button 
             variant="primary" 
             rounded="pill" 
             onClick={onDone}
+            disabled={lesson.type === 'assessment' && !lesson.hasPassed && lesson.status !== 'completed'}
             style={{ minWidth: 100, justifyContent: "center" }}
           >
             Done
           </Button>
-        ) : (
-          <div style={{ width: 100 }}></div>
         )}
       </div>
     </div>

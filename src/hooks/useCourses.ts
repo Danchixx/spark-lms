@@ -12,6 +12,8 @@ export type LessonItem = {
   position: number;
   status: 'completed' | 'open' | 'locked';
   attemptsCount?: number;
+  isLockedOut?: boolean;
+  hasPassed?: boolean;
 };
 
 export type ModuleItem = {
