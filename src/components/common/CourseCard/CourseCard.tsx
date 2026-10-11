@@ -1,4 +1,4 @@
-import { Pin, Trophy } from "lucide-react";
+import { Pin, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../../../context/AuthContext";
@@ -107,7 +107,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
         }}>
           {isCompleted ? (
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--color-text-muted)" }}>
-              <Trophy size={13} color="#f39c12" /> Certificate Earned
+              <CheckCircle size={13} color="#27ae60" /> Course Completed
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--color-text-muted)" }}>

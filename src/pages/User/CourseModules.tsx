@@ -45,6 +45,7 @@ const CourseModules = () => {
 
   const { course: courseData, loading } = useCourseById(courseId);
   const isCompleted = courseData?.progress === 100;
+  const isCpd = company?.name?.toUpperCase() === "SPARK CPD" || slug === "spark-cpd" || slug === "cpd" || company?.name?.toLowerCase().includes("cpd") || slug?.toLowerCase().includes("cpd");
 
   const [expandedModule, setExpandedModule] = useState<number | null>(null);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
@@ -162,7 +163,7 @@ const CourseModules = () => {
                     <span style={{ fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>Your Progress</span>
                     <ProgressBar value={courseData.progress} size="lg" showLabel />
                     {isCompleted ? (
-                      slug !== 'spark' && (
+                      (!isCpd && slug !== 'spark') && (
                         <Button size="sm" rounded="pill" variant="ghost" onClick={() => setShowCertificate(true)}>View Certificate</Button>
                       )
                     ) : (

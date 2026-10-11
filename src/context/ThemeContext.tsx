@@ -11,6 +11,8 @@ type ThemeContextType = {
   setSidebarTheme: (theme: SidebarTheme) => void;
   showSidebarIcons: boolean;
   setShowSidebarIcons: (show: boolean) => void;
+  font: string;
+  setFont: (font: string) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -32,6 +34,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return saved === null ? true : saved === 'true';
   });
 
+  const [font, setFontState] = useState<string>(() => {
+    const saved = localStorage.getItem('font');
+    return saved || 'Barlow';
+  });
+
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem('theme', newTheme);
@@ -47,6 +54,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('showSidebarIcons', String(show));
   };
 
+  const setFont = (newFont: string) => {
+    setFontState(newFont);
+    localStorage.setItem('font', newFont);
+  };
+
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
@@ -58,15 +70,19 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     root.classList.add(theme);
     root.setAttribute('data-theme', theme);
     
+    // Sync font
+    root.style.setProperty('--font-primary', `'${font}', sans-serif`);
+    
     // Also sync sidebar theme attribute for global targeting if needed
     root.setAttribute('data-sidebar-theme', theme === 'dark' ? 'dark' : sidebarTheme);
-  }, [theme, sidebarTheme]);
+  }, [theme, sidebarTheme, font]);
 
   return (
     <ThemeContext.Provider value={{ 
       theme, setTheme, toggleTheme, 
       sidebarTheme, setSidebarTheme,
-      showSidebarIcons, setShowSidebarIcons
+      showSidebarIcons, setShowSidebarIcons,
+      font, setFont
     }}>
       {children}
     </ThemeContext.Provider>
