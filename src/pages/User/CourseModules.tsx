@@ -251,6 +251,10 @@ const CourseModules = () => {
                                   navigate(`/${slug}/courses/attempts`, {
                                     state: { courseId, moduleId: module.id }
                                   });
+                                } else if (unit.status !== "locked") {
+                                  navigate(`/${slug}/courses/lessons`, {
+                                    state: { courseId, moduleId: module.id, lessonId: unit.id }
+                                  });
                                 }
                               }}
                               style={{
@@ -259,7 +263,7 @@ const CourseModules = () => {
                                 border: "1px solid var(--color-border)", 
                                 background: unit.status === "locked" ? "var(--color-bg-subtle)" : "var(--color-surface)",
                                 opacity: unit.status === "locked" ? 0.75 : 1,
-                                cursor: isAssessmentLockedOut ? "pointer" : "default",
+                                cursor: unit.status === "locked" ? "default" : "pointer",
                                 transition: "all 0.2s ease"
                               }}
                             >
@@ -298,10 +302,10 @@ const CourseModules = () => {
                                     Locked Out
                                   </Button>
                                 ) : (
-                                  (unit.status === "open" || (unit.status === "completed" && unit.type !== "assessment")) && (
+                                  (unit.status === "open" || unit.status === "completed" || isAssessmentPassed) && (
                                     <Button
                                       size="sm"
-                                      variant={unit.status === "completed" ? "outline" : "primary"}
+                                      variant={unit.status === "completed" || isAssessmentPassed ? "outline" : "primary"}
                                       rounded="pill"
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -310,12 +314,12 @@ const CourseModules = () => {
                                         });
                                       }}
                                     >
-                                      {unit.status === "completed" ? "Review" : "Open"}
+                                      {unit.status === "completed" || isAssessmentPassed ? "Review" : "Open"}
                                     </Button>
                                   )
                                 )}
 
-                                {/* Passed Assessment shows checkmark only (matching Image 1) */}
+                                {/* Passed Assessment shows checkmark */}
                                 {isAssessmentPassed && (
                                   <Check size={20} color="#FF6B00" strokeWidth={3} />
                                 )}
