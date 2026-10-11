@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Plus, FileText, Clock, CheckCircle } from "lucide-react";
+import { BookOpen, Plus, FileText, Clock, Users } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
@@ -102,7 +102,15 @@ const CreatorCourseCardSkeleton = () => {
 };
 
 // ─── Course Card ────────────────────────────────────────────
-const CreatorCourseCard = ({ course, onEdit }: { course: any; onEdit: (id: string) => void }) => {
+const CreatorCourseCard = ({ 
+  course, 
+  onEdit, 
+  onOverview 
+}: { 
+  course: any; 
+  onEdit: (id: string) => void;
+  onOverview: (id: string) => void;
+}) => {
   const isDraft = course.status === "draft";
 
   return (
@@ -174,20 +182,34 @@ const CreatorCourseCard = ({ course, onEdit }: { course: any; onEdit: (id: strin
         padding: "12px 16px",
         background: "var(--color-bg-subtle)",
         borderTop: "1px solid var(--color-border)",
+        gap: 8, flexWrap: "wrap",
       }}>
         <div style={{ fontSize: 11, color: "var(--color-text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
           <Clock size={12} />
           Created {new Date(course.createdAt).toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}
         </div>
 
-        <Button
-          size="sm"
-          rounded="pill"
-          variant={isDraft ? "primary" : "outline"}
-          onClick={() => onEdit(course.id)}
-        >
-          {isDraft ? "Continue Editing" : "Edit Course"}
-        </Button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Button
+            size="sm"
+            rounded="pill"
+            variant="outline"
+            onClick={() => onOverview(course.id)}
+            style={{ fontSize: 12, padding: "5px 12px" }}
+            title="Review Learners & Submissions"
+          >
+            <Users size={12} style={{ marginRight: 4 }} /> Overview
+          </Button>
+          <Button
+            size="sm"
+            rounded="pill"
+            variant={isDraft ? "primary" : "outline"}
+            onClick={() => onEdit(course.id)}
+            style={{ fontSize: 12, padding: "5px 14px" }}
+          >
+            {isDraft ? "Continue Editing" : "Edit Course"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -247,6 +269,10 @@ const CreatorCourses = () => {
     });
   };
 
+  const handleViewOverview = (courseId: string) => {
+    navigate(`/${slug}/overview?courseId=${courseId}`, { state: { courseId } });
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
       <style>{`
@@ -278,7 +304,12 @@ const CreatorCourses = () => {
               ) : (
                 <>
                   {filtered.map((course) => (
-                    <CreatorCourseCard key={course.id} course={course} onEdit={handleEditCourse} />
+                    <CreatorCourseCard 
+                      key={course.id} 
+                      course={course} 
+                      onEdit={handleEditCourse} 
+                      onOverview={handleViewOverview}
+                    />
                   ))}
                   {filtered.length === 0 && (
                     <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)" }}>

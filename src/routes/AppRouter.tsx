@@ -42,6 +42,7 @@ import AdminReports from "../pages/Admin/Reports";
 import AdminAuditLogs from "../pages/Admin/AuditLogs";
 
 import CreatorDashboard from "../pages/Creator/CreatorDashboard";
+import CreatorCourseOverview from "../pages/Creator/CourseOverview";
 
 // import ApproverDashboard   from "../pages/Approver/Dashboard";
 
@@ -189,8 +190,11 @@ const AppRoutes = () => {
         <Route path="/:company/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
         <Route path="/:company/audit-logs" element={<ProtectedRoute><AdminAuditLogs /></ProtectedRoute>} />
         <Route path="/:company/courses" element={<ProtectedRoute><CoursesRouter /></ProtectedRoute>} />
+        <Route path="/:company/creator" element={<ProtectedRoute role="course creator"><CreatorCourses /></ProtectedRoute>} />
         <Route path="/:company/courses/details" element={<ProtectedRoute><CourseDetailsRouter /></ProtectedRoute>} />
         <Route path="/:company/courses/create" element={<ProtectedRoute role="course creator"><CreatorCreateCourse /></ProtectedRoute>} />
+        <Route path="/:company/overview" element={<ProtectedRoute role="course creator"><CreatorCourseOverview /></ProtectedRoute>} />
+        <Route path="/:company/courses/overview" element={<ProtectedRoute role="course creator"><CreatorCourseOverview /></ProtectedRoute>} />
         <Route path="/:company/courses/builder" element={<ProtectedRoute role="course creator"><CreatorCourseBuilder /></ProtectedRoute>} />
         <Route path="/:company/courses/lesson-editor" element={<ProtectedRoute role="course creator"><CreatorLessonEditor /></ProtectedRoute>} />
         <Route path="/:company/courses/modules" element={<ProtectedRoute><UserCourseModules /></ProtectedRoute>} />
