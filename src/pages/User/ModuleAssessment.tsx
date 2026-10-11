@@ -30,7 +30,7 @@ const ModuleAssessment = () => {
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   const { courseId, moduleId } = location.state || {};
-  const { course: courseData, loading: courseLoading } = useCourseById(courseId);
+  const { course: courseData, loading: courseLoading, refetch: refetchCourse } = useCourseById(courseId);
   const moduleData = courseData?.modules?.find((m) => m.id === Number(moduleId));
   const moduleIndex = courseData?.modules?.findIndex(m => m.id === Number(moduleId)) ?? -1;
 
@@ -259,6 +259,11 @@ const ModuleAssessment = () => {
             { onConflict: 'assignment_id,lesson_id' }
           );
         }
+      }
+      
+      // Sync global course state to update lockout UI across pages
+      if (refetchCourse) {
+        await refetchCourse();
       }
     } catch (err) {
       console.error('Error saving attempt:', err);

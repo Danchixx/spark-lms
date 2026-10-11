@@ -257,9 +257,20 @@ const CourseModules = () => {
 
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               {unit.type === "assessment" && (unit.attemptsCount ?? 0) >= 3 && unit.status !== "completed" ? (
-                                <span style={{ fontSize: 12, fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "4px 10px", borderRadius: 99, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                  <Lock size={12} /> Locked (3/3 Attempts)
-                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  rounded="pill"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/${slug}/courses/attempts`, {
+                                      state: { courseId, moduleId: module.id }
+                                    });
+                                  }}
+                                  style={{ background: "#dc2626", border: "none" }}
+                                >
+                                  Locked Out (View Attempts)
+                                </Button>
                               ) : (
                                 (unit.status === "open" || (unit.status === "completed" && unit.type !== "assessment")) && (
                                   <Button

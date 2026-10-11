@@ -85,7 +85,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           id, 
           lesson_id, 
           course_lessons!inner(module_id, course_modules!inner(course_id)),
-          assessment_attempts(id)
+          assessment_attempts(id, is_reset)
         `)
         .eq('is_archived', false)
         .eq('assessment_attempts.user_id', user.id);
@@ -98,7 +98,9 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         if (courseId) {
           assessmentCountByCourse.set(courseId, (assessmentCountByCourse.get(courseId) || 0) + 1);
         }
-        lessonToAttempts.set(row.lesson_id, (row.assessment_attempts || []).length);
+        
+        const activeAttempts = (row.assessment_attempts || []).filter((a: any) => !a.is_reset);
+        lessonToAttempts.set(row.lesson_id, activeAttempts.length);
       });
 
       // 4. Transform
