@@ -62,7 +62,9 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
           ),
           course_assignments (
             id,
-            course_progress ( progress_pct )
+            status,
+            course_progress ( progress_pct ),
+            lessons_progress ( lesson_id, is_completed )
           ),
           course_modules (
             id,
@@ -75,15 +77,25 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
 
       const mapped = (data || []).map((c: any) => {
         const assignments = c.course_assignments || [];
+        const modules = c.course_modules || [];
+        const totalLessons = modules.reduce((total: number, m: any) => total + (m.course_lessons?.length || 0), 0);
         let avgCompletion = 0;
         if (assignments.length > 0) {
-          const total = assignments.reduce((acc: number, a: any) => acc + (a.course_progress?.[0]?.progress_pct || 0), 0);
+          const total = assignments.reduce((acc: number, a: any) => {
+            let prog = a.course_progress?.[0]?.progress_pct || 0;
+            if (a.status === 'completed') {
+              prog = 100;
+            } else if (a.lessons_progress && totalLessons > 0) {
+              const doneCount = new Set((a.lessons_progress || []).filter((lp: any) => lp.is_completed).map((lp: any) => lp.lesson_id)).size;
+              prog = Math.max(prog, Math.min(100, Math.round((doneCount / totalLessons) * 100)));
+            }
+            return acc + prog;
+          }, 0);
           avgCompletion = Math.round(total / assignments.length);
         }
 
-        const modules = c.course_modules || [];
         const modulesCount = modules.length;
-        const lessonsCount = modules.reduce((total: number, m: any) => total + (m.course_lessons?.length || 0), 0);
+        const lessonsCount = totalLessons;
         
         const creatorData = Array.isArray(c.users) ? c.users[0] : c.users;
         const roleData = creatorData?.roles;
@@ -140,8 +152,9 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
             status,
             assigned_at,
             course_progress ( progress_pct ),
+            lessons_progress ( lesson_id, is_completed ),
             users!course_assignments_user_id_fkey (
-              id, firstname, lastname, email, avatar_url, department
+              id, firstname, lastname, email, avatar_url, department, cpd_school_name
             )
           )
         `)

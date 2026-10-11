@@ -76,6 +76,10 @@ const UserProfile = () => {
             assigned_at,
             status,
             course_progress ( progress_pct ),
+            lessons_progress (
+              lesson_id,
+              is_completed
+            ),
             courses (
               id,
               title,
@@ -102,16 +106,29 @@ const UserProfile = () => {
           const modules = a.courses?.course_modules || [];
           const lessonsCount = modules.reduce((total: number, m: any) => total + (m.course_lessons?.length || 0), 0);
           
-          let derivedStatus = a.status; // Default to assignment status
-          const progressPct = a.course_progress?.[0]?.progress_pct || 0;
-          if (progressPct === 100) derivedStatus = "COMPLETED";
-          else if (progressPct > 0) derivedStatus = "IN PROGRESS";
+          let derivedStatus = a.status || "not_started";
+          let progressPct = a.course_progress?.[0]?.progress_pct || 0;
+          if (!progressPct && a.lessons_progress && a.lessons_progress.length > 0 && lessonsCount > 0) {
+            const completedCount = new Set(
+              (a.lessons_progress || [])
+                .filter((lp: any) => lp.is_completed)
+                .map((lp: any) => lp.lesson_id)
+            ).size;
+            progressPct = Math.min(100, Math.round((completedCount / lessonsCount) * 100));
+          }
+
+          if (progressPct === 100 || a.status === 'completed') {
+            derivedStatus = "completed";
+          } else if (progressPct > 0 || a.status === 'in_progress' || a.status === 'in-progress') {
+            derivedStatus = "in_progress";
+          }
 
           return {
             id: a.courses.id,
             title: a.courses.title,
             thumbnail: a.courses.thumbnail_url,
             status: derivedStatus,
+            progressPct,
             assignedAt: new Date(a.assigned_at).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
             modulesCount: modules.length,
             lessonsCount: lessonsCount

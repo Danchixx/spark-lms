@@ -28,6 +28,7 @@ const AdminApprovals = () => {
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
   const slug = getCompanySlug(company);
+  const isSparkCpd = company?.name?.toUpperCase() === "SPARK CPD" || slug === "spark-cpd" || slug === "cpd" || company?.name?.toLowerCase().includes("cpd") || slug?.toLowerCase().includes("cpd");
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase().replace(/\s+/g, "-")}`);
 
   const [requests, setRequests] = useState<any[]>([]);
@@ -79,6 +80,7 @@ const AdminApprovals = () => {
         return {
           ...u,
           status: u.status, 
+          department: (isSparkCpd ? (u.cpd_school_name || u.department) : (u.department || u.cpd_school_name)) || "—",
           created_by_name: u.creator ? `${u.creator.firstname} ${u.creator.lastname}` : "Danchi D",
           reviewed_at: approval?.decided_at,
           rejection_reason: approval?.reason,
@@ -220,7 +222,7 @@ const AdminApprovals = () => {
                     <tr style={{ textAlign: "left", background: "var(--color-bg-subtle)", borderTop: "1px solid var(--color-border)", borderBottom: "1px solid var(--color-border)" }}>
                       <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase" }}>Name</th>
                       <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase" }}>Status</th>
-                      <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase" }}>Department</th>
+                      <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase" }}>{isSparkCpd ? "School" : "Department"}</th>
                       <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase" }}>Submitted</th>
                       <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase" }}>Reviewed</th>
                       <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase", textAlign: "right" }}>Actions</th>
