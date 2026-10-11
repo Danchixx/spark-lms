@@ -118,7 +118,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
           <Button
             size="sm"
             rounded="pill"
-            variant={isCompleted || isNotStarted ? "ghost" : "primary"}
+            variant={isCompleted ? "ghost" : "primary"}
             onClick={handleActionClick}
           >
             {isCompleted ? "View" : isNotStarted ? "Start" : "Continue"}

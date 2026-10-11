@@ -42,6 +42,7 @@ const ModuleAssessment = () => {
   const [loadingAssessment, setLoadingAssessment] = useState(true);
   const [pastAttempts, setPastAttempts] = useState<any[]>([]);
   const [isLockedOut, setIsLockedOut] = useState(false);
+  const [passingScore, setPassingScore] = useState<number>(70);
 
   // Assessment state
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -94,19 +95,24 @@ const ModuleAssessment = () => {
         const timeLimitSeconds = assessmentData.time_limit || (15 * 60);
         setAssessmentTimeLimit(timeLimitSeconds);
         setTimeLeft(timeLimitSeconds);
+        setPassingScore(assessmentData.passing_score || 70);
 
         // Check user's previous attempts for lockout enforcement
         if (user?.id) {
-          const { data: userAttempts, error: attemptsErr } = await supabase
+          const { data: dbAttempts, error: attemptsErr } = await supabase
             .from('assessment_attempts')
-            .select('id, score, passed, attempted_at')
+            .select('id, score, passed, attempted_at, is_reset')
             .eq('assessment_id', assessmentData.id)
             .eq('user_id', user.id)
             .order('attempted_at', { ascending: false });
 
-          if (!attemptsErr && userAttempts) {
-            setPastAttempts(userAttempts);
-            if (userAttempts.length >= MAX_ATTEMPTS) {
+          if (!attemptsErr && dbAttempts) {
+            const activeAttempts = dbAttempts.filter((a: any) => !a.is_reset);
+            setPastAttempts(activeAttempts);
+            
+            const hasPassed = activeAttempts.some((a: any) => a.passed);
+            
+            if (activeAttempts.length >= MAX_ATTEMPTS && !hasPassed) {
               setIsLockedOut(true);
               setLoadingAssessment(false);
               return;
@@ -231,12 +237,29 @@ const ModuleAssessment = () => {
   const saveAttempt = async (score: number) => {
     if (!assessmentId || !user?.id) return;
     try {
+      const isPassed = score >= passingScore;
       await supabase.from('assessment_attempts').insert({
         assessment_id: assessmentId,
         user_id: user.id,
         score,
-        passed: score >= 70,
+        passed: isPassed,
       });
+      
+      // Auto-complete the lesson if passed
+      if (isPassed && courseData?.assignmentId && moduleData) {
+        const assessmentLesson = moduleData.lessons.find((l: any) => l.type === 'assessment');
+        if (assessmentLesson) {
+          await supabase.from('lessons_progress').upsert(
+            {
+              assignment_id: courseData.assignmentId,
+              lesson_id: assessmentLesson.id,
+              is_completed: true,
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: 'assignment_id,lesson_id' }
+          );
+        }
+      }
     } catch (err) {
       console.error('Error saving attempt:', err);
     }

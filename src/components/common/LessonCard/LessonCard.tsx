@@ -32,7 +32,7 @@ const convertVideoUrl = (url?: string | null): string | null => {
   return url;
 };
 
-const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModule, currentIndex, totalLessons, onProceedAssessment }: LessonCardProps) => {
+const LessonCard = ({ lesson, onBack, onNext, onNextModule, onDone, hasNextModule, currentIndex, totalLessons, onProceedAssessment, onViewAttempts }: LessonCardProps) => {
   if (!lesson) return null;
 
   const videoUrl = lesson.video_url;
