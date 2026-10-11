@@ -61,7 +61,7 @@ const StatusTag = ({ color, label }: { color: string; label: string }) => (
   </div>
 );
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 const PENDING_COLOR = "#CF591D";
 
 const SuccessModal = ({ message, onClose }: { message: string; onClose: () => void }) => (

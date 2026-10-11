@@ -23,6 +23,7 @@ const ICON_MAP: Record<string, any> = {
   Profile: UserCircle,
   Users: Users,
   Courses: BookOpen,
+  Overview: BarChart3,
   Approvals: CheckSquare,
   Reports: BarChart3,
   Certificates: Award,

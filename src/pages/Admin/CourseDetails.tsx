@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, User, Search, UserPlus, CheckCircle, X, ChevronRight, Briefcase, UserMinus, Flame } from "lucide-react";
+import { ArrowLeft, User, Search, UserPlus, CheckCircle, X, ChevronLeft, ChevronRight, Briefcase, UserMinus, Flame } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
@@ -43,14 +43,46 @@ const AdminCourseDetails = () => {
   // Toast State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Search Enrolled State & Pagination
+  const [searchEnrolled, setSearchEnrolled] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
   const slug = getCompanySlug(company);
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   useEffect(() => {
     if (!id) return;
     const loadData = async () => {
-      const data = await fetchCourseDetails(id as string);
-      if (data) setCourse(data);
+      const data = await fetchCourseDetails(id as string, true);
+      if (data) {
+        const assignmentIds = (data.course_assignments || []).map((a: any) => a.id);
+        if (assignmentIds.length > 0) {
+          const { data: progRows } = await supabase
+            .from('lessons_progress')
+            .select('assignment_id, lesson_id, is_completed')
+            .in('assignment_id', assignmentIds)
+            .eq('is_completed', true);
+
+          if (progRows && progRows.length > 0) {
+            const progByAssignment = new Map<number, any[]>();
+            progRows.forEach(row => {
+              if (!progByAssignment.has(row.assignment_id)) {
+                progByAssignment.set(row.assignment_id, []);
+              }
+              progByAssignment.get(row.assignment_id)!.push(row);
+            });
+
+            data.course_assignments.forEach((a: any) => {
+              const directProg = progByAssignment.get(a.id);
+              if (directProg && directProg.length > 0) {
+                a.lessons_progress = directProg;
+              }
+            });
+          }
+        }
+        setCourse(data);
+      }
     };
     loadData();
   }, [id, fetchCourseDetails]);
@@ -61,7 +93,7 @@ const AdminCourseDetails = () => {
       const fetchUsers = async () => {
         const { data } = await supabase
           .from('users')
-          .select('id, firstname, lastname, email, avatar_url, department, roles(name)')
+          .select('id, firstname, lastname, email, avatar_url, department, cpd_school_name, roles(name)')
           .eq('company_id', company.id);
         if (data) setCompanyUsers(data);
       };
@@ -119,48 +151,88 @@ const AdminCourseDetails = () => {
      return <div style={{ display: "flex", height: "100vh", padding: 40, textAlign: "center" }}>Course not found.</div>;
   }
 
+  const isSparkCpd = company?.name?.toUpperCase() === "SPARK CPD" || slug === "spark-cpd" || slug === "cpd" || company?.name?.toLowerCase().includes("cpd") || slug?.toLowerCase().includes("cpd");
+
   // Analytics Computation
   const assignments = course.course_assignments || [];
   const enrolledCount = assignments.length;
   let completedCount = 0;
   let inProgressCount = 0;
   let totalProgress = 0;
+
+  const modulesCount = course.course_modules?.length || 0;
+  const lessonsCount = (course.course_modules || []).reduce((total: number, m: any) => total + (m.course_lessons?.length || 0), 0);
+  const totalLessons = lessonsCount;
   
   const mappedEnrolled = assignments.map((a: any) => {
      let progress = 0;
-     if (a.course_progress && a.course_progress.length > 0) {
-       progress = a.course_progress[0].progress_pct || 0;
+     const dbProgress = a.course_progress?.[0]?.progress_pct;
+     if (typeof dbProgress === 'number' && dbProgress > 0) {
+       progress = dbProgress;
+     } else if (a.status === 'completed') {
+       progress = 100;
+     } else if (a.lessons_progress && a.lessons_progress.length > 0 && totalLessons > 0) {
+       const completedLessonCount = new Set(
+         (a.lessons_progress || [])
+           .filter((lp: any) => lp.is_completed)
+           .map((lp: any) => lp.lesson_id)
+       ).size;
+       progress = Math.min(100, Math.round((completedLessonCount / totalLessons) * 100));
      }
      
      let status = "Not Started";
      let statusColor = "var(--color-text-muted)";
-     if (progress === 100) {
+     if (progress === 100 || a.status === 'completed') {
        status = "Completed";
        statusColor = "var(--color-success)";
        completedCount++;
-     } else if (progress > 0) {
+     } else if (progress > 0 || a.status === 'in_progress' || a.status === 'in-progress') {
        status = "In Progress";
        statusColor = "#FF9800";
        inProgressCount++;
      }
      totalProgress += progress;
+
+     const dept = a.users?.department;
+     const school = a.users?.cpd_school_name;
+     const displayDept = (isSparkCpd ? (school || dept) : (dept || school)) || "N/A";
      
      return {
        id: a.users?.id,
-       name: `${a.users?.firstname} ${a.users?.lastname}`,
+       name: `${a.users?.firstname || ""} ${a.users?.lastname || ""}`.trim() || a.users?.email || "Unknown User",
        email: a.users?.email,
        avatar: a.users?.avatar_url,
-       department: a.users?.department || "N/A",
+       department: displayDept,
        progress,
        status,
        statusColor,
-       assignedAt: new Date(a.assigned_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric'})
+       assignedAt: a.assigned_at ? new Date(a.assigned_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric'}) : "N/A"
      };
   });
 
+  const filteredEnrolled = mappedEnrolled.filter((u: any) => {
+    if (!searchEnrolled.trim()) return true;
+    const q = searchEnrolled.toLowerCase();
+    return u.name.toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q) || (u.department || "").toLowerCase().includes(q);
+  });
+
+  const totalPages = Math.ceil(filteredEnrolled.length / PAGE_SIZE) || 1;
+  const pagedEnrolled = filteredEnrolled.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 3) {
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
+
   const avgCompletion = enrolledCount > 0 ? Math.round(totalProgress / enrolledCount) : 0;
-  const modulesCount = course.course_modules?.length || 0;
-  const lessonsCount = (course.course_modules || []).reduce((total: number, m: any) => total + (m.course_lessons?.length || 0), 0);
   
   const creator = Array.isArray(course.users) ? course.users[0] : course.users;
   const companyData = Array.isArray(course.companies) ? course.companies[0] : course.companies;
@@ -172,9 +244,9 @@ const AdminCourseDetails = () => {
   const enrolledIds = new Set(assignments.map((a: any) => a.users?.id));
   const filteredCompanyUsers = companyUsers.filter(u => {
     const q = modalSearch.toLowerCase();
-    const name = `${u.firstname} ${u.lastname}`.toLowerCase();
-    const dept = (u.department || "").toLowerCase();
-    return name.includes(q) || u.email.toLowerCase().includes(q) || dept.includes(q);
+    const name = `${u.firstname || ""} ${u.lastname || ""}`.toLowerCase();
+    const dept = ((isSparkCpd ? u.cpd_school_name : u.department) || u.department || u.cpd_school_name || "").toLowerCase();
+    return name.includes(q) || (u.email || "").toLowerCase().includes(q) || dept.includes(q);
   });
   
   const availableToAssign = filteredCompanyUsers.filter(u => !enrolledIds.has(u.id));
@@ -290,7 +362,12 @@ const AdminCourseDetails = () => {
                        <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--color-text-muted)" }} />
                        <input 
                          type="text" 
-                         placeholder="Search enrolled users ..." 
+                         value={searchEnrolled}
+                         onChange={(e) => {
+                           setSearchEnrolled(e.target.value);
+                           setCurrentPage(1);
+                         }}
+                         placeholder={isSparkCpd ? "Search enrolled users, schools ..." : "Search enrolled users ..."} 
                          style={{ padding: "8px 12px 8px 36px", fontSize: 13, borderRadius: 20, border: "1px solid var(--color-border)", outline: "none", width: 220, background: "var(--color-bg-subtle)" }}
                        />
                      </div>
@@ -301,7 +378,7 @@ const AdminCourseDetails = () => {
                      <thead>
                        <tr style={{ background: "var(--color-bg-subtle)", color: "var(--color-text-header)", borderBottom: "1px solid var(--color-border)", borderTop: "1px solid var(--color-border)", textAlign: "left" }}>
                          <th style={{ padding: "12px 24px", fontWeight: 800 }}>USER</th>
-                         <th style={{ padding: "12px 16px", fontWeight: 800 }}>DEPARTMENT</th>
+                         <th style={{ padding: "12px 16px", fontWeight: 800 }}>{isSparkCpd ? "SCHOOL" : "DEPARTMENT"}</th>
                          <th style={{ padding: "12px 16px", fontWeight: 800 }}>PROGRESS</th>
                          <th style={{ padding: "12px 16px", fontWeight: 800 }}>STATUS</th>
                          <th style={{ padding: "12px 16px", fontWeight: 800 }}>ASSIGNED</th>
@@ -309,7 +386,7 @@ const AdminCourseDetails = () => {
                        </tr>
                      </thead>
                      <tbody>
-                       {mappedEnrolled.map((u: any, idx: number) => (
+                       {pagedEnrolled.map((u: any, idx: number) => (
                          <tr key={idx} style={{ borderBottom: "1px solid var(--color-border)" }}>
                            <td style={{ padding: "12px 24px" }}>
                              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -343,7 +420,7 @@ const AdminCourseDetails = () => {
                            </td>
                          </tr>
                        ))}
-                       {mappedEnrolled.length === 0 && (
+                       {filteredEnrolled.length === 0 && (
                          <tr>
                            <td colSpan={6} style={{ padding: "32px", textAlign: "center", color: "var(--color-text-muted)" }}>No users enrolled yet.</td>
                          </tr>
@@ -352,8 +429,67 @@ const AdminCourseDetails = () => {
                    </table>
                    </div>
                    
-                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px 0 24px" }}>
-                     <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Showing {enrolledCount} of {enrolledCount} enrolled</span>
+                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px 0 24px", flexWrap: "wrap", gap: 12 }}>
+                     <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                       Showing {filteredEnrolled.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filteredEnrolled.length)} of {filteredEnrolled.length} enrolled
+                     </span>
+
+                     {totalPages > 1 && (
+                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                         <button
+                           disabled={currentPage === 1}
+                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                           style={{
+                             padding: "4px 8px", background: "var(--color-surface)",
+                             border: "1px solid var(--color-border)", borderRadius: 6,
+                             cursor: currentPage === 1 ? "default" : "pointer",
+                             fontSize: 12, opacity: currentPage === 1 ? 0.4 : 1,
+                             display: "flex", alignItems: "center", justifyContent: "center"
+                           }}
+                           title="Previous Page"
+                         >
+                           <ChevronLeft size={14} />
+                         </button>
+
+                         {getPageNumbers().map((pageItem, i) => (
+                           typeof pageItem === 'number' ? (
+                             <button
+                               key={i}
+                               onClick={() => setCurrentPage(pageItem)}
+                               style={{
+                                 minWidth: 28, height: 28, padding: "0 6px",
+                                 background: currentPage === pageItem ? "#FF6B00" : "var(--color-surface)",
+                                 border: `1px solid ${currentPage === pageItem ? "#FF6B00" : "var(--color-border)"}`,
+                                 borderRadius: 6, cursor: "pointer", fontSize: 12,
+                                 color: currentPage === pageItem ? "white" : "var(--color-text)",
+                                 fontWeight: currentPage === pageItem ? 700 : 500,
+                                 display: "flex", alignItems: "center", justifyContent: "center"
+                              }}
+                             >
+                               {pageItem}
+                             </button>
+                           ) : (
+                             <span key={i} style={{ padding: "0 4px", fontSize: 12, color: "var(--color-text-muted)" }}>...</span>
+                           )
+                         ))}
+
+                         <button
+                           disabled={currentPage === totalPages}
+                           onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                           style={{
+                             padding: "4px 8px", background: "var(--color-surface)",
+                             border: "1px solid var(--color-border)", borderRadius: 6,
+                             cursor: currentPage === totalPages ? "default" : "pointer",
+                             fontSize: 12, opacity: currentPage === totalPages ? 0.4 : 1,
+                             display: "flex", alignItems: "center", justifyContent: "center"
+                           }}
+                           title="Next Page"
+                         >
+                           <ChevronRight size={14} />
+                         </button>
+                       </div>
+                     )}
+
                      <Button variant="primary" rounded="pill" onClick={() => setIsAssignModalOpen(true)}>
                        <UserPlus size={14} style={{ marginRight: 6 }} /> Assign Users
                      </Button>
@@ -516,7 +652,7 @@ const AdminCourseDetails = () => {
                        type="text" 
                        value={modalSearch}
                        onChange={e => setModalSearch(e.target.value)}
-                       placeholder="Search users by name, email, or dept." 
+                       placeholder={isSparkCpd ? "Search users by name, email, or school" : "Search users by name, email, or dept."} 
                        style={{ padding: "10px 12px 10px 36px", fontSize: 13, borderRadius: 20, border: "1px solid var(--color-border)", outline: "none", width: "100%", boxSizing: "border-box" }}
                      />
                    </div>
@@ -555,7 +691,7 @@ const AdminCourseDetails = () => {
                               }
                               <div style={{ display: "flex", flexDirection: "column" }}>
                                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-header)" }}>{u.firstname} {u.lastname}</span>
-                                <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{u.email} • {u.department || "No Dept"}</span>
+                                <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{u.email} • {isSparkCpd ? (u.cpd_school_name || u.department || "No School") : (u.department || u.cpd_school_name || "No Dept")}</span>
                               </div>
                            </div>
                          </div>
@@ -580,7 +716,7 @@ const AdminCourseDetails = () => {
                               }
                               <div style={{ display: "flex", flexDirection: "column" }}>
                                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-header)" }}>{u.firstname} {u.lastname}</span>
-                                <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{u.email} • {u.department || "No Dept"}</span>
+                                <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{u.email} • {isSparkCpd ? (u.cpd_school_name || u.department || "No School") : (u.department || u.cpd_school_name || "No Dept")}</span>
                               </div>
                            </div>
                            <div style={{ padding: "4px 10px", background: "#E8F5E9", color: "#2E7D32", fontSize: 10, fontWeight: 700, borderRadius: 12 }}>

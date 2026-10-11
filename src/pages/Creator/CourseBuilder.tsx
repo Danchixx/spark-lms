@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, ChevronRight, ChevronDown, Plus, Play, FileText, PenTool, Trash2, GripVertical, Edit3, X, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, ChevronDown, Plus, Play, FileText, PenTool, Trash2, GripVertical, Edit3, X, CheckCircle, AlertCircle, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
