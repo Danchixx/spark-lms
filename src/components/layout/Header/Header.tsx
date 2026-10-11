@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Squash as Hamburger } from "hamburger-react";
-import { Bell, User, X } from "lucide-react";
+import { Bell, User, X, HelpCircle } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { useTheme } from "../../../context/ThemeContext";
 import { getCompanySlug } from "../../../utils/slug";
 import { supabase } from "../../../lib/supabase";
+import userGuideUrl from "../../../assets/SPARK_LMS_Learner_User_Guide.html?url";
 
 const BREAKPOINT = 1024;
 
@@ -138,6 +139,16 @@ const Header = ({
         }
         .notif-btn:hover { background: var(--color-bg-hover); }
 
+        .help-btn {
+          background: none; border: none; cursor: pointer;
+          position: relative; display: flex; align-items: center;
+          padding: 6px; border-radius: 8px;
+          text-decoration: none;
+          transition: background 0.2s ease;
+        }
+        .help-btn:hover { background: var(--color-bg-hover); }
+        .help-btn:hover svg { stroke: #FF6B00; }
+
         .notif-dropdown {
           position: absolute;
           top: calc(100% + 10px);
@@ -223,6 +234,18 @@ const Header = ({
 
         {/* Right side */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: isMobile ? 12 : 16 }}>
+
+          {/* Help */}
+          <a
+            href={userGuideUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="help-btn"
+            title="Help / User Guide"
+            aria-label="Help"
+          >
+            <HelpCircle size={22} color={(isMobile && isOpen && sidebarTheme === 'black' && theme === 'light') ? "#fff" : "#555"} />
+          </a>
 
           {/* Bell with dropdown */}
           <div ref={notifRef} style={{ position: "relative" }}>

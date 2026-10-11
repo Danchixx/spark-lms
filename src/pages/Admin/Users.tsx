@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, User, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2, Check, Archive, RefreshCw, Upload, AlertCircle } from "lucide-react";
+import { Users, User, UserCheck, UserMinus, Clock, Edit2, Trash2, ChevronRight, Plus, Eye, Loader2, Check, Archive, RefreshCw, Upload, AlertCircle, Download } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
 import { supabase } from "../../lib/supabase";
@@ -348,7 +348,9 @@ const AdminUsers = () => {
               roleColor: roleColor,
               originalRole: roleName,
               avatar: u.avatar_url,
-              isArchived: u.is_archived || false
+              isArchived: u.is_archived || false,
+              email: u.email,
+              password: u.password
             };
           });
 
@@ -390,6 +392,23 @@ const AdminUsers = () => {
     const isCpd = company?.name?.toUpperCase() === "SPARK CPD";
     return [isCpd ? "All Schools" : "All Departments", ...Array.from(sets)];
   }, [dbUsers]);
+
+  const downloadCsv = () => {
+    const learners = dbUsers.filter(u => u.originalRole === 'user' && !u.isArchived);
+    const headers = ["Username (Email)", "Password"];
+    const rows = learners.map(u => [u.email || 'N/A', u.password || 'N/A']);
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${company?.name?.replace(/\s+/g, '_') || 'users'}_credentials.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Barlow', sans-serif", background: "var(--color-bg)", overflow: "hidden" }}>
@@ -449,6 +468,7 @@ const AdminUsers = () => {
               <div className="dash-top-greeting"></div>
               <h1 className="dash-top-title" style={{ color: "var(--color-text-header)" }}>Users</h1>
                 <div className="dash-top-btn-wrap" style={{ display: 'flex', gap: '12px' }}>
+                  <Button size="sm" rounded="pill" variant="outline" leftIcon={<Download size={16} />} onClick={downloadCsv}>Download CSV</Button>
                   <input type="file" accept=".csv" ref={fileInputRef} onChange={handleBatchFileChange} style={{ display: 'none' }} />
                   <Button size="sm" rounded="pill" variant="outline" leftIcon={<Upload size={16} />} onClick={() => fileInputRef.current?.click()}>Batch Upload</Button>
                   <Button size="sm" rounded="pill" leftIcon={<Plus size={16} />} onClick={() => navigate(`/${slug}/users/add`)}>Add User</Button>

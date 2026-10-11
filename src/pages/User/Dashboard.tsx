@@ -54,11 +54,13 @@ const Dashboard = () => {
   const notStarted = courses.filter(c => c.status === 'Not Started').length;
   const certificates = completed;
 
+  const isCpd = company?.name?.toUpperCase() === "SPARK CPD" || slug === "spark-cpd" || slug === "cpd" || company?.name?.toLowerCase().includes("cpd") || slug?.toLowerCase().includes("cpd");
+
   const stats: StatItem[] = [
     { label: "Enrolled Courses", value: enrolled, icon: BookOpen, sub: "", subColor: "transparent" },
     { label: "Ongoing Courses", value: ongoing, icon: BookMarked, sub: "In progress", subColor: "#FF6B00" },
     { label: "Completed Courses", value: completed, icon: CheckCircle, sub: "All lessons done", subColor: "#27ae60" },
-    company?.name?.toUpperCase() === "SPARK CPD" 
+    isCpd
       ? { label: "Not Started", value: notStarted, icon: ClipboardList, sub: "Awaiting start", subColor: "#888" }
       : { label: "Certificate Earned", value: certificates, icon: Award, sub: completed > 0 ? "View certificates" : "Complete a course", subColor: completed > 0 ? "#27ae60" : "#888" },
   ];
