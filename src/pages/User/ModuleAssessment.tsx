@@ -30,7 +30,7 @@ const ModuleAssessment = () => {
   const onNavigate = (page: string) => navigate(`/${slug}/${page.toLowerCase()}`);
 
   const { courseId, moduleId } = location.state || {};
-  const { course: courseData, loading: courseLoading } = useCourseById(courseId);
+  const { course: courseData, loading: courseLoading, refetch: refetchCourse } = useCourseById(courseId);
   const moduleData = courseData?.modules?.find((m) => m.id === Number(moduleId));
   const moduleIndex = courseData?.modules?.findIndex(m => m.id === Number(moduleId)) ?? -1;
 
@@ -42,6 +42,7 @@ const ModuleAssessment = () => {
   const [loadingAssessment, setLoadingAssessment] = useState(true);
   const [pastAttempts, setPastAttempts] = useState<any[]>([]);
   const [isLockedOut, setIsLockedOut] = useState(false);
+  const [passingScore, setPassingScore] = useState<number>(70);
 
   // Assessment state
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -94,19 +95,24 @@ const ModuleAssessment = () => {
         const timeLimitSeconds = assessmentData.time_limit || (15 * 60);
         setAssessmentTimeLimit(timeLimitSeconds);
         setTimeLeft(timeLimitSeconds);
+        setPassingScore(assessmentData.passing_score || 70);
 
         // Check user's previous attempts for lockout enforcement
         if (user?.id) {
-          const { data: userAttempts, error: attemptsErr } = await supabase
+          const { data: dbAttempts } = await supabase
             .from('assessment_attempts')
-            .select('id, score, passed, attempted_at')
+            .select('*')
             .eq('assessment_id', assessmentData.id)
             .eq('user_id', user.id)
             .order('attempted_at', { ascending: false });
 
-          if (!attemptsErr && userAttempts) {
-            setPastAttempts(userAttempts);
-            if (userAttempts.length >= MAX_ATTEMPTS) {
+          if (dbAttempts) {
+            const activeAttempts = dbAttempts.filter((a: any) => !a.is_reset);
+            setPastAttempts(activeAttempts);
+            
+            const hasPassed = activeAttempts.some((a: any) => a.passed || (a.score != null && a.score >= (assessmentData.passing_score || 70)));
+            
+            if (activeAttempts.length >= MAX_ATTEMPTS && !hasPassed) {
               setIsLockedOut(true);
               setLoadingAssessment(false);
               return;
@@ -231,11 +237,12 @@ const ModuleAssessment = () => {
   const saveAttempt = async (score: number) => {
     if (!assessmentId || !user?.id) return;
     try {
+      const isPassed = score >= passingScore;
       const { data: attemptData, error: attemptErr } = await supabase.from('assessment_attempts').insert({
         assessment_id: assessmentId,
         user_id: user.id,
         score,
-        passed: score >= 70,
+        passed: isPassed,
       }).select('id').single();
 
       if (attemptErr) throw attemptErr;
@@ -254,7 +261,7 @@ const ModuleAssessment = () => {
 
           if (q.type === 'multiple_choice' || q.type === 'true_false') {
              // ans is the index of the selected choice
-             choiceId = q.choiceIds[ans];
+             choiceId = q.choiceIds?.[ans] ?? null;
           } else {
              // For text-based answers
              textAnswer = typeof ans === 'object' ? JSON.stringify(ans) : String(ans);
@@ -270,8 +277,29 @@ const ModuleAssessment = () => {
 
         if (answerInserts.length > 0) {
           const { error: answersErr } = await supabase.from('attempt_answers').insert(answerInserts);
-          if (answersErr) throw answersErr;
+          if (answersErr) console.error('Error saving attempt answers:', answersErr);
         }
+      }
+      
+      // Auto-complete the lesson if passed
+      if (isPassed && courseData?.assignmentId && moduleData) {
+        const assessmentLesson = moduleData.lessons.find((l: any) => l.type === 'assessment');
+        if (assessmentLesson) {
+          await supabase.from('lessons_progress').upsert(
+            {
+              assignment_id: courseData.assignmentId,
+              lesson_id: assessmentLesson.id,
+              is_completed: true,
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: 'assignment_id,lesson_id' }
+          );
+        }
+      }
+      
+      // Sync global course state to update lockout UI across pages
+      if (refetchCourse) {
+        await refetchCourse();
       }
     } catch (err) {
       console.error('Error saving attempt:', err);
@@ -343,7 +371,7 @@ const ModuleAssessment = () => {
                   Assessment Locked Out
                 </h2>
                 <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.5 }}>
-                  You have reached the maximum limit of <strong>3 attempts</strong> for this assessment. You can no longer retake this exam.
+                  You have been locked out of this assessment retake. Please contact SPARK immediately to allow another retake.
                 </p>
               </div>
 

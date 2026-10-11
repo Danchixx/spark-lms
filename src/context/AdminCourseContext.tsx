@@ -17,7 +17,7 @@ type AdminCourseContextValue = {
 const AdminCourseContext = createContext<AdminCourseContextValue | null>(null);
 
 export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
-  const { company } = useAuth();
+  const { user, company } = useAuth();
   
   const [adminCourses, setAdminCourses] = useState<any[]>([]);
   const [courseDetailsCache, setCourseDetailsCache] = useState<Record<string, any>>({});
@@ -169,7 +169,8 @@ export const AdminCourseProvider = ({ children }: { children: ReactNode }) => {
       const inserts = userIds.map(uid => ({
         course_id: courseId,
         user_id: uid,
-        status: 'not_started'
+        status: 'not_started',
+        assigned_by: user?.id || null
       }));
       
       const { error } = await supabase.from('course_assignments').insert(inserts);
