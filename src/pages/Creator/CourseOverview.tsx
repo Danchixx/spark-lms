@@ -101,7 +101,13 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
         }
 
         const mods = c.course_modules || [];
-        const lessonsCount = mods.reduce((sum: number, m: any) => sum + (m.course_lessons?.length || 0), 0);
+        const allLessons = mods.flatMap((m: any) => m.course_lessons || []);
+        const lessonTypeMap: Record<number, string> = {};
+        allLessons.forEach((l: any) => { lessonTypeMap[l.id] = l.type; });
+
+        const lessonsCount = allLessons.filter((l: any) => l.type !== 'assessment').length;
+        const assessmentsCount = allLessons.filter((l: any) => l.type === 'assessment').length;
+        const totalItemsCount = allLessons.length;
         const enrolledCount = (c.course_assignments || []).length;
         setSelectedCourse({
           id: c.id,
@@ -111,6 +117,9 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
           status: c.status,
           modulesCount: mods.length,
           lessonsCount,
+          assessmentsCount,
+          totalItemsCount,
+          lessonTypeMap,
           enrolledCount,
           createdAt: c.created_at
         });
@@ -136,7 +145,9 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
       setLoadingUsers(true);
       setUserCurrentPage(1);
       try {
-        // Fetch course assignments with users and lessons_progress
+        let assignmentsData: any[] = [];
+
+        // 1. Try joined query with explicit relationship disambiguation
         const { data: assignments, error: aErr } = await supabase
           .from('course_assignments')
           .select(`
@@ -144,7 +155,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
             user_id,
             status,
             assigned_at,
-            users (
+            course_progress ( progress_pct ),
+            users:users!course_assignments_user_id_fkey (
               id,
               firstname,
               lastname,
@@ -152,30 +164,81 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
               avatar_url,
               department,
               cpd_school_name
-            ),
-            lessons_progress (
-              lesson_id,
-              is_completed,
-              completed_at
             )
           `)
           .eq('course_id', selectedCourse.id);
 
-        if (aErr) throw aErr;
+        if (!aErr && assignments && assignments.length > 0) {
+          assignmentsData = assignments;
+        } else {
+          // Fallback: fetch assignments directly, then fetch users
+          const { data: rawAssignments, error: rawErr } = await supabase
+            .from('course_assignments')
+            .select('id, user_id, status, assigned_at, course_progress(progress_pct)')
+            .eq('course_id', selectedCourse.id);
 
-        const totalCourseLessons = selectedCourse.lessonsCount || 1;
+          if (rawErr) throw rawErr;
 
-        const mapped = (assignments || []).map((a: any) => {
-          const u = a.users || {};
-          const completedCount = new Set(
-            (a.lessons_progress || [])
-              .filter((lp: any) => lp.is_completed)
-              .map((lp: any) => lp.lesson_id)
-          ).size;
+          const rawList = rawAssignments || [];
+          const userIds = Array.from(new Set(rawList.map((a: any) => a.user_id).filter(Boolean)));
+          const usersMap: Record<string, any> = {};
+
+          if (userIds.length > 0) {
+            const { data: usersData, error: uErr } = await supabase
+              .from('users')
+              .select('id, firstname, lastname, email, avatar_url, department, cpd_school_name')
+              .in('id', userIds);
+
+            if (!uErr && usersData) {
+              usersData.forEach((u: any) => { usersMap[u.id] = u; });
+            }
+          }
+
+          assignmentsData = rawList.map((a: any) => ({
+            ...a,
+            users: usersMap[a.user_id] || null
+          }));
+        }
+
+        // 2. Fetch lessons_progress for these assignments to accurately calculate lesson progress
+        const assignmentIds = assignmentsData.map((a: any) => a.id);
+        const progByAssignment = new Map<number, any[]>();
+
+        if (assignmentIds.length > 0) {
+          const { data: progRows } = await supabase
+            .from('lessons_progress')
+            .select('assignment_id, lesson_id, is_completed')
+            .in('assignment_id', assignmentIds)
+            .eq('is_completed', true);
+
+          if (progRows && progRows.length > 0) {
+            progRows.forEach((row: any) => {
+              if (!progByAssignment.has(row.assignment_id)) {
+                progByAssignment.set(row.assignment_id, []);
+              }
+              progByAssignment.get(row.assignment_id)!.push(row);
+            });
+          }
+        }
+
+        const totalCourseLessons = selectedCourse.totalItemsCount || selectedCourse.lessonsCount || 1;
+
+        const typeMap = selectedCourse?.lessonTypeMap || {};
+        const mapped = assignmentsData.map((a: any) => {
+          const u = Array.isArray(a.users) ? a.users[0] : (a.users || {});
+          const completedForAssign = progByAssignment.get(a.id) || [];
+          const completedLessonIds = Array.from(new Set(completedForAssign.map((lp: any) => lp.lesson_id)));
+          const completedCount = completedLessonIds.length;
+          const completedLessonsOnly = completedLessonIds.filter((id: any) => typeMap[id] !== 'assessment').length;
+          const completedAssessmentsOnly = completedLessonIds.filter((id: any) => typeMap[id] === 'assessment').length;
 
           let progress = 0;
-          if (a.status === 'completed') progress = 100;
-          else if (totalCourseLessons > 0) {
+          const dbProgress = a.course_progress?.[0]?.progress_pct ?? a.course_progress?.progress_pct;
+          if (typeof dbProgress === 'number' && dbProgress > 0) {
+            progress = dbProgress;
+          } else if (a.status === 'completed') {
+            progress = 100;
+          } else if (totalCourseLessons > 0) {
             progress = Math.min(100, Math.round((completedCount / totalCourseLessons) * 100));
           }
 
@@ -196,9 +259,9 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
           return {
             assignmentId: a.id,
             user: {
-              id: u.id,
+              id: u.id || a.user_id,
               name: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.email || "Unknown User",
-              email: u.email,
+              email: u.email || "N/A",
               avatar: u.avatar_url,
               department: displayDept,
               school: u.cpd_school_name || "N/A"
@@ -207,6 +270,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
             status,
             statusColor,
             completedLessonsCount: completedCount,
+            completedLessonsOnlyCount: completedLessonsOnly,
+            completedAssessmentsCount: completedAssessmentsOnly,
             assignedAt: a.assigned_at ? new Date(a.assigned_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric'}) : "N/A"
           };
         });
@@ -251,12 +316,18 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
         const allLessonIds = modules.flatMap(m => (m.lessons || []).map((l: any) => l.id));
 
         if (allLessonIds.length > 0) {
-          // 2. Fetch user's lessons_progress for these lessons
-          const { data: lpData } = await supabase
+          // 2. Fetch user's lessons_progress for these lessons using assignment_id
+          let lpQuery = supabase
             .from('lessons_progress')
             .select('*')
-            .eq('user_id', selectedUser.user.id)
             .in('lesson_id', allLessonIds);
+
+          if (selectedUser.assignmentId) {
+            lpQuery = lpQuery.eq('assignment_id', selectedUser.assignmentId);
+          } else {
+            lpQuery = lpQuery.eq('user_id', selectedUser.user.id);
+          }
+          const { data: lpData } = await lpQuery;
 
           const lpMap: Record<number, any> = {};
           (lpData || []).forEach(lp => {
@@ -366,10 +437,11 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
   // Helper: Lesson Icon
   const renderLessonTypeIcon = (type: string) => {
     switch (type) {
-      case "video": return <Play size={15} color="#FF6B00" />;
-      case "assessment": return <PenTool size={15} color="#8E24AA" />;
-      case "hybrid": return <FileText size={15} color="#00897B" />;
-      default: return <BookOpen size={15} color="#1E88E5" />;
+      case "video": return <Play size={16} />;
+      case "assessment": return <PenTool size={16} />;
+      case "hybrid": return <FileText size={16} />;
+      case "reading": return <FileText size={16} />;
+      default: return <BookOpen size={16} />;
     }
   };
 
@@ -396,8 +468,20 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
     // ═══════════════════════════════════════════════════════════
     if (selectedUser) {
       const userObj = selectedUser.user;
-      const totalLessons = selectedCourse.lessonsCount || 0;
-      const completedCount = selectedUser.completedLessonsCount || 0;
+      const allCourseLessons = (courseStructure?.modules || []).flatMap((m: any) => m.lessons || []);
+      const regularLessons = allCourseLessons.filter((l: any) => l.type !== 'assessment');
+      const assessmentLessons = allCourseLessons.filter((l: any) => l.type === 'assessment');
+
+      const totalRegular = regularLessons.length || selectedCourse.lessonsCount || 0;
+      const totalAssessments = assessmentLessons.length || selectedCourse.assessmentsCount || 0;
+
+      const completedRegular = courseStructure 
+        ? regularLessons.filter((l: any) => lessonProgressMap[l.id]?.is_completed).length
+        : (selectedUser.completedLessonsOnlyCount ?? Math.min(totalRegular, selectedUser.completedLessonsCount || 0));
+
+      const completedAssessments = courseStructure
+        ? assessmentLessons.filter((l: any) => lessonProgressMap[l.id]?.is_completed).length
+        : (selectedUser.completedAssessmentsCount ?? 0);
 
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 60 }}>
@@ -472,7 +556,15 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                   {selectedUser.progress}%
                 </div>
                 <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
-                  {completedCount} of {totalLessons} lessons completed
+                  {totalAssessments > 0 ? (
+                    <span>
+                      {completedRegular} of {totalRegular} lessons • {completedAssessments} of {totalAssessments} assessments completed
+                    </span>
+                  ) : (
+                    <span>
+                      {completedRegular} of {totalRegular} lessons completed
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -517,18 +609,20 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                         onClick={() => setExpandedModules(prev => ({ ...prev, [module.id]: !prev[module.id] }))}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <div style={{ 
-                            width: 28, height: 28, borderRadius: 8, 
-                            background: moduleCompletedCount === moduleLessons.length && moduleLessons.length > 0 ? "rgba(39, 174, 96, 0.15)" : "#FF6B00", 
-                            color: moduleCompletedCount === moduleLessons.length && moduleLessons.length > 0 ? "#27ae60" : "#fff", 
-                            display: "flex", alignItems: "center", justifyContent: "center", 
-                            fontSize: 13, fontWeight: 800 
-                          }}>
-                            {mIdx + 1}
-                          </div>
                           <div>
                             <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-header)" }}>{module.title}</div>
-                            {module.description && <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{module.description}</div>}
+                            <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 2 }}>
+                              {(() => {
+                                const lCount = moduleLessons.filter((l: any) => l.type !== "assessment").length;
+                                const aCount = moduleLessons.filter((l: any) => l.type === "assessment").length;
+                                return (
+                                  <>
+                                    {lCount} {lCount === 1 ? "Lesson" : "Lessons"}
+                                    {aCount > 0 ? ` · ${aCount} ${aCount === 1 ? "Assessment" : "Assessments"}` : ""}
+                                  </>
+                                );
+                              })()}
+                            </div>
                           </div>
                         </div>
 
@@ -560,7 +654,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
                                   <div style={{ 
                                     width: 30, height: 30, borderRadius: 6, 
-                                    background: isSelected ? "rgba(255,107,0,0.15)" : "var(--color-bg-subtle)",
+                                    background: "var(--color-bg-subtle)",
+                                    color: "var(--color-text-muted)",
                                     display: "flex", alignItems: "center", justifyContent: "center" 
                                   }}>
                                     {renderLessonTypeIcon(lesson.type)}
@@ -883,12 +978,14 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
               <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "var(--color-text-muted)", lineHeight: 1.5 }}>
                 {selectedCourse.description || "No description provided."}
               </p>
-              <div style={{ display: "flex", gap: 20, fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600 }}>
+              <div style={{ display: "flex", gap: 20, fontSize: 13, color: "var(--color-text-muted)", fontWeight: 600, flexWrap: "wrap" }}>
                 <span><strong>{selectedCourse.enrolledCount}</strong> Learners Enrolled</span>
                 <span>•</span>
                 <span><strong>{selectedCourse.modulesCount}</strong> Modules</span>
                 <span>•</span>
-                <span><strong>{selectedCourse.lessonsCount}</strong> Lessons</span>
+                <span><strong>{selectedCourse.lessonsCount}</strong> {selectedCourse.lessonsCount === 1 ? "Lesson" : "Lessons"}</span>
+                <span>•</span>
+                <span><strong>{selectedCourse.assessmentsCount || 0}</strong> {selectedCourse.assessmentsCount === 1 ? "Assessment" : "Assessments"}</span>
               </div>
             </div>
           </div>
@@ -929,7 +1026,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                     <th style={{ padding: "12px 16px", fontWeight: 800 }}>PROGRESS</th>
                     <th style={{ padding: "12px 16px", fontWeight: 800 }}>STATUS</th>
                     <th style={{ padding: "12px 16px", fontWeight: 800 }}>ASSIGNED</th>
-                    <th style={{ padding: "12px 24px", fontWeight: 800, textAlign: "right" }}>ACTION</th>
+                    <th style={{ padding: "12px 24px", fontWeight: 800, textAlign: "center", width: 120 }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -971,14 +1068,15 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                       <td style={{ padding: "12px 16px", color: "var(--color-text-muted)" }}>
                         {u.assignedAt}
                       </td>
-                      <td style={{ padding: "12px 24px", textAlign: "right" }}>
+                      <td style={{ padding: "12px 24px", textAlign: "center" }}>
                         <Button
                           variant="outline"
                           size="sm"
                           rounded="pill"
                           onClick={() => setSelectedUser(u)}
+                          style={{ fontSize: 12, padding: "5px 18px", whiteSpace: "nowrap" }}
                         >
-                          <Eye size={13} style={{ marginRight: 6 }} /> Review Submissions
+                          View
                         </Button>
                       </td>
                     </tr>

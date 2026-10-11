@@ -165,13 +165,18 @@ const CreatorCourseCard = ({
         </div>
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--color-text-muted)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--color-text-muted)", flexWrap: "wrap" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <BookOpen size={12} /> {course.modulesCount} Modules
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <FileText size={12} /> {course.lessonsCount} Lessons
             </span>
+            {course.assessmentsCount > 0 && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <FileText size={12} /> {course.assessmentsCount} Assessments
+              </span>
+            )}
           </div>
         </div>
       </div>

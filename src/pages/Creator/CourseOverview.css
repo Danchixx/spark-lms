@@ -97,7 +97,7 @@
 }
 
 .overview-module-card.expanded {
-  border-color: rgba(255, 107, 0, 0.4);
+  border-color: var(--color-border);
 }
 
 .overview-module-header {
@@ -131,7 +131,6 @@
 
 .overview-lesson-item.active {
   background: rgba(255, 107, 0, 0.06);
-  border-left: 3px solid #FF6B00;
 }
 
 .overview-response-card {
