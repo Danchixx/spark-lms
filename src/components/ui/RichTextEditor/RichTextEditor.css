@@ -16,6 +16,7 @@
   background: var(--color-surface) !important;
   border-radius: 12px;
   font-family: 'Barlow', sans-serif !important;
+  font-size: 18px;
 }
 
 .rich-text-editor-container .se-wrapper .se-placeholder,
@@ -215,6 +216,12 @@
 /* Global reading class so LessonCard can inherit typography from Editor */
 .tiptap-content {
   font-family: 'Barlow', sans-serif !important;
+  font-size: 18px;
+}
+
+.tiptap-content small,
+.sun-editor-editable small {
+  font-size: 18px !important;
 }
 
 .tiptap-content p {

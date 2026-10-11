@@ -41,5 +41,6 @@ body {
 .sun-editor,
 .sun-editor-editable {
   font-family: 'Barlow', sans-serif !important;
+  font-size: 18px;
 }
 
