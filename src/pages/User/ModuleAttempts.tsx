@@ -309,7 +309,7 @@ const ModuleAttempts = () => {
 
               {/* Table Rows */}
               {attempts.map((attempt, idx) => {
-                const isPassed = attempt.score >= PASSING_SCORE;
+                const isPassed = attempt.score >= passingScore;
                 return (
                   <div
                     key={attempt.dbId || attempt.id}
