@@ -364,6 +364,18 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                 lesson_id,
                 title,
                 passing_score,
+                assessment_questions (
+                  id,
+                  question_text,
+                  position,
+                  question_type,
+                  correct_answers,
+                  assessment_choices (
+                    id,
+                    choice_text,
+                    is_correct
+                  )
+                ),
                 assessment_attempts (
                   id,
                   score,
@@ -383,19 +395,31 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
             const aaMap: Record<number, any> = {};
             (assessData || []).forEach(a => {
               const userAttempts = (a.assessment_attempts || []).filter((att: any) => att.user_id === selectedUser.user.id);
+              const questions = (a.assessment_questions || []).sort((x: any, y: any) => (x.position || 0) - (y.position || 0));
+              questions.forEach((q: any) => {
+                if (q.assessment_choices) {
+                  q.assessment_choices.sort((x: any, y: any) => x.id - y.id);
+                }
+              });
+
+              let latestAttempt: any = null;
+              const answerMap: Record<number, any> = {};
+
               if (userAttempts.length > 0) {
-                // Get latest attempt
                 userAttempts.sort((x: any, y: any) => new Date(y.attempted_at).getTime() - new Date(x.attempted_at).getTime());
-                aaMap[a.lesson_id] = {
-                  assessment: a,
-                  attempt: userAttempts[0]
-                };
-              } else {
-                aaMap[a.lesson_id] = {
-                  assessment: a,
-                  attempt: null
-                };
+                latestAttempt = userAttempts[0];
+
+                (latestAttempt?.attempt_answers || []).forEach((ans: any) => {
+                  answerMap[ans.question_id] = ans;
+                });
               }
+
+              aaMap[a.lesson_id] = {
+                assessment: a,
+                attempt: latestAttempt,
+                questions,
+                answerMap
+              };
             });
             setAssessmentAttemptsMap(aaMap);
           }
@@ -506,7 +530,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                 <ArrowLeft size={14} /> Back to Enrolled Learners
               </button>
               <ChevronRight size={14} color="var(--color-text-muted)" />
-              <span style={{ color: "var(--color-text-muted)" }}>{selectedCourse.title}</span>
+              <span style={{ color: "var(--color-text-muted)" }}>Course Overview</span>
               <ChevronRight size={14} color="var(--color-text-muted)" />
               <span style={{ color: "var(--color-text-header)" }}>User View</span>
             </div>
@@ -541,7 +565,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
           <div className="overview-user-banner">
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               {userObj.avatar ? (
-                <img src={userObj.avatar} alt={userObj.name} style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: "2px solid #FF6B00" }} />
+                <img src={userObj.avatar} alt={userObj.name} style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--color-border)" }} />
               ) : (
                 <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#111", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800 }}>
                   {userObj.name.charAt(0)}
@@ -596,9 +620,6 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--color-text-header)" }}>
                     Course Modules ({courseStructure.modules.length})
                   </div>
-                  <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                    Click a lesson to inspect answers
-                  </span>
                 </div>
 
                 {courseStructure.modules.map((module, mIdx) => {
@@ -666,7 +687,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                     {renderLessonTypeIcon(lesson.type)}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: isSelected ? 700 : 600, color: isSelected ? "#FF6B00" : "var(--color-text-header)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    <div style={{ fontSize: 13, fontWeight: isSelected ? 700 : 600, color: "var(--color-text-header)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                       {lesson.title}
                                     </div>
                                     <div style={{ fontSize: 11, color: "var(--color-text-muted)", textTransform: "capitalize" }}>
@@ -772,11 +793,13 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                           const attemptInfo = assessmentAttemptsMap[selectedLesson.id];
                           const attempt = attemptInfo?.attempt;
                           const assessment = attemptInfo?.assessment;
+                          const questions = attemptInfo?.questions || [];
+                          const answerMap = attemptInfo?.answerMap || {};
 
                           return (
-                            <div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                               {attempt ? (
-                                <div style={{ background: attempt.passed ? "rgba(46, 125, 50, 0.08)" : "rgba(211, 47, 47, 0.08)", border: `1.5px solid ${attempt.passed ? "#2E7D32" : "#D32F2F"}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                                <div style={{ background: attempt.passed ? "rgba(46, 125, 50, 0.08)" : "rgba(211, 47, 47, 0.08)", border: `1.5px solid ${attempt.passed ? "#2E7D32" : "#D32F2F"}`, borderRadius: 12, padding: 16, marginBottom: 4 }}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                                     <span style={{ fontSize: 13, fontWeight: 700, color: attempt.passed ? "#2E7D32" : "#D32F2F" }}>
                                       {attempt.passed ? "PASSED" : "FAILED"}
@@ -790,8 +813,110 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                   </div>
                                 </div>
                               ) : (
-                                <div style={{ padding: 16, background: "var(--color-bg-subtle)", borderRadius: 12, marginBottom: 16, color: "var(--color-text-muted)", fontSize: 13, textAlign: "center" }}>
+                                <div style={{ padding: 16, background: "var(--color-bg-subtle)", borderRadius: 12, marginBottom: 4, color: "var(--color-text-muted)", fontSize: 13, textAlign: "center" }}>
                                   Learner has not attempted this assessment yet.
+                                </div>
+                              )}
+
+                              {/* Questions and User Answers */}
+                              {questions.length > 0 && (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 2px" }}>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: "var(--color-text-header)" }}>
+                                      Assessment Questions ({questions.length})
+                                    </div>
+                                    <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                                      {Object.keys(answerMap).length} of {questions.length} answered
+                                    </span>
+                                  </div>
+
+                                  {questions.map((q: any, qIdx: number) => {
+                                    const ans = answerMap[q.id];
+                                    const userChoiceId = ans?.choice_id;
+                                    const userTextAns = ans?.text_answer;
+                                    const hasSubmitted = ans !== undefined && (userChoiceId != null || (userTextAns != null && userTextAns !== ""));
+
+                                    return (
+                                      <div key={q.id} style={{ border: "1px solid var(--color-border)", borderRadius: 12, padding: 16, background: "var(--color-surface)" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 12 }}>
+                                          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-header)" }}>
+                                            <span style={{ color: "#FF6B00", marginRight: 6 }}>Q{qIdx + 1}.</span> {q.question_text}
+                                          </div>
+                                          {hasSubmitted ? (
+                                            <span style={{ padding: "2px 8px", borderRadius: 10, background: "#E8F5E9", color: "#2E7D32", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
+                                              Answered
+                                            </span>
+                                          ) : (
+                                            <span style={{ padding: "2px 8px", borderRadius: 10, background: "var(--color-bg-subtle)", color: "var(--color-text-muted)", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
+                                              Not Answered
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {/* Multiple Choice & True/False */}
+                                        {(q.question_type === 'multiple_choice' || q.question_type === 'true_false' || !q.question_type) && (
+                                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                            {(q.assessment_choices || []).map((choice: any) => {
+                                              const isUserChoice = userChoiceId != null && String(userChoiceId) === String(choice.id);
+                                              const isCorrectChoice = !!choice.is_correct;
+
+                                              let border = "1px solid var(--color-border)";
+                                              let bg = "var(--color-bg)";
+                                              let badge = null;
+
+                                              if (isUserChoice && isCorrectChoice) {
+                                                border = "2px solid #4CAF50";
+                                                bg = "rgba(76, 175, 80, 0.1)";
+                                                badge = <span style={{ color: "#4CAF50", fontWeight: 700, fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}><CheckCircle size={14} /> Learner's Answer (Correct)</span>;
+                                              } else if (isUserChoice && !isCorrectChoice) {
+                                                border = "2px solid #F44336";
+                                                bg = "rgba(244, 67, 54, 0.1)";
+                                                badge = <span style={{ color: "#F44336", fontWeight: 700, fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}><X size={14} /> Learner's Answer (Incorrect)</span>;
+                                              } else if (isCorrectChoice) {
+                                                border = "1.5px dashed #4CAF50";
+                                                badge = <span style={{ color: "#4CAF50", fontWeight: 600, fontSize: 11 }}>Correct Answer</span>;
+                                              }
+
+                                              return (
+                                                <div key={choice.id} style={{ padding: "10px 14px", borderRadius: 8, border, background: bg, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
+                                                  <span style={{ fontWeight: isUserChoice ? 700 : 500, color: "var(--color-text-header)" }}>{choice.choice_text}</span>
+                                                  {badge}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+
+                                        {/* Identification or Enumeration */}
+                                        {(q.question_type === 'identification' || q.question_type === 'enumeration') && (
+                                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>Learner's Submitted Response:</div>
+                                            <div style={{ padding: "10px 14px", borderRadius: 8, background: hasSubmitted ? "var(--color-bg)" : "var(--color-bg-subtle)", border: "1.5px solid var(--color-border)", fontSize: 14, fontWeight: 700, color: "var(--color-text-header)" }}>
+                                              {userTextAns ? String(userTextAns) : <span style={{ color: "var(--color-text-muted)", fontStyle: "italic" }}>No answer submitted</span>}
+                                            </div>
+                                            {q.correct_answers && q.correct_answers.length > 0 && (
+                                              <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(76, 175, 80, 0.08)", borderLeft: "3px solid #4CAF50", fontSize: 12, color: "#2E7D32" }}>
+                                                <strong>Correct Answer:</strong> {Array.isArray(q.correct_answers) ? q.correct_answers.join(", ") : String(q.correct_answers)}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Essay */}
+                                        {q.question_type === 'essay' && (
+                                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>Learner's Essay Response:</div>
+                                            <div style={{ 
+                                              padding: 14, borderRadius: 8, background: "var(--color-bg)", border: "1px solid var(--color-border)", 
+                                              fontSize: 13, lineHeight: 1.6, color: "var(--color-text-header)", minHeight: 80, whiteSpace: "pre-wrap" 
+                                            }}>
+                                              {userTextAns ? String(userTextAns) : <span style={{ color: "var(--color-text-muted)", fontStyle: "italic" }}>No essay submitted by learner.</span>}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>
