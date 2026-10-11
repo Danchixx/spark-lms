@@ -47,9 +47,11 @@ const RichTextEditor = ({ content, onChange, placeholder }: RichTextEditorProps)
             ['fullScreen', 'codeView']
           ],
           font: [
+            'Barlow',
             'Arial', 'Comic Sans MS', 'Courier New', 'Impact',
-            'Georgia','Tahoma', 'Trebuchet MS', 'Verdana'
+            'Georgia', 'Tahoma', 'Trebuchet MS', 'Verdana'
           ],
+          defaultFont: 'Barlow',
           defaultStyle: "font-family: 'Barlow', sans-serif; font-size: 15px; color: var(--color-text);",
           minHeight: '400px',
         }}
