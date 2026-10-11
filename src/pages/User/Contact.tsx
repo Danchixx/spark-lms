@@ -211,7 +211,7 @@ const Contact = ({ embedded = false }: ContactProps) => {
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search ..." role="User" />
 
-            <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+            <div className="contact-content-scroll">
               {content}
             </div>
           </div>

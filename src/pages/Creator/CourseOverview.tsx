@@ -49,6 +49,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
   const [enrolledUsers, setEnrolledUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [userSearch, setUserSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [userCurrentPage, setUserCurrentPage] = useState(1);
 
   // Level 3 Data (Modules, Lessons, Responses)
@@ -303,9 +304,11 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
         const { course, modules } = await courseService.fetchCourseWithModules(Number(selectedCourse.id));
         setCourseStructure({ course, modules });
 
-        // Auto-expand all modules initially
+        // Auto-expand only the first module initially
         const expanded: Record<number, boolean> = {};
-        modules.forEach(m => { expanded[m.id] = true; });
+        if (modules.length > 0) {
+          expanded[modules[0].id] = true;
+        }
         setExpandedModules(expanded);
 
         // Auto-select first lesson if available
@@ -412,6 +415,9 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
 
   // Filtered enrolled users for Level 2
   const filteredEnrolled = enrolledUsers.filter(u => {
+    if (statusFilter !== "All" && u.status.toLowerCase() !== statusFilter.toLowerCase()) {
+      return false;
+    }
     if (!userSearch.trim()) return true;
     const q = userSearch.toLowerCase();
     return u.user.name.toLowerCase().includes(q) || (u.user.email || "").toLowerCase().includes(q) || (u.user.department || "").toLowerCase().includes(q);
@@ -486,8 +492,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 60 }}>
           {/* Breadcrumb & Navigation */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600 }}>
+          <div className="overview-breadcrumb-wrap">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, flexWrap: "wrap" }}>
               <button 
                 onClick={() => { setSelectedUser(null); }}
                 style={{
@@ -502,7 +508,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
               <ChevronRight size={14} color="var(--color-text-muted)" />
               <span style={{ color: "var(--color-text-muted)" }}>{selectedCourse.title}</span>
               <ChevronRight size={14} color="var(--color-text-muted)" />
-              <span style={{ color: "var(--color-text-header)" }}>{userObj.name}'s Submission Review</span>
+              <span style={{ color: "var(--color-text-header)" }}>User View</span>
             </div>
 
             {/* Quick Learner Switcher */}
@@ -549,27 +555,26 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Overall Completion</div>
+            <div className="overview-completion-block" style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Overall Completion</div>
+              <div className="overview-completion-row" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, margin: "2px 0" }}>
+                <div style={{ width: 90, height: 8, background: "var(--color-bg-muted, #eee)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${selectedUser.progress}%`, background: selectedUser.progress === 100 ? "#27ae60" : "#FF6B00", borderRadius: 4 }} />
+                </div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: selectedUser.progress === 100 ? "#27ae60" : "#FF6B00" }}>
                   {selectedUser.progress}%
                 </div>
-                <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
-                  {totalAssessments > 0 ? (
-                    <span>
-                      {completedRegular} of {totalRegular} lessons • {completedAssessments} of {totalAssessments} assessments completed
-                    </span>
-                  ) : (
-                    <span>
-                      {completedRegular} of {totalRegular} lessons completed
-                    </span>
-                  )}
-                </div>
               </div>
-
-              <div style={{ width: 90, height: 8, background: "var(--color-bg-muted, #eee)", borderRadius: 4, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${selectedUser.progress}%`, background: selectedUser.progress === 100 ? "#27ae60" : "#FF6B00", borderRadius: 4 }} />
+              <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                {totalAssessments > 0 ? (
+                  <span>
+                    {completedRegular} of {totalRegular} lessons • {completedAssessments} of {totalAssessments} assessments completed
+                  </span>
+                ) : (
+                  <span>
+                    {completedRegular} of {totalRegular} lessons completed
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -584,7 +589,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
           ) : !courseStructure ? (
             <div style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>Could not load course modules.</div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr", gap: 24, alignItems: "start" }}>
+            <div className="overview-builder-grid">
               {/* Left Column: Modules & Lessons Accordion (Matches Builder UI) */}
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 2px" }}>
@@ -632,7 +637,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                             background: moduleCompletedCount === moduleLessons.length && moduleLessons.length > 0 ? "#E8F5E9" : "var(--color-bg-subtle)",
                             color: moduleCompletedCount === moduleLessons.length && moduleLessons.length > 0 ? "#2E7D32" : "var(--color-text-muted)"
                           }}>
-                            {moduleCompletedCount}/{moduleLessons.length} Completed
+                            {moduleCompletedCount}/{moduleLessons.length}
                           </span>
                           <ChevronDown size={18} style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", color: "var(--color-text-muted)" }} />
                         </div>
@@ -810,6 +815,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                             return <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>No blocks in this hybrid lesson.</div>;
                           }
 
+                          let questionCounter = 0;
                           return blocks.map((block: any, bIdx: number) => {
                             if (block.type === "reading") {
                               return (
@@ -830,6 +836,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                             }
 
                             if (block.type === "question" && block.question) {
+                              questionCounter++;
+                              const qNum = questionCounter;
                               const q = block.question;
                               const responseKey = `${selectedLesson.id}_${block.id}`;
                               const userAns = hybridResponsesMap[responseKey];
@@ -839,7 +847,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                 <div key={bIdx} style={{ border: "1px solid var(--color-border)", borderRadius: 12, padding: 16, background: "var(--color-surface)" }}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 12 }}>
                                     <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-header)" }}>
-                                      <span style={{ color: "#FF6B00", marginRight: 6 }}>Q{bIdx + 1}.</span> {q.question_text}
+                                      <span style={{ color: "#FF6B00", marginRight: 6 }}>Q{qNum}.</span> {q.question_text}
                                     </div>
                                     {hasSubmitted ? (
                                       <span style={{ padding: "2px 8px", borderRadius: 10, background: "#E8F5E9", color: "#2E7D32", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -956,7 +964,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
             <ArrowLeft size={14} /> Back to Courses
           </button>
           <ChevronRight size={14} color="var(--color-text-muted)" />
-          <span style={{ color: "var(--color-text-header)" }}>{selectedCourse.title} (Enrolled Learners)</span>
+          <span style={{ color: "var(--color-text-header)" }}>Course Overview</span>
         </div>
 
           {/* Course Banner */}
@@ -991,8 +999,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
           </div>
 
           {/* Enrolled Users Table */}
-          <div style={{ background: "var(--color-surface)", borderRadius: 16, border: "1px solid var(--color-border)", padding: "20px 0", boxShadow: "var(--shadow-sm)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 24px 16px 24px", borderBottom: "1px solid var(--color-border)", flexWrap: "wrap", gap: 12 }}>
+          <div className="overview-table-card">
+            <div className="overview-table-header">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <Users size={20} color="#FF6B00" />
                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--color-text-header)" }}>Enrolled Learners</h3>
@@ -1001,18 +1009,44 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                 </span>
               </div>
 
-              <div style={{ position: "relative", width: 260 }}>
-                <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--color-text-muted)" }} />
-                <input 
-                  type="text" 
-                  value={userSearch}
+              <div className="overview-table-controls">
+                <select
+                  value={statusFilter}
                   onChange={(e) => {
-                    setUserSearch(e.target.value);
+                    setStatusFilter(e.target.value);
                     setUserCurrentPage(1);
                   }}
-                  placeholder={isSparkCpd ? "Search learners, schools ..." : "Search learners, dept ..."}
-                  style={{ padding: "8px 12px 8px 36px", fontSize: 13, borderRadius: 20, border: "1px solid var(--color-border)", outline: "none", width: "100%", background: "var(--color-bg-subtle)", boxSizing: "border-box" }}
-                />
+                  style={{
+                    padding: "8px 14px",
+                    fontSize: 13,
+                    borderRadius: 20,
+                    border: "1px solid var(--color-border)",
+                    outline: "none",
+                    background: "var(--color-bg-subtle)",
+                    color: "var(--color-text-header)",
+                    cursor: "pointer",
+                    fontWeight: 600
+                  }}
+                >
+                  <option value="All">All Status</option>
+                  <option value="Completed">Completed</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Not Started">Not Started</option>
+                </select>
+
+                <div className="overview-search-wrap" style={{ position: "relative", width: 240 }}>
+                  <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--color-text-muted)" }} />
+                  <input 
+                    type="text" 
+                    value={userSearch}
+                    onChange={(e) => {
+                      setUserSearch(e.target.value);
+                      setUserCurrentPage(1);
+                    }}
+                    placeholder={isSparkCpd ? "Search learners, schools ..." : "Search learners, dept ..."}
+                    style={{ padding: "8px 12px 8px 36px", fontSize: 13, borderRadius: 20, border: "1px solid var(--color-border)", outline: "none", width: "100%", background: "var(--color-bg-subtle)", boxSizing: "border-box" }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1084,7 +1118,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                   {!loadingUsers && filteredEnrolled.length === 0 && (
                     <tr>
                       <td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>
-                        No learners enrolled in this course yet.
+                        {enrolledUsers.length === 0 ? "No learners enrolled in this course yet." : "No learners match your search and filter criteria."}
                       </td>
                     </tr>
                   )}
@@ -1167,7 +1201,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <Header user={user} isOpen={sidebarOpen} onToggleSidebar={toggleSidebar} searchPlaceholder="Search courses, submissions ..." role="Creator" />
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
+        <div className="overview-content-scroll">
           <PageTransition>
             <div className="overview-page-container">
               {renderContent()}
