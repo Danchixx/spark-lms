@@ -34,6 +34,7 @@ const ModuleLessons = () => {
   const [savingNote, setSavingNote] = useState(false);
   const [savedNoteStatus, setSavedNoteStatus] = useState<"idle"|"saved"|"error">("idle");
   const [saving, setSaving] = useState(false);
+  const [showSideDetails, setShowSideDetails] = useState(true);
 
   // Fetch quick notes for current lesson
   useEffect(() => {
@@ -187,22 +188,55 @@ const ModuleLessons = () => {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           <PageTransition>
+            <style>{`
+              .spark-flame-toggle-btn:hover .spark-flame-img {
+                opacity: 0.95 !important;
+                transform: scale(1.12);
+                filter: drop-shadow(0 2px 10px rgba(255, 107, 0, 0.45));
+              }
+              .spark-flame-toggle-btn:active .spark-flame-img {
+                transform: scale(0.95);
+              }
+            `}</style>
+
             {/* Breadcrumb Area */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, fontSize: 16 }}>
-              <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId } })}>
-                Modules
-              </Button>
-              <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-              {isReady ? (
-                <>
-                  <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {moduleIndex + 1}</span>
-                  <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-                  <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>
-                    Lesson {currentIndex + 1}: {currentLesson?.title}
-                  </span>
-                </>
-              ) : (
-                <Skeleton width={200} height={20} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 16, flexWrap: "wrap" }}>
+                <Button variant="outline" size="sm" rounded="pill" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(`/${slug}/courses/modules`, { state: { courseId } })}>
+                  Modules
+                </Button>
+                <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
+                {isReady ? (
+                  <>
+                    <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {moduleIndex + 1}</span>
+                    <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
+                    <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>
+                      Lesson {currentIndex + 1}: {currentLesson?.title}
+                    </span>
+                  </>
+                ) : (
+                  <Skeleton width={200} height={20} />
+                )}
+              </div>
+
+              {/* Show Details button when side details are collapsed */}
+              {!showSideDetails && isReady && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  rounded="pill"
+                  onClick={() => setShowSideDetails(true)}
+                  leftIcon={<img src={sparkLogoImg} alt="Spark" style={{ width: 18, height: 18, objectFit: "contain" }} />}
+                  style={{
+                    borderColor: "#FF6B00",
+                    color: "#FF6B00",
+                    fontWeight: 700,
+                    boxShadow: "var(--shadow-sm)"
+                  }}
+                  title="Expand side details"
+                >
+                  Show Details
+                </Button>
               )}
             </div>
 
@@ -215,7 +249,13 @@ const ModuleLessons = () => {
                 </div>
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24, alignItems: "start" }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: showSideDetails ? "1fr 320px" : "1fr",
+                gap: 24,
+                alignItems: "start",
+                transition: "all 0.3s ease"
+              }}>
 
               <LessonCard
                 lesson={currentLesson}
@@ -244,102 +284,136 @@ const ModuleLessons = () => {
               />
 
               {/* Right Column: Sidebar Panels */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {showSideDetails && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-                {/* Progress Card */}
-                <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", position: "relative", overflow: "hidden", border: "1px solid var(--color-border)" }}>
-                  <div style={{ position: "absolute", top: -10, right: -10, opacity: 0.15, width: 80 }}>
-                    <img src={sparkLogoImg} alt="Spark" style={{ width: "100%", height: "auto" }} />
-                  </div>
-
-                  <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", marginBottom: 8, letterSpacing: 0.5 }}>COURSE PROGRESS</div>
-                  <ProgressBar value={courseData!.progress} size="md" />
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-                    <span style={{ fontSize: 24, fontWeight: 800, color: courseData!.progress === 100 ? "#27ae60" : "#FF6B00" }}>{courseData!.progress}%</span>
-                    <span style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>completed</span>
-                  </div>
-                </div>
-
-                {/* Module Lessons List */}
-                <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
-                  <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", marginBottom: 16, letterSpacing: 0.5, textTransform: "uppercase" }}>MODULE {moduleIndex + 1} LESSONS</div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {lessons.map((lsn, idx) => {
-                      const isActive = lsn.id === currentLessonId;
-                      const isCompleted = lsn.status === "completed";
-                      const isLockedOut = lsn.isLockedOut || (lsn.type === "assessment" && (lsn.attemptsCount ?? 0) >= 3 && !lsn.hasPassed);
-
-                      return (
-                        <div
-                          key={lsn.id}
-                          onClick={() => {
-                            if (isLockedOut) {
-                              navigate(`/${slug}/courses/attempts`, { state: { courseId, moduleId } });
-                            } else if (lsn.status !== 'locked') {
-                              setCurrentLessonId(lsn.id);
-                            }
-                          }}
-                          style={{
-                            display: "flex", alignItems: "center", justifyContent: "space-between",
-                            padding: "10px 14px",
-                            borderRadius: 8,
-                            background: isActive ? "var(--sidebar-active-bg)" : "var(--color-bg-muted)",
-                            border: `1px solid ${isActive ? "var(--sidebar-active-border)" : "transparent"}`,
-                            cursor: lsn.status === 'locked' ? "not-allowed" : "pointer",
-                            opacity: lsn.status === 'locked' ? 0.45 : 1,
-                            transition: "all 0.2s"
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: isCompleted || isActive ? "#FF6B00" : "var(--color-bg-muted)" }} />
-                            <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#FF6B00" : "var(--color-text)" }}>
-                              Lesson {idx + 1}: {lsn.title}
-                            </span>
-                          </div>
-                          {isCompleted && <Check size={16} color="#FF6B00" />}
-                          {isLockedOut && <Lock size={15} color="#dc2626" />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Quick Notes */}
-                <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", letterSpacing: 0.5 }}>QUICK NOTES</div>
-                    {savedNoteStatus === "saved" && <span style={{ fontSize: 11, color: "#27ae60", fontWeight: 700 }}>Saved!</span>}
-                    {savedNoteStatus === "error" && <span style={{ fontSize: 11, color: "#e74c3c", fontWeight: 700 }}>Error saving</span>}
-                  </div>
-                  <textarea
-                    value={quickNotes}
-                    onChange={(e) => {
-                      setQuickNotes(e.target.value);
-                      if (savedNoteStatus !== "idle") setSavedNoteStatus("idle");
-                    }}
-                    placeholder="Type your notes here..."
-                    style={{
-                      width: "100%", height: 120, resize: "none",
-                      background: "var(--color-bg-muted)", border: "1px solid var(--color-border)", borderRadius: 8,
-                      padding: "12px", fontSize: 13, color: "var(--color-text)", fontFamily: "inherit",
-                      outline: "none", marginBottom: 12
-                    }}
-                  />
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <Button 
-                      variant="primary" 
-                      size="sm" 
-                      rounded="pill" 
-                      onClick={handleSaveNote}
-                      disabled={savingNote}
+                  {/* Progress Card */}
+                  <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", position: "relative", overflow: "hidden", border: "1px solid var(--color-border)" }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowSideDetails(false)}
+                      title="Collapse side details for broader view"
+                      aria-label="Collapse side details"
+                      className="spark-flame-toggle-btn"
+                      style={{
+                        position: "absolute",
+                        top: -10,
+                        right: -10,
+                        width: 80,
+                        height: 80,
+                        background: "transparent",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 10,
+                        outline: "none"
+                      }}
                     >
-                      {savingNote ? "Saving..." : "Save Note"}
-                    </Button>
-                  </div>
-                </div>
+                      <img
+                        src={sparkLogoImg}
+                        alt="Spark - Collapse sidebar"
+                        className="spark-flame-img"
+                        style={{
+                          width: "100%",
+                          height: "auto",
+                          opacity: 0.3,
+                          transition: "all 0.25s ease"
+                        }}
+                      />
+                    </button>
 
-              </div>
+                    <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", marginBottom: 8, letterSpacing: 0.5 }}>COURSE PROGRESS</div>
+                    <ProgressBar value={courseData!.progress} size="md" />
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
+                      <span style={{ fontSize: 24, fontWeight: 800, color: courseData!.progress === 100 ? "#27ae60" : "#FF6B00" }}>{courseData!.progress}%</span>
+                      <span style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>completed</span>
+                    </div>
+                  </div>
+
+                  {/* Module Lessons List */}
+                  <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", marginBottom: 16, letterSpacing: 0.5, textTransform: "uppercase" }}>MODULE {moduleIndex + 1} LESSONS</div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {lessons.map((lsn, idx) => {
+                        const isActive = lsn.id === currentLessonId;
+                        const isCompleted = lsn.status === "completed";
+                        const isLockedOut = lsn.isLockedOut || (lsn.type === "assessment" && (lsn.attemptsCount ?? 0) >= 3 && !lsn.hasPassed);
+
+                        return (
+                          <div
+                            key={lsn.id}
+                            onClick={() => {
+                              if (isLockedOut) {
+                                navigate(`/${slug}/courses/attempts`, { state: { courseId, moduleId } });
+                              } else if (lsn.status !== 'locked') {
+                                setCurrentLessonId(lsn.id);
+                              }
+                            }}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "space-between",
+                              padding: "10px 14px",
+                              borderRadius: 8,
+                              background: isActive ? "var(--sidebar-active-bg)" : "var(--color-bg-muted)",
+                              border: `1px solid ${isActive ? "var(--sidebar-active-border)" : "transparent"}`,
+                              cursor: lsn.status === 'locked' ? "not-allowed" : "pointer",
+                              opacity: lsn.status === 'locked' ? 0.45 : 1,
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: isCompleted || isActive ? "#FF6B00" : "var(--color-bg-muted)" }} />
+                              <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#FF6B00" : "var(--color-text)" }}>
+                                Lesson {idx + 1}: {lsn.title}
+                              </span>
+                            </div>
+                            {isCompleted && <Check size={16} color="#FF6B00" />}
+                            {isLockedOut && <Lock size={15} color="#dc2626" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Quick Notes */}
+                  <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                      <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: "700", letterSpacing: 0.5 }}>QUICK NOTES</div>
+                      {savedNoteStatus === "saved" && <span style={{ fontSize: 11, color: "#27ae60", fontWeight: 700 }}>Saved!</span>}
+                      {savedNoteStatus === "error" && <span style={{ fontSize: 11, color: "#e74c3c", fontWeight: 700 }}>Error saving</span>}
+                    </div>
+                    <textarea
+                      value={quickNotes}
+                      onChange={(e) => {
+                        setQuickNotes(e.target.value);
+                        if (savedNoteStatus !== "idle") setSavedNoteStatus("idle");
+                      }}
+                      placeholder="Type your notes here..."
+                      style={{
+                        width: "100%", height: 120, resize: "none",
+                        background: "var(--color-bg-muted)", border: "1px solid var(--color-border)", borderRadius: 8,
+                        padding: "12px", fontSize: 13, color: "var(--color-text)", fontFamily: "inherit",
+                        outline: "none", marginBottom: 12
+                      }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <Button 
+                        variant="primary" 
+                        size="sm" 
+                        rounded="pill" 
+                        onClick={handleSaveNote}
+                        disabled={savingNote}
+                      >
+                        {savingNote ? "Saving..." : "Save Note"}
+                      </Button>
+                    </div>
+                  </div>
+
+                </div>
+              )}
             </div>
             )}
 
