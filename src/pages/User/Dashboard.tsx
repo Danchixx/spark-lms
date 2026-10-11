@@ -152,7 +152,7 @@ const Dashboard = () => {
                           <ClipboardList size={20} className="pending-icon" style={{ color: "var(--color-text-muted)" }} />
                           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text)" }}>{a.title || a.name || `Assessment #${a.id}`}</span>
                         </div>
-                        <Button variant="ghost" size="sm" rightIcon={<ChevronRight size={13} />}>Start</Button>
+                        <Button variant="primary" size="sm" rounded="pill" rightIcon={<ChevronRight size={13} />}>Start</Button>
                       </div>
                     ))
                   )}

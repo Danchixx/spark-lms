@@ -238,65 +238,105 @@ const CourseModules = () => {
                         padding: isExpanded ? "0 24px 24px 84px" : "0 24px 0 84px",
                         display: "flex", flexDirection: "column", gap: 12
                       }}>
-                        {module.lessons.map((unit) => (
-                          <div key={unit.id} style={{
-                            display: "flex", alignItems: "center", gap: 16,
-                            padding: "16px", borderRadius: 8,
-                            border: "1px solid var(--color-border)", 
-                            background: unit.status === "locked" ? "var(--color-bg-subtle)" : "var(--color-surface)",
-                            opacity: unit.status === "locked" ? 0.75 : 1,
-                            transition: "all 0.2s ease"
-                          }}>
-                            <div style={{ background: "var(--color-bg-muted)", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-text-muted)" }}>
-                              {getUnitIcon(unit.type)}
-                            </div>
+                        {module.lessons.map((unit) => {
+                          const isAssessmentLockedOut = unit.type === "assessment" && (unit.isLockedOut || ((unit.attemptsCount ?? 0) >= 3 && !unit.hasPassed));
+                          const isAssessmentPassed = unit.type === "assessment" && (unit.hasPassed || unit.status === "completed");
 
-                            <div style={{ flex: 1, fontWeight: 600, color: "var(--color-text-header)", fontSize: 14 }}>
-                              {unit.title}
-                            </div>
+                          return (
+                            <div 
+                              key={unit.id} 
+                              onClick={() => {
+                                if (isAssessmentLockedOut) {
+                                  navigate(`/${slug}/courses/attempts`, {
+                                    state: { courseId, moduleId: module.id }
+                                  });
+                                }
+                              }}
+                              style={{
+                                display: "flex", alignItems: "center", gap: 16,
+                                padding: "16px", borderRadius: 8,
+                                border: "1px solid var(--color-border)", 
+                                background: unit.status === "locked" ? "var(--color-bg-subtle)" : "var(--color-surface)",
+                                opacity: unit.status === "locked" ? 0.75 : 1,
+                                cursor: isAssessmentLockedOut ? "pointer" : "default",
+                                transition: "all 0.2s ease"
+                              }}
+                            >
+                              <div style={{ background: "var(--color-bg-muted)", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-text-muted)" }}>
+                                {getUnitIcon(unit.type)}
+                              </div>
 
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              {unit.type === "assessment" && (unit.attemptsCount ?? 0) >= 3 && unit.status !== "completed" ? (
-                                <span style={{ fontSize: 12, fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "4px 10px", borderRadius: 99, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                  <Lock size={12} /> Locked (3/3 Attempts)
-                                </span>
-                              ) : (
-                                (unit.status === "open" || (unit.status === "completed" && unit.type !== "assessment")) && (
+                              <div style={{ flex: 1, fontWeight: 600, color: "var(--color-text-header)", fontSize: 14 }}>
+                                {unit.title}
+                              </div>
+
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                {isAssessmentLockedOut ? (
                                   <Button
                                     size="sm"
-                                    variant={unit.status === "completed" ? "outline" : "primary"}
+                                    variant="outline"
                                     rounded="pill"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      navigate(`/${slug}/courses/lessons`, {
-                                        state: { courseId, moduleId: module.id, lessonId: unit.id }
+                                      navigate(`/${slug}/courses/attempts`, {
+                                        state: { courseId, moduleId: module.id }
                                       });
                                     }}
+                                    style={{
+                                      background: "#f3f4f6",
+                                      borderColor: "#d1d5db",
+                                      color: "#6b7280",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 6,
+                                      fontWeight: 600,
+                                      padding: "6px 14px"
+                                    }}
                                   >
-                                    {unit.status === "completed" ? "Review" : "Open"}
+                                    <Lock size={14} color="#6b7280" />
+                                    Locked Out
                                   </Button>
-                                )
-                              )}
-                              {unit.type === "assessment" && (unit.status === "completed" || unit.status === "open") && (unit.attemptsCount ?? 0) > 0 && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  rounded="pill"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/${slug}/courses/attempts`, {
-                                      state: { courseId, moduleId: module.id }
-                                    });
-                                  }}
-                                >
-                                  View Attempts
-                                </Button>
-                              )}
-                              {unit.status === "completed" && <Check size={20} color="#FF6B00" strokeWidth={3} />}
-                              {unit.status === "locked" && <Lock size={16} color="#666" />}
+                                ) : (
+                                  (unit.status === "open" || (unit.status === "completed" && unit.type !== "assessment")) && (
+                                    <Button
+                                      size="sm"
+                                      variant={unit.status === "completed" ? "outline" : "primary"}
+                                      rounded="pill"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/${slug}/courses/lessons`, {
+                                          state: { courseId, moduleId: module.id, lessonId: unit.id }
+                                        });
+                                      }}
+                                    >
+                                      {unit.status === "completed" ? "Review" : "Open"}
+                                    </Button>
+                                  )
+                                )}
+
+                                {/* Passed Assessment shows checkmark only (matching Image 1) */}
+                                {isAssessmentPassed && (
+                                  <Check size={20} color="#FF6B00" strokeWidth={3} />
+                                )}
+
+                                {/* Locked out assessment shows grey lock icon */}
+                                {isAssessmentLockedOut && (
+                                  <Lock size={16} color="#9ca3af" />
+                                )}
+
+                                {/* Standard Completed Lesson */}
+                                {unit.type !== "assessment" && unit.status === "completed" && (
+                                  <Check size={20} color="#FF6B00" strokeWidth={3} />
+                                )}
+
+                                {/* Standard Locked Lesson */}
+                                {unit.type !== "assessment" && unit.status === "locked" && (
+                                  <Lock size={16} color="#666" />
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );

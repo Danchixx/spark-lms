@@ -8,7 +8,7 @@ import useSidebar from "../../hooks/useSidebar";
 import Button from "../../components/ui/Button/Button";
 import ProgressBar from "../../components/ui/ProgressBar/ProgressBar";
 import LessonCard from "../../components/common/LessonCard/LessonCard";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Lock } from "lucide-react";
 import { useCourseById } from "../../hooks/useCourses";
 import { supabase } from "../../lib/supabase";
 import sparkLogoImg from "../../components/common/SparkLogo/sparklogo.png";
@@ -130,12 +130,17 @@ const ModuleLessons = () => {
   };
 
   const handleNext = async () => {
-    if (currentLesson && currentLesson.status !== 'completed') {
+    if (currentLesson && currentLesson.status !== 'completed' && currentLesson.type !== 'assessment') {
       await markLessonComplete(currentLesson.id);
+    }
+    if (currentLesson?.type === 'assessment' && !currentLesson?.hasPassed) {
+      return;
     }
     if (currentIndex < lessons.length - 1) {
       const nextLesson = lessons[currentIndex + 1];
-      if (nextLesson) setCurrentLessonId(nextLesson.id);
+      if (nextLesson && nextLesson.status !== 'locked') {
+        setCurrentLessonId(nextLesson.id);
+      }
     }
   };
 
@@ -149,18 +154,24 @@ const ModuleLessons = () => {
   const hasNextModule = (courseData?.modules?.length ?? 0) > moduleIndex + 1;
 
   const handleNextModule = async () => {
-    if (currentLesson && currentLesson.status !== 'completed') {
+    if (currentLesson && currentLesson.status !== 'completed' && currentLesson.type !== 'assessment') {
       await markLessonComplete(currentLesson.id);
     }
+    if (currentLesson?.type === 'assessment' && !currentLesson?.hasPassed) {
+      return;
+    }
     const nextMod = courseData?.modules?.[moduleIndex + 1];
-    if (nextMod) {
+    if (nextMod && nextMod.status !== 'locked') {
       navigate(`/${slug}/courses/lessons`, { state: { courseId, moduleId: nextMod.id, lessonId: nextMod.lessons[0]?.id } });
     }
   };
 
   const handleDone = async () => {
-    if (currentLesson && currentLesson.status !== 'completed') {
+    if (currentLesson && currentLesson.status !== 'completed' && currentLesson.type !== 'assessment') {
       await markLessonComplete(currentLesson.id);
+    }
+    if (currentLesson?.type === 'assessment' && !currentLesson?.hasPassed) {
+      return;
     }
     navigate(`/${slug}/courses`);
   };
@@ -215,9 +226,18 @@ const ModuleLessons = () => {
                 hasNextModule={hasNextModule}
                 currentIndex={currentIndex + 1}
                 totalLessons={lessons.length}
-                onProceedAssessment={() => navigate(`/${slug}/courses/assessment`, {
-                  state: { courseId, moduleId }
-                })}
+                onProceedAssessment={() => {
+                  const isLocked = currentLesson?.isLockedOut || ((currentLesson?.attemptsCount ?? 0) >= 3 && !currentLesson?.hasPassed);
+                  if (isLocked) {
+                    navigate(`/${slug}/courses/attempts`, {
+                      state: { courseId, moduleId }
+                    });
+                  } else {
+                    navigate(`/${slug}/courses/assessment`, {
+                      state: { courseId, moduleId }
+                    });
+                  }
+                }}
                 onViewAttempts={() => navigate(`/${slug}/courses/attempts`, {
                   state: { courseId, moduleId }
                 })}
@@ -248,19 +268,26 @@ const ModuleLessons = () => {
                     {lessons.map((lsn, idx) => {
                       const isActive = lsn.id === currentLessonId;
                       const isCompleted = lsn.status === "completed";
+                      const isLockedOut = lsn.isLockedOut || (lsn.type === "assessment" && (lsn.attemptsCount ?? 0) >= 3 && !lsn.hasPassed);
 
                       return (
                         <div
                           key={lsn.id}
-                          onClick={() => (isCompleted || lsn.status === 'open') && setCurrentLessonId(lsn.id)}
+                          onClick={() => {
+                            if (isLockedOut) {
+                              navigate(`/${slug}/courses/attempts`, { state: { courseId, moduleId } });
+                            } else if (lsn.status !== 'locked') {
+                              setCurrentLessonId(lsn.id);
+                            }
+                          }}
                           style={{
                             display: "flex", alignItems: "center", justifyContent: "space-between",
                             padding: "10px 14px",
                             borderRadius: 8,
                             background: isActive ? "var(--sidebar-active-bg)" : "var(--color-bg-muted)",
                             border: `1px solid ${isActive ? "var(--sidebar-active-border)" : "transparent"}`,
-                            cursor: lsn.status === 'locked' ? "default" : "pointer",
-                            opacity: lsn.status === 'locked' ? 0.5 : 1,
+                            cursor: lsn.status === 'locked' ? "not-allowed" : "pointer",
+                            opacity: lsn.status === 'locked' ? 0.45 : 1,
                             transition: "all 0.2s"
                           }}
                         >
@@ -271,6 +298,7 @@ const ModuleLessons = () => {
                             </span>
                           </div>
                           {isCompleted && <Check size={16} color="#FF6B00" />}
+                          {isLockedOut && <Lock size={15} color="#dc2626" />}
                         </div>
                       );
                     })}

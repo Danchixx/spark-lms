@@ -12,7 +12,6 @@ import { supabase } from "../../lib/supabase";
 import PageTransition from "../../components/common/PageTransition";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
 
-const PASSING_SCORE = 70;
 const MAX_ATTEMPTS = 3;
 
 const ModuleAttempts = () => {
@@ -32,6 +31,7 @@ const ModuleAttempts = () => {
   const [attempts, setAttempts] = useState<any[]>([]);
   const [loadingAttempts, setLoadingAttempts] = useState(true);
   const [assessmentCompleted, setAssessmentCompleted] = useState(false);
+  const [passingScore, setPassingScore] = useState(70);
 
   // Fetch attempts from DB
   useEffect(() => {
@@ -54,7 +54,7 @@ const ModuleAttempts = () => {
         // Get assessment ID
         const { data: assessmentData } = await supabase
           .from('assessments')
-          .select('id')
+          .select('id, passing_score')
           .eq('lesson_id', assessmentLesson.id)
           .single();
 
@@ -62,6 +62,8 @@ const ModuleAttempts = () => {
           setLoadingAttempts(false);
           return;
         }
+
+        setPassingScore(assessmentData.passing_score || 70);
 
         // Get attempts
         const { data: attemptData, error } = await supabase
@@ -72,9 +74,11 @@ const ModuleAttempts = () => {
           .order('attempted_at', { ascending: false });
 
         if (error) throw error;
+        
+        const activeAttempts = (attemptData || []).filter((a: any) => !a.is_reset);
 
-        const formatted = (attemptData || []).map((a, idx) => ({
-          id: attemptData.length - idx,
+        const formatted = activeAttempts.map((a, idx) => ({
+          id: activeAttempts.length - idx,
           date: new Date(a.attempted_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
           time: new Date(a.attempted_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
           score: a.score || 0,
@@ -96,7 +100,7 @@ const ModuleAttempts = () => {
 
   const isReady = !courseLoading && !loadingAttempts && courseData && moduleData;
 
-  const hasPassingAttempt = attempts.some((a) => a.score >= PASSING_SCORE);
+  const hasPassingAttempt = attempts.some((a) => a.score >= passingScore);
   const bestScore = attempts.length > 0 ? Math.max(...attempts.map((a) => a.score)) : 0;
 
   const handleReAssess = () => {
@@ -129,7 +133,7 @@ const ModuleAttempts = () => {
     }
     setAttempts((prev) =>
       prev.map((a) =>
-        a.score >= PASSING_SCORE && !a.submitted
+        a.score >= passingScore && !a.submitted
           ? { ...a, submitted: true }
           : a
       )
@@ -186,9 +190,9 @@ const ModuleAttempts = () => {
                     Module {moduleIndex + 1} Assessment — {moduleData.title}
                   </h2>
                   <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)" }}>
-                    Passing score: <strong style={{ color: "#FF6B00" }}>{PASSING_SCORE}%</strong> · 
-                    {" "}Attempts: <strong style={{ color: attempts.length >= MAX_ATTEMPTS ? "#dc2626" : "var(--color-text-header)" }}>{attempts.length} / {MAX_ATTEMPTS}</strong> · 
-                    {" "}Best score: <strong style={{ color: bestScore >= PASSING_SCORE ? "#27ae60" : "#e74c3c" }}>{bestScore}%</strong>
+                    Passing score: <strong style={{ color: "#FF6B00" }}>{passingScore}%</strong> · 
+                    {" "}Attempts: <strong style={{ color: (attempts.length >= MAX_ATTEMPTS && !hasPassingAttempt) ? "#dc2626" : "var(--color-text-header)" }}>{attempts.length} / {MAX_ATTEMPTS}</strong> · 
+                    {" "}Best score: <strong style={{ color: bestScore >= passingScore ? "#27ae60" : "#e74c3c" }}>{bestScore}%</strong>
                   </p>
                 </div>
 
@@ -251,7 +255,7 @@ const ModuleAttempts = () => {
                   Maximum Attempts Exceeded (3/3 Attempts Used)
                 </div>
                 <div style={{ fontSize: 13, color: "#b91c1c", marginTop: 2 }}>
-                  You have exhausted all 3 allowed attempts for this assessment. Retakes are locked. Please contact your instructor or administrator for assistance.
+                  You have been locked out of this assessment retake. Please contact SPARK immediately to allow another retake.
                 </div>
               </div>
               <Button variant="outline" size="sm" rounded="pill" onClick={handleBackToModules} style={{ marginLeft: "auto", borderColor: "#dc2626", color: "#dc2626" }}>
@@ -305,7 +309,7 @@ const ModuleAttempts = () => {
 
               {/* Table Rows */}
               {attempts.map((attempt, idx) => {
-                const isPassed = attempt.score >= PASSING_SCORE;
+                const isPassed = attempt.score >= passingScore;
                 return (
                   <div
                     key={attempt.dbId || attempt.id}
