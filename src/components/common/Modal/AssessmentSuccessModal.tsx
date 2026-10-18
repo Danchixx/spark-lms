@@ -1,6 +1,6 @@
 import "./AssessmentSuccessModal.css";
 
-const AssessmentSuccessModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const AssessmentSuccessModal = ({ isOpen, onClose, isEvaluation }: { isOpen: boolean; onClose: () => void; isEvaluation?: boolean }) => {
   if (!isOpen) return null;
 
   return (
@@ -9,13 +9,17 @@ const AssessmentSuccessModal = ({ isOpen, onClose }: { isOpen: boolean; onClose:
         <button className="assessment-success-close" onClick={onClose}>✕</button>
 
         <h2 className="assessment-success-title">
-          Assessment Submitted Successfully!
+          {isEvaluation ? "Evaluation Submitted Successfully!" : "Assessment Submitted Successfully!"}
         </h2>
 
-        <p className="assessment-success-label">WELL DONE</p>
+        <p className="assessment-success-label">
+          {isEvaluation ? "THANK YOU" : "WELL DONE"}
+        </p>
 
         <p className="assessment-success-desc">
-          Go to Attempts to see your result
+          {isEvaluation
+            ? "Your evaluation and feedback have been recorded."
+            : "Go to Attempts to see your result"}
         </p>
 
         <button className="assessment-success-btn" onClick={onClose}>

@@ -38,14 +38,14 @@ export type LessonPayload = {
 export type QuestionPayload = {
   question_text: string;
   position: number;
-  question_type: 'multiple_choice' | 'true_false' | 'identification' | 'enumeration' | 'essay';
+  question_type: 'multiple_choice' | 'true_false' | 'identification' | 'enumeration' | 'essay' | 'evaluation';
   correct_answers: string[];
   choices: { choice_text: string; is_correct: boolean }[];
 };
 
 export type AssessmentPayload = {
   passing_score: number;
-  time_limit: number; // in seconds
+  time_limit: number | null; // in seconds
   questions: QuestionPayload[];
 };
 

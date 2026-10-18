@@ -17,6 +17,8 @@ import Skeleton from "../../components/ui/Skeleton/Skeleton";
 import { supabase } from "../../lib/supabase";
 import * as courseService from "../../services/courseCreatorService";
 import { FileBlockViewer } from "../../components/common/LessonCard/FileBlock";
+import { EvaluationFormView } from "../../components/common/Evaluation";
+import { parseEvaluationConfig } from "../../types/evaluation";
 import "./CourseOverview.css";
 
 interface CourseOverviewProps {
@@ -796,25 +798,70 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                           const questions = attemptInfo?.questions || [];
                           const answerMap = attemptInfo?.answerMap || {};
 
+                          // Determine if this assessment is an evaluation form
+                          const isEvaluationAssessment =
+                            selectedLesson.title?.toLowerCase().includes("evaluation") ||
+                            selectedLesson.title?.toLowerCase().includes("feedback") ||
+                            assessment?.title?.toLowerCase().includes("evaluation") ||
+                            assessment?.title?.toLowerCase().includes("feedback") ||
+                            questions.some((q: any) =>
+                              q.question_type === "evaluation" ||
+                              q.question_text?.toLowerCase().includes("evaluation") ||
+                              q.question_text?.toLowerCase().includes("feedback") ||
+                              (answerMap[q.id]?.text_answer && (
+                                typeof answerMap[q.id].text_answer === "object" ||
+                                String(answerMap[q.id].text_answer).includes("ratings") ||
+                                String(answerMap[q.id].text_answer).includes("feedback")
+                              ))
+                            );
+
                           return (
                             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                               {attempt ? (
-                                <div style={{ background: attempt.passed ? "rgba(46, 125, 50, 0.08)" : "rgba(211, 47, 47, 0.08)", border: `1.5px solid ${attempt.passed ? "#2E7D32" : "#D32F2F"}`, borderRadius: 12, padding: 16, marginBottom: 4 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                                    <span style={{ fontSize: 13, fontWeight: 700, color: attempt.passed ? "#2E7D32" : "#D32F2F" }}>
-                                      {attempt.passed ? "PASSED" : "FAILED"}
-                                    </span>
-                                    <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                                      Attempted: {new Date(attempt.attempted_at).toLocaleDateString()} {new Date(attempt.attempted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
+                                isEvaluationAssessment ? (
+                                  <div style={{
+                                    background: "rgba(255, 107, 0, 0.08)",
+                                    border: "1.5px solid #FF6B00",
+                                    borderRadius: 12,
+                                    padding: 16,
+                                    marginBottom: 4
+                                  }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                      <span style={{ fontSize: 13, fontWeight: 800, color: "#FF6B00", display: "flex", alignItems: "center", gap: 6, letterSpacing: 0.5 }}>
+                                        <CheckCircle2 size={16} color="#FF6B00" />
+                                        EVALUATION COMPLETED
+                                      </span>
+                                      <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                                        Submitted: {new Date(attempt.attempted_at).toLocaleDateString()} {new Date(attempt.attempted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: 20, fontWeight: 800, color: "var(--color-text-header)" }}>
+                                      Course Evaluation & Participant Feedback
+                                    </div>
+                                    <div style={{ fontSize: 12.5, color: "var(--color-text-muted)", marginTop: 4 }}>
+                                      Learner has submitted ratings for each evaluation statement and provided written feedback comments.
+                                    </div>
                                   </div>
-                                  <div style={{ fontSize: 24, fontWeight: 800, color: "var(--color-text-header)" }}>
-                                    Score: {attempt.score}% {assessment?.passing_score && <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-muted)" }}>(Passing score: {assessment.passing_score}%)</span>}
+                                ) : (
+                                  <div style={{ background: attempt.passed ? "rgba(46, 125, 50, 0.08)" : "rgba(211, 47, 47, 0.08)", border: `1.5px solid ${attempt.passed ? "#2E7D32" : "#D32F2F"}`, borderRadius: 12, padding: 16, marginBottom: 4 }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: attempt.passed ? "#2E7D32" : "#D32F2F" }}>
+                                        {attempt.passed ? "PASSED" : "FAILED"}
+                                      </span>
+                                      <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                                        Attempted: {new Date(attempt.attempted_at).toLocaleDateString()} {new Date(attempt.attempted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: 24, fontWeight: 800, color: "var(--color-text-header)" }}>
+                                      Score: {attempt.score}% {(assessment?.passing_score != null && assessment.passing_score > 0) ? (
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-muted)" }}>(Passing score: {assessment.passing_score}%)</span>
+                                      ) : null}
+                                    </div>
                                   </div>
-                                </div>
+                                )
                               ) : (
                                 <div style={{ padding: 16, background: "var(--color-bg-subtle)", borderRadius: 12, marginBottom: 4, color: "var(--color-text-muted)", fontSize: 13, textAlign: "center" }}>
-                                  Learner has not attempted this assessment yet.
+                                  {isEvaluationAssessment ? "Learner has not submitted this evaluation yet." : "Learner has not attempted this assessment yet."}
                                 </div>
                               )}
 
@@ -823,10 +870,10 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 2px" }}>
                                     <div style={{ fontSize: 14, fontWeight: 800, color: "var(--color-text-header)" }}>
-                                      Assessment Questions ({questions.length})
+                                      {isEvaluationAssessment ? "Submitted Evaluation & Feedback" : `Assessment Questions (${questions.length})`}
                                     </div>
                                     <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                                      {Object.keys(answerMap).length} of {questions.length} answered
+                                      {isEvaluationAssessment ? "Completed" : `${Object.keys(answerMap).length} of ${questions.length} answered`}
                                     </span>
                                   </div>
 
@@ -836,6 +883,17 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                     const userTextAns = ans?.text_answer;
                                     const hasSubmitted = ans !== undefined && (userChoiceId != null || (userTextAns != null && userTextAns !== ""));
 
+                                    const isEvalQ =
+                                      q.question_type === 'evaluation' ||
+                                      isEvaluationAssessment ||
+                                      q.question_text?.toLowerCase().includes('evaluation') ||
+                                      q.question_text?.toLowerCase().includes('feedback') ||
+                                      (userTextAns && (
+                                        typeof userTextAns === 'object' ||
+                                        String(userTextAns).includes('ratings') ||
+                                        String(userTextAns).includes('feedback')
+                                      ));
+
                                     return (
                                       <div key={q.id} style={{ border: "1px solid var(--color-border)", borderRadius: 12, padding: 16, background: "var(--color-surface)" }}>
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 12 }}>
@@ -843,8 +901,16 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                             <span style={{ color: "#FF6B00", marginRight: 6 }}>Q{qIdx + 1}.</span> {q.question_text}
                                           </div>
                                           {hasSubmitted ? (
-                                            <span style={{ padding: "2px 8px", borderRadius: 10, background: "#E8F5E9", color: "#2E7D32", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
-                                              Answered
+                                            <span style={{
+                                              padding: "2px 8px",
+                                              borderRadius: 10,
+                                              background: isEvalQ ? "rgba(255, 107, 0, 0.12)" : "#E8F5E9",
+                                              color: isEvalQ ? "#FF6B00" : "#2E7D32",
+                                              fontSize: 10,
+                                              fontWeight: 700,
+                                              whiteSpace: "nowrap"
+                                            }}>
+                                              {isEvalQ ? "Evaluation Submitted" : "Answered"}
                                             </span>
                                           ) : (
                                             <span style={{ padding: "2px 8px", borderRadius: 10, background: "var(--color-bg-subtle)", color: "var(--color-text-muted)", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -854,7 +920,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                         </div>
 
                                         {/* Multiple Choice & True/False */}
-                                        {(q.question_type === 'multiple_choice' || q.question_type === 'true_false' || !q.question_type) && (
+                                        {!isEvalQ && (q.question_type === 'multiple_choice' || q.question_type === 'true_false' || !q.question_type) && (
                                           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                                             {(q.assessment_choices || []).map((choice: any) => {
                                               const isUserChoice = userChoiceId != null && String(userChoiceId) === String(choice.id);
@@ -888,7 +954,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                         )}
 
                                         {/* Identification or Enumeration */}
-                                        {(q.question_type === 'identification' || q.question_type === 'enumeration') && (
+                                        {!isEvalQ && (q.question_type === 'identification' || q.question_type === 'enumeration') && (
                                           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                                             <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>Learner's Submitted Response:</div>
                                             <div style={{ padding: "10px 14px", borderRadius: 8, background: hasSubmitted ? "var(--color-bg)" : "var(--color-bg-subtle)", border: "1.5px solid var(--color-border)", fontSize: 14, fontWeight: 700, color: "var(--color-text-header)" }}>
@@ -903,7 +969,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                         )}
 
                                         {/* Essay */}
-                                        {q.question_type === 'essay' && (
+                                        {!isEvalQ && q.question_type === 'essay' && (
                                           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                                             <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>Learner's Essay Response:</div>
                                             <div style={{ 
@@ -914,6 +980,61 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                             </div>
                                           </div>
                                         )}
+
+                                        {/* Evaluation Form */}
+                                        {isEvalQ && (() => {
+                                          let evalAns: any = { ratings: {}, feedback: {} };
+                                          try {
+                                            if (userTextAns) {
+                                              evalAns = typeof userTextAns === 'object' ? userTextAns : JSON.parse(userTextAns);
+                                            }
+                                          } catch (e) {
+                                            console.error("Failed to parse evaluation answer", e);
+                                          }
+
+                                          const safeRatings = (evalAns && typeof evalAns.ratings === 'object') ? evalAns.ratings : {};
+                                          const safeFeedback = (evalAns && typeof evalAns.feedback === 'object') ? evalAns.feedback : {};
+
+                                          const evalConfig = parseEvaluationConfig(
+                                            q.evaluation_config ||
+                                            (Array.isArray(q.correct_answers) ? q.correct_answers[0] : q.correct_answers)
+                                          );
+
+                                          const ratedCount = Object.keys(safeRatings).length;
+                                          const feedbackCount = Object.values(safeFeedback).filter((v: any) => v && String(v).trim().length > 0).length;
+
+                                          return (
+                                            <div style={{ marginTop: 10 }}>
+                                              {/* Evaluation Stats Pill */}
+                                              <div style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 16,
+                                                flexWrap: "wrap",
+                                                marginBottom: 14,
+                                                padding: "10px 14px",
+                                                background: "rgba(255, 107, 0, 0.08)",
+                                                borderRadius: 8,
+                                                border: "1px solid rgba(255, 107, 0, 0.25)"
+                                              }}>
+                                                <div style={{ fontSize: 13, fontWeight: 700, color: "#FF6B00", display: "flex", alignItems: "center", gap: 6 }}>
+                                                  <CheckCircle2 size={16} color="#FF6B00" />
+                                                  <span>Ratings Submitted: <strong>{ratedCount}</strong> statement{ratedCount === 1 ? '' : 's'}</span>
+                                                </div>
+                                                <div style={{ fontSize: 13, fontWeight: 700, color: "#FF6B00", display: "flex", alignItems: "center", gap: 6 }}>
+                                                  <Edit3 size={16} color="#FF6B00" />
+                                                  <span>Written Feedback: <strong>{feedbackCount}</strong> comment{feedbackCount === 1 ? '' : 's'}</span>
+                                                </div>
+                                              </div>
+
+                                              <EvaluationFormView
+                                                config={evalConfig}
+                                                answers={{ ratings: safeRatings, feedback: safeFeedback }}
+                                                readOnly={true}
+                                              />
+                                            </div>
+                                          );
+                                        })()}
                                       </div>
                                     );
                                   })}
@@ -1046,6 +1167,28 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                       </div>
                                     </div>
                                   )}
+
+                                  {/* Evaluation Form */}
+                                  {q.question_type === 'evaluation' && (() => {
+                                    let evalAns: any = { ratings: {}, feedback: {} };
+                                    try {
+                                      if (userAns) {
+                                        evalAns = typeof userAns === 'object' ? userAns : JSON.parse(userAns);
+                                      }
+                                    } catch (e) {
+                                      console.error("Failed to parse evaluation answer", e);
+                                    }
+                                    const evalConfig = parseEvaluationConfig(q.correct_answers?.[0]);
+                                    return (
+                                      <div style={{ marginTop: 8 }}>
+                                        <EvaluationFormView
+                                          config={evalConfig}
+                                          answers={evalAns}
+                                          readOnly={true}
+                                        />
+                                      </div>
+                                    );
+                                  })()}
 
                                 </div>
                               );

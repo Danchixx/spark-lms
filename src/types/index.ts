@@ -137,7 +137,7 @@ export type AssessmentQuestion = {
   assessment_id: number;
   question_text: string;
   position: number;
-  question_type: 'multiple_choice' | 'true_false' | 'identification' | 'enumeration' | 'essay';
+  question_type: 'multiple_choice' | 'true_false' | 'identification' | 'enumeration' | 'essay' | 'evaluation';
   correct_answers: string[];
 };
 
@@ -210,3 +210,6 @@ export type NotificationPreferences = {
   announcements: boolean;
   weekly_digest: boolean;
 };
+
+// ─── Evaluation Forms ─────────────────────────────────────────
+export * from './evaluation';

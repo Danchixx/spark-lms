@@ -4,6 +4,8 @@ import { useAuth } from "../../../context/AuthContext";
 import Button from "../../ui/Button/Button";
 import { Check, X, CheckCircle } from "lucide-react";
 import { FileBlockViewer } from "./FileBlock";
+import { EvaluationFormView } from "../Evaluation/EvaluationFormView";
+import { parseEvaluationConfig } from "../../../types/evaluation";
 import "../../ui/RichTextEditor/RichTextEditor.css";
 
 interface HybridBlock {
@@ -243,6 +245,33 @@ export default function HybridLessonViewer({ lesson }: { lesson: any }) {
                   {revealed[block.id] && (
                     <div style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <CheckCircle size={16} color="#4CAF50" /> Answer saved for review.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Evaluation */}
+              {block.question.question_type === 'evaluation' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <EvaluationFormView
+                    config={parseEvaluationConfig((block.question as any).evaluation_config || block.question.correct_answers?.[0])}
+                    answers={responses[block.id] || { ratings: {}, feedback: {} }}
+                    onAnswerChange={(ans) => setResponses({ ...responses, [block.id]: ans })}
+                    readOnly={revealed[block.id]}
+                  />
+                  {!revealed[block.id] && (
+                    <Button 
+                      variant="primary" 
+                      rounded="pill" 
+                      onClick={() => saveResponse(block.id, responses[block.id] || { ratings: {}, feedback: {} })}
+                      style={{ marginTop: 8, alignSelf: 'flex-start' }}
+                    >
+                      Submit Evaluation
+                    </Button>
+                  )}
+                  {revealed[block.id] && (
+                    <div style={{ marginTop: 8, fontSize: 13, color: '#0d5c4d', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle size={16} color="#0d5c4d" /> Evaluation submitted.
                     </div>
                   )}
                 </div>
