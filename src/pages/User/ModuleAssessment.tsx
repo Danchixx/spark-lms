@@ -15,6 +15,7 @@ import { useCourseById } from "../../hooks/useCourses";
 import { supabase } from "../../lib/supabase";
 import PageTransition from "../../components/common/PageTransition";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
+import { parseEvaluationConfig } from "../../types/evaluation";
 
 // ── Timer & Attempts Config ────────────────────────────────────
 const DEFAULT_TIME_SECONDS = 15 * 60; // 15 minutes fallback
@@ -92,12 +93,27 @@ const ModuleAssessment = () => {
 
         setAssessmentId(assessmentData.id);
         setAssessmentTitle(assessmentData.title);
-        const timeLimitSeconds = assessmentData.time_limit || (15 * 60);
-        setAssessmentTimeLimit(timeLimitSeconds);
-        setTimeLeft(timeLimitSeconds);
-        setPassingScore(assessmentData.passing_score || 70);
+        // Get questions with choices
+        const { data: questionData, error: qErr } = await supabase
+          .from('assessment_questions')
+          .select(`
+            id, question_text, position, question_type, correct_answers,
+            assessment_choices ( id, choice_text, is_correct )
+          `)
+          .eq('assessment_id', assessmentData.id);
 
-        // Check user's previous attempts for lockout enforcement
+        if (qErr) throw qErr;
+
+        const isEval = (questionData || []).some((q: any) => q.question_type === 'evaluation') ||
+          assessmentData.title?.toLowerCase().includes('evaluation') ||
+          assessmentLesson.title?.toLowerCase().includes('evaluation');
+
+        const timeLimitSeconds = isEval ? null : (assessmentData.time_limit || (15 * 60));
+        setAssessmentTimeLimit(timeLimitSeconds);
+        setTimeLeft(timeLimitSeconds || 0);
+        setPassingScore(isEval ? 0 : (assessmentData.passing_score || 70));
+
+        // Check user's previous attempts for lockout enforcement (assessments only)
         if (user?.id) {
           const { data: dbAttempts } = await supabase
             .from('assessment_attempts')
@@ -112,7 +128,7 @@ const ModuleAssessment = () => {
             
             const hasPassed = activeAttempts.some((a: any) => a.passed || (a.score != null && a.score >= (assessmentData.passing_score || 70)));
             
-            if (activeAttempts.length >= MAX_ATTEMPTS && !hasPassed) {
+            if (!isEval && activeAttempts.length >= MAX_ATTEMPTS && !hasPassed) {
               setIsLockedOut(true);
               setLoadingAssessment(false);
               return;
@@ -120,28 +136,27 @@ const ModuleAssessment = () => {
           }
         }
 
-        // Get questions with choices
-        const { data: questionData, error: qErr } = await supabase
-          .from('assessment_questions')
-          .select(`
-            id, question_text, position, question_type, correct_answers,
-            assessment_choices ( id, choice_text, is_correct )
-          `)
-          .eq('assessment_id', assessmentData.id);
-
-        if (qErr) throw qErr;
-
         // 1. Shuffle Questions
         const shuffledQuestions = shuffleArray(questionData || []);
 
         // 2. Format and Shuffle Choices for each question
         const formattedQuestions = shuffledQuestions.map(q => {
-          const shuffledChoices = shuffleArray(q.assessment_choices || []);
+          const isEvalQuestion = q.question_type === 'evaluation' ||
+            isEval ||
+            q.question_text?.toLowerCase().includes('evaluation') ||
+            q.question_text?.toLowerCase().includes('feedback');
+
+          const shuffledChoices = isEvalQuestion
+            ? []
+            : shuffleArray(q.assessment_choices || []);
           return {
             id: q.id,
             question: q.question_text,
-            type: q.question_type || 'multiple_choice',
+            type: isEvalQuestion ? 'evaluation' : (q.question_type || 'multiple_choice'),
             correct_answers: q.correct_answers || [],
+            evaluation_config: isEvalQuestion
+              ? parseEvaluationConfig(q.correct_answers?.[0] || q.correct_answers)
+              : undefined,
             choices: shuffledChoices.map((c: any) => c.choice_text),
             choiceIds: shuffledChoices.map((c: any) => c.id),
             correctIndex: shuffledChoices.findIndex((c: any) => c.is_correct),
@@ -159,9 +174,13 @@ const ModuleAssessment = () => {
     fetchAssessment();
   }, [moduleData]);
 
+  const isEvaluation = questions.some(q => q.type === 'evaluation') ||
+    assessmentTitle?.toLowerCase().includes('evaluation') ||
+    moduleData?.title?.toLowerCase().includes('evaluation');
+
   // Start countdown
   useEffect(() => {
-    if (loadingAssessment || isLockedOut || questions.length === 0) return;
+    if (loadingAssessment || isLockedOut || questions.length === 0 || isEvaluation || !assessmentTimeLimit) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -172,14 +191,14 @@ const ModuleAssessment = () => {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [loadingAssessment, isLockedOut, questions.length]);
+  }, [loadingAssessment, isLockedOut, questions.length, isEvaluation, assessmentTimeLimit]);
 
   // When time hits 0
   useEffect(() => {
-    if (timeLeft === 0) {
+    if (!isEvaluation && assessmentTimeLimit && timeLeft === 0) {
       setShowTimeUpModal(true);
     }
-  }, [timeLeft]);
+  }, [timeLeft, isEvaluation, assessmentTimeLimit]);
 
   const isReady = !courseLoading && !loadingAssessment && courseData && moduleData;
 
@@ -229,6 +248,11 @@ const ModuleAssessment = () => {
           const allFound = correctAns.every((ca: string) => userAns.includes(ca));
           if (allFound) correct++;
         }
+      } else if (q.type === 'evaluation') {
+        // Evaluation form answers count as complete/passed once submitted
+        correct++;
+      } else if (q.type === 'essay') {
+        if (ans && String(ans).trim().length > 0) correct++;
       }
     }
     return Math.round((correct / totalQuestions) * 100) || 0;
@@ -237,7 +261,7 @@ const ModuleAssessment = () => {
   const saveAttempt = async (score: number) => {
     if (!assessmentId || !user?.id) return;
     try {
-      const isPassed = score >= passingScore;
+      const isPassed = isEvaluation ? true : score >= passingScore;
       const { data: attemptData, error: attemptErr } = await supabase.from('assessment_attempts').insert({
         assessment_id: assessmentId,
         user_id: user.id,
@@ -467,7 +491,9 @@ const ModuleAssessment = () => {
                   <>
                     <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Module {moduleIndex + 1}</span>
                     <span style={{ color: "#FF6B00", fontWeight: "600" }}>&gt;</span>
-                    <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>Assessment</span>
+                    <span style={{ fontWeight: 600, color: "var(--color-text-header)" }}>
+                      {isEvaluation ? "Course Evaluation" : "Assessment"}
+                    </span>
                   </>
                 ) : (
                   <Skeleton width={200} height={20} />
@@ -475,7 +501,7 @@ const ModuleAssessment = () => {
               </div>
 
               {/* Attempt Counter + Timer Badges */}
-              {isReady && totalQuestions > 0 && (
+              {isReady && totalQuestions > 0 && !isEvaluation && (
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{
                     display: "flex", alignItems: "center", gap: 6,
@@ -489,16 +515,18 @@ const ModuleAssessment = () => {
                     {pastAttempts.length === 2 && <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 800 }}> (Final)</span>}
                   </div>
 
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    background: timeLeft <= 60 ? "#dc2626" : "#FF6B00",
-                    color: "white", padding: "8px 20px", borderRadius: 99,
-                    fontSize: 16, fontWeight: 700,
-                    boxShadow: "0 4px 12px rgba(255, 107, 0, 0.3)"
-                  }}>
-                    <Timer size={18} />
-                    {formatTime(timeLeft)}
-                  </div>
+                  {assessmentTimeLimit && (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      background: timeLeft <= 60 ? "#dc2626" : "#FF6B00",
+                      color: "white", padding: "8px 20px", borderRadius: 99,
+                      fontSize: 16, fontWeight: 700,
+                      boxShadow: "0 4px 12px rgba(255, 107, 0, 0.3)"
+                    }}>
+                      <Timer size={18} />
+                      {formatTime(timeLeft)}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -526,47 +554,58 @@ const ModuleAssessment = () => {
 
                   {/* Left: Assessment Card */}
                   <AssessmentCard
-                    moduleName={`Module ${moduleIndex + 1} Assessment – ${assessmentTitle || moduleData.title}`}
-                currentQuestion={currentQuestion}
-                currentIndex={currentQIndex}
-                totalQuestions={totalQuestions}
-                selectedAnswer={answers[currentQIndex]}
-                onAnswerChange={handleAnswerChange}
-                onBack={handleBack}
-                onNext={handleNext}
-                onSubmit={handleSubmitClick}
-                onDotClick={setCurrentQIndex}
-                answers={answers}
-                isLastQuestion={currentQIndex === totalQuestions - 1}
-              />
+                    moduleName={isEvaluation ? (assessmentTitle || "Course Evaluation") : `Module ${moduleIndex + 1} Assessment – ${assessmentTitle || moduleData.title}`}
+                    currentQuestion={currentQuestion}
+                    currentIndex={currentQIndex}
+                    totalQuestions={totalQuestions}
+                    selectedAnswer={answers[currentQIndex]}
+                    onAnswerChange={handleAnswerChange}
+                    onBack={handleBack}
+                    onNext={handleNext}
+                    onSubmit={handleSubmitClick}
+                    onDotClick={setCurrentQIndex}
+                    answers={answers}
+                    isLastQuestion={currentQIndex === totalQuestions - 1}
+                    passingScore={passingScore}
+                  />
 
-              {/* Right: Assessment Info + Question Map */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {/* Right: Assessment Info + Question Map */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-                {/* Assessment Info */}
-                <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 16, borderBottom: "1px solid var(--color-border)", paddingBottom: 12 }}>
-                    Assessment Info
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "var(--color-text-muted)" }}>Total Questions:</span>
-                      <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>{totalQuestions}</span>
+                    {/* Assessment Info */}
+                    <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)", marginBottom: 16, borderBottom: "1px solid var(--color-border)", paddingBottom: 12 }}>
+                        {isEvaluation ? "Evaluation Info" : "Assessment Info"}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: "var(--color-text-muted)" }}>
+                            {isEvaluation ? "Sections:" : "Total Questions:"}
+                          </span>
+                          <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>{totalQuestions}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: "var(--color-text-muted)" }}>
+                            {isEvaluation ? "Completed:" : "Answered:"}
+                          </span>
+                          <span style={{ fontWeight: 700, color: "#FF6B00" }}>{answeredCount}/{totalQuestions}</span>
+                        </div>
+                        {!isEvaluation && (
+                          <>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "var(--color-text-muted)" }}>Passing Score:</span>
+                              <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>{passingScore}%</span>
+                            </div>
+                            {assessmentTimeLimit && (
+                              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                <span style={{ color: "var(--color-text-muted)" }}>Time Left:</span>
+                                <span style={{ fontWeight: 700, color: "#FF6B00" }}>{formatTime(timeLeft)}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "var(--color-text-muted)" }}>Answered:</span>
-                      <span style={{ fontWeight: 700, color: "#FF6B00" }}>{answeredCount}/{totalQuestions}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "var(--color-text-muted)" }}>Passing Score:</span>
-                      <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>70%</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "var(--color-text-muted)" }}>Time Left:</span>
-                      <span style={{ fontWeight: 700, color: "#FF6B00" }}>{formatTime(timeLeft)}</span>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Question Map */}
                 <div style={{ background: "var(--color-surface)", borderRadius: 12, padding: "20px", boxShadow: "var(--shadow)", border: "1px solid var(--color-border)" }}>
@@ -611,7 +650,7 @@ const ModuleAssessment = () => {
                     onClick={handleSubmitClick}
                     style={{ width: "100%", justifyContent: "center", fontWeight: 700 }}
                   >
-                    Submit Assessment
+                    {isEvaluation ? "Submit Evaluation" : "Submit Assessment"}
                   </Button>
                 </div>
               </div>
@@ -629,9 +668,10 @@ const ModuleAssessment = () => {
         onClose={() => setShowSubmitModal(false)}
         onConfirm={handleConfirmSubmit}
         hasUnanswered={hasUnanswered}
+        isEvaluation={isEvaluation}
       />
       <TimeUpModal isOpen={showTimeUpModal} onClose={handleTimeUpClose} />
-      <AssessmentSuccessModal isOpen={showSuccessModal} onClose={handleSuccessClose} />
+      <AssessmentSuccessModal isOpen={showSuccessModal} onClose={handleSuccessClose} isEvaluation={isEvaluation} />
     </>
   );
 };

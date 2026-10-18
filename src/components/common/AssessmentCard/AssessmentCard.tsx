@@ -1,4 +1,6 @@
 import Button from "../../ui/Button/Button";
+import { EvaluationFormView } from "../Evaluation/EvaluationFormView";
+import { parseEvaluationConfig } from "../../../types/evaluation";
 import "./AssessmentCard.css";
 
 interface AssessmentCardProps {
@@ -14,6 +16,7 @@ interface AssessmentCardProps {
   onDotClick: (idx: number) => void;
   answers: Record<number, any>;
   isLastQuestion: boolean;
+  passingScore?: number;
 }
 
 const AssessmentCard = ({
@@ -28,24 +31,31 @@ const AssessmentCard = ({
   onSubmit,
   onDotClick,
   answers,
-  isLastQuestion
+  isLastQuestion,
+  passingScore = 70,
 }: AssessmentCardProps) => {
   if (!currentQuestion) return null;
+
+  const isEvaluation = currentQuestion.type === 'evaluation';
 
   return (
     <div className="assessment-card-wrapper">
       <div className="assessment-card-header">
         <h2>{moduleName}</h2>
-        <p>Answer all questions. Passing score is 70%</p>
+        <p>{isEvaluation ? "Please complete this evaluation form" : `Answer all questions. Passing score is ${passingScore}%`}</p>
       </div>
 
       <div className="assessment-question-label">
-        QUESTION {currentIndex + 1} OF {totalQuestions}
+        {isEvaluation
+          ? `SECTION ${currentIndex + 1} OF ${totalQuestions} · EVALUATION`
+          : `QUESTION ${currentIndex + 1} OF ${totalQuestions}`}
       </div>
 
-      <div className="assessment-question-text">
-        {currentQuestion.question}
-      </div>
+      {!isEvaluation && (
+        <div className="assessment-question-text">
+          {currentQuestion.question}
+        </div>
+      )}
 
       <div className="assessment-choices">
         {(currentQuestion.type === 'multiple_choice' || currentQuestion.type === 'true_false') && (
@@ -100,6 +110,15 @@ const AssessmentCard = ({
             value={(selectedAnswer as string) || ""}
             onChange={(e) => onAnswerChange(e.target.value)}
             style={{ resize: "vertical" }}
+          />
+        )}
+
+        {isEvaluation && (
+          <EvaluationFormView
+            config={currentQuestion.evaluation_config || parseEvaluationConfig(currentQuestion.correct_answers?.[0])}
+            answers={selectedAnswer || { ratings: {}, feedback: {} }}
+            onAnswerChange={(newAns) => onAnswerChange(newAns)}
+            readOnly={false}
           />
         )}
       </div>

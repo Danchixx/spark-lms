@@ -5,9 +5,10 @@ type SubmitAssessmentModalProps = {
   onClose: () => void;
   onConfirm: () => void;
   hasUnanswered: boolean;
+  isEvaluation?: boolean;
 };
 
-const SubmitAssessmentModal = ({ isOpen, onClose, onConfirm, hasUnanswered }: SubmitAssessmentModalProps) => {
+const SubmitAssessmentModal = ({ isOpen, onClose, onConfirm, hasUnanswered, isEvaluation }: SubmitAssessmentModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -16,15 +17,19 @@ const SubmitAssessmentModal = ({ isOpen, onClose, onConfirm, hasUnanswered }: Su
         <button className="submit-assessment-close" onClick={onClose}>✕</button>
 
         <h2 className="submit-assessment-title">
-          Are You Sure You Want to Submit Assessment?
+          {isEvaluation ? "Are You Sure You Want to Submit Evaluation?" : "Are You Sure You Want to Submit Assessment?"}
         </h2>
 
         <p className={`submit-assessment-warning ${hasUnanswered ? "submit-assessment-warning--unanswered" : "submit-assessment-warning--complete"}`}>
-          {hasUnanswered ? "YOU HAVE UNANSWERED QUESTIONS" : "YOU HAVE ANSWERED ALL QUESTIONS"}
+          {isEvaluation
+            ? (hasUnanswered ? "YOU HAVE UNANSWERED SECTIONS" : "YOU HAVE COMPLETED ALL SECTIONS")
+            : (hasUnanswered ? "YOU HAVE UNANSWERED QUESTIONS" : "YOU HAVE ANSWERED ALL QUESTIONS")}
         </p>
 
         <p className="submit-assessment-desc">
-          Submitting this form will count as an attempt, do you still want to proceed?
+          {isEvaluation
+            ? "Your responses and feedback will be submitted for this course."
+            : "Submitting this form will count as an attempt, do you still want to proceed?"}
         </p>
 
         <div className="submit-assessment-actions">

@@ -17,6 +17,8 @@ import PageTransition from "../../components/common/PageTransition";
 import RichTextEditor from "../../components/ui/RichTextEditor/RichTextEditor";
 import { FileBlockEditor, createEmptyFileBlock } from "../../components/common/LessonCard/FileBlock";
 import * as courseService from "../../services/courseCreatorService";
+import { EvaluationBuilder } from "../../components/common/Evaluation";
+import { EvaluationFormConfig, createDefaultEvaluationConfig, parseEvaluationConfig } from "../../types/evaluation";
 import "./LessonEditor.css";
 
 // ─── Types ──────────────────────────────────────────────────
@@ -30,9 +32,10 @@ type EditorQuestion = {
   id: number;
   question_text: string;
   position: number;
-  question_type: "multiple_choice" | "true_false" | "identification" | "enumeration" | "essay";
+  question_type: "multiple_choice" | "true_false" | "identification" | "enumeration" | "essay" | "evaluation";
   choices: EditorChoice[]; // For multiple choice & true/false
   correct_answers: string[]; // For identification & enumeration
+  evaluation_config?: EvaluationFormConfig;
 };
 
 type EditorLesson = {
@@ -148,6 +151,9 @@ const LessonEditor = () => {
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [saving, setSaving] = useState(false);
 
+  const isEvaluation = questions.some((q) => q.question_type === "evaluation") ||
+    lessonTitle.toLowerCase().includes("evaluation");
+
   const currentModule: EditorModule = moduleData || { id: 0, title: "Module", lessons: [] };
   const allModulesList: EditorModule[] = allModules || [];
 
@@ -173,6 +179,9 @@ const LessonEditor = () => {
               is_correct: c.is_correct,
             })),
             correct_answers: q.correct_answers || [],
+            evaluation_config: q.question_type === "evaluation"
+              ? parseEvaluationConfig(q.correct_answers?.[0])
+              : undefined,
           })));
         }
       } catch (err) {
@@ -184,16 +193,18 @@ const LessonEditor = () => {
 
   // ─── Assessment Actions ────────────────────────────────────
   const addQuestion = () => {
+    const isEvaluationForm = isEvaluation;
     const newQ: EditorQuestion = {
       id: ++nextQuestionId,
-      question_text: "",
+      question_text: isEvaluationForm ? "Course Evaluation Form" : "",
       position: questions.length + 1,
-      question_type: "multiple_choice",
-      choices: [
+      question_type: isEvaluationForm ? "evaluation" : "multiple_choice",
+      choices: isEvaluationForm ? [] : [
         { id: ++nextChoiceId, choice_text: "", is_correct: true },
         { id: ++nextChoiceId, choice_text: "", is_correct: false },
       ],
-      correct_answers: [],
+      correct_answers: isEvaluationForm ? [JSON.stringify(createDefaultEvaluationConfig())] : [],
+      evaluation_config: isEvaluationForm ? createDefaultEvaluationConfig() : undefined,
     };
     setQuestions([...questions, newQ]);
   };
@@ -254,6 +265,14 @@ const LessonEditor = () => {
       } else if (type === "essay") {
         updatedQ.choices = [];
         updatedQ.correct_answers = [];
+      } else if (type === "evaluation") {
+        updatedQ.choices = [];
+        const defaultEval = createDefaultEvaluationConfig();
+        updatedQ.evaluation_config = defaultEval;
+        updatedQ.correct_answers = [JSON.stringify(defaultEval)];
+        if (!updatedQ.question_text || updatedQ.question_text.trim() === "") {
+          updatedQ.question_text = "Course Evaluation Form";
+        }
       } else if (type === "multiple_choice" && q.choices.length === 0) {
         updatedQ.choices = [
           { id: ++nextChoiceId, choice_text: "", is_correct: true },
@@ -302,13 +321,15 @@ const LessonEditor = () => {
       // 2. Save assessment if applicable
       if (lessonType === "assessment") {
         await courseService.saveAssessment(Number(lessonId), lessonTitle, {
-          passing_score: passingScore,
-          time_limit: timeLimit * 60,
+          passing_score: isEvaluation ? 0 : passingScore,
+          time_limit: isEvaluation ? null : (timeLimit * 60),
           questions: questions.map((q) => ({
-            question_text: q.question_text,
+            question_text: q.question_text || (q.question_type === "evaluation" ? "Course Evaluation Form" : "Untitled Question"),
             position: q.position,
             question_type: q.question_type,
-            correct_answers: q.correct_answers,
+            correct_answers: q.question_type === "evaluation"
+              ? [JSON.stringify(q.evaluation_config || parseEvaluationConfig(q.correct_answers?.[0]))]
+              : q.correct_answers,
             choices: q.choices.map((c) => ({
               choice_text: c.choice_text,
               is_correct: c.is_correct,
@@ -570,6 +591,9 @@ const LessonEditor = () => {
                                     newAnswers = [''];
                                   } else if (type === 'enumeration') {
                                     newAnswers = ['', '', ''];
+                                  } else if (type === 'evaluation') {
+                                    const defaultEval = createDefaultEvaluationConfig();
+                                    newAnswers = [JSON.stringify(defaultEval)];
                                   }
                                   const newBlocks = [...hybridBlocks];
                                   newBlocks[index] = { 
@@ -585,6 +609,7 @@ const LessonEditor = () => {
                                 <option value="identification">Identification</option>
                                 <option value="enumeration">Enumeration</option>
                                 <option value="essay">Essay</option>
+                                <option value="evaluation">Evaluation</option>
                               </select>
 
                               {/* Render Choices based on type */}
@@ -704,6 +729,26 @@ const LessonEditor = () => {
                                 </div>
                               )}
 
+                              {block.question.question_type === 'evaluation' && (
+                                <div style={{ marginTop: 12 }}>
+                                  <EvaluationBuilder
+                                    config={block.question.evaluation_config || parseEvaluationConfig(block.question.correct_answers?.[0])}
+                                    onChange={(newConfig) => {
+                                      const newBlocks = [...hybridBlocks];
+                                      newBlocks[index] = {
+                                        ...block,
+                                        question: {
+                                          ...block.question,
+                                          evaluation_config: newConfig,
+                                          correct_answers: [JSON.stringify(newConfig)],
+                                        }
+                                      };
+                                      setHybridBlocks(newBlocks);
+                                    }}
+                                  />
+                                </div>
+                              )}
+
                             </div>
                           )}
                         </div>
@@ -741,42 +786,61 @@ const LessonEditor = () => {
                   {/* ─── Assessment Builder ────────────────────── */}
                   {lessonType === "assessment" && (
                     <div>
-                      {/* Assessment Config */}
+                      {/* Assessment / Evaluation Config */}
                       <div className="editor-assessment-header">
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <PenTool size={18} color="#FF6B00" />
-                          <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text-header)" }}>Assessment Builder</span>
+                          <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text-header)" }}>
+                            {isEvaluation ? "Course Evaluation Builder" : "Assessment Builder"}
+                          </span>
                         </div>
 
-                        <div className="editor-assessment-config">
-                          <div className="editor-assessment-config-field">
-                            <label className="editor-assessment-config-label">
-                              <Target size={12} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />
-                              Passing Score (%)
-                            </label>
-                            <input
-                              className="editor-assessment-config-input"
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={passingScore}
-                              onChange={(e) => setPassingScore(Number(e.target.value))}
-                            />
+                        {!isEvaluation ? (
+                          <div className="editor-assessment-config">
+                            <div className="editor-assessment-config-field">
+                              <label className="editor-assessment-config-label">
+                                <Target size={12} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />
+                                Passing Score (%)
+                              </label>
+                              <input
+                                className="editor-assessment-config-input"
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={passingScore}
+                                onChange={(e) => setPassingScore(Number(e.target.value))}
+                              />
+                            </div>
+                            <div className="editor-assessment-config-field">
+                              <label className="editor-assessment-config-label">
+                                <Timer size={12} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />
+                                Time Limit (minutes)
+                              </label>
+                              <input
+                                className="editor-assessment-config-input"
+                                type="number"
+                                min={1}
+                                value={timeLimit}
+                                onChange={(e) => setTimeLimit(Number(e.target.value))}
+                              />
+                            </div>
                           </div>
-                          <div className="editor-assessment-config-field">
-                            <label className="editor-assessment-config-label">
-                              <Timer size={12} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />
-                              Time Limit (minutes)
-                            </label>
-                            <input
-                              className="editor-assessment-config-input"
-                              type="number"
-                              min={1}
-                              value={timeLimit}
-                              onChange={(e) => setTimeLimit(Number(e.target.value))}
-                            />
+                        ) : (
+                          <div style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "6px 14px",
+                            borderRadius: 20,
+                            background: "rgba(255, 107, 0, 0.08)",
+                            color: "#FF6B00",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            border: "1px solid rgba(255, 107, 0, 0.2)",
+                          }}>
+                            Evaluation · No passing score or time limit
                           </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* Questions */}
@@ -805,6 +869,7 @@ const LessonEditor = () => {
                               <option value="identification">Identification</option>
                               <option value="enumeration">Enumeration</option>
                               <option value="essay">Essay</option>
+                              <option value="evaluation">Evaluation</option>
                             </select>
                             <button className="editor-question-delete" onClick={() => deleteQuestion(q.id)} title="Delete question">
                               <Trash2 size={14} />
@@ -904,6 +969,25 @@ const LessonEditor = () => {
                                 They require manual grading by an instructor.
                               </div>
                             )}
+
+                            {/* EVALUATION */}
+                            {q.question_type === "evaluation" && (
+                              <div style={{ marginTop: 12 }}>
+                                <EvaluationBuilder
+                                  config={q.evaluation_config || parseEvaluationConfig(q.correct_answers?.[0])}
+                                  onChange={(newConfig) => {
+                                    setQuestions(questions.map((question) => {
+                                      if (question.id !== q.id) return question;
+                                      return {
+                                        ...question,
+                                        evaluation_config: newConfig,
+                                        correct_answers: [JSON.stringify(newConfig)],
+                                      };
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -953,17 +1037,23 @@ const LessonEditor = () => {
                     {lessonType === "assessment" && (
                       <>
                         <div className="editor-info-row">
-                          <span className="editor-info-label">Questions</span>
+                          <span className="editor-info-label">
+                            {isEvaluation ? "Sections" : "Questions"}
+                          </span>
                           <span className="editor-info-value">{questions.length}</span>
                         </div>
-                        <div className="editor-info-row">
-                          <span className="editor-info-label">Pass Score</span>
-                          <span className="editor-info-value">{passingScore}%</span>
-                        </div>
-                        <div className="editor-info-row">
-                          <span className="editor-info-label">Time Limit</span>
-                          <span className="editor-info-value">{timeLimit} min</span>
-                        </div>
+                        {!isEvaluation && (
+                          <>
+                            <div className="editor-info-row">
+                              <span className="editor-info-label">Pass Score</span>
+                              <span className="editor-info-value">{passingScore}%</span>
+                            </div>
+                            <div className="editor-info-row">
+                              <span className="editor-info-label">Time Limit</span>
+                              <span className="editor-info-value">{timeLimit} min</span>
+                            </div>
+                          </>
+                        )}
                       </>
                     )}
                   </div>

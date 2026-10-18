@@ -1,0 +1,418 @@
+/* ─── Evaluation Component Styles ────────────────────────────── */
+
+.evaluation-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: inherit;
+  color: var(--color-text);
+}
+
+/* ─── Header & Part Styles ────────────────────────────────── */
+
+.eval-part-block {
+  margin-bottom: 32px;
+}
+
+.eval-part-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #FF6B00;
+  margin-bottom: 8px;
+  letter-spacing: -0.2px;
+}
+
+:root[data-theme="dark"] .eval-part-title,
+.dark .eval-part-title {
+  color: #FF8533;
+}
+
+.eval-instruction {
+  font-size: 13.5px;
+  color: var(--color-text);
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.eval-scale-legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.eval-scale-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ─── Section Styles ──────────────────────────────────────── */
+
+.eval-section-block {
+  margin-bottom: 24px;
+}
+
+.eval-section-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #FF6B00;
+  margin-bottom: 10px;
+}
+
+:root[data-theme="dark"] .eval-section-title,
+.dark .eval-section-title {
+  color: #FF8533;
+}
+
+/* ─── Rating Table ────────────────────────────────────────── */
+
+.eval-table-wrapper {
+  overflow-x: auto;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.eval-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1.5px solid #111827;
+  font-size: 13px;
+  background: var(--color-surface);
+}
+
+:root[data-theme="dark"] .eval-table,
+.dark .eval-table {
+  border-color: #475569;
+  background: var(--color-surface);
+}
+
+.eval-table th,
+.eval-table td {
+  border: 1px solid #111827;
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+
+:root[data-theme="dark"] .eval-table th,
+:root[data-theme="dark"] .eval-table td,
+.dark .eval-table th,
+.dark .eval-table td {
+  border-color: #475569;
+}
+
+.eval-table th {
+  font-weight: 800;
+  color: var(--color-text-header);
+  background: var(--color-bg-subtle);
+  text-align: center;
+}
+
+.eval-table th.statement-col {
+  text-align: left;
+  width: auto;
+}
+
+.eval-table th.rating-col {
+  width: 44px;
+  min-width: 40px;
+  font-size: 14px;
+}
+
+.eval-table td.statement-cell {
+  text-align: left;
+  line-height: 1.45;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.eval-table td.rating-cell {
+  text-align: center;
+  padding: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.eval-table td.rating-cell:hover:not(.read-only) {
+  background: rgba(255, 107, 0, 0.08);
+}
+
+.eval-checkbox-box {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #334155;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  color: #FF6B00;
+  background: var(--color-input-bg);
+  transition: all 0.15s;
+  user-select: none;
+}
+
+:root[data-theme="dark"] .eval-checkbox-box,
+.dark .eval-checkbox-box {
+  border-color: #94a3b8;
+  color: #FF8533;
+}
+
+.eval-checkbox-box.checked {
+  background: #FF6B00;
+  border-color: #FF6B00;
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .eval-checkbox-box.checked,
+.dark .eval-checkbox-box.checked {
+  background: #FF6B00;
+  border-color: #FF6B00;
+  color: #ffffff;
+}
+
+/* ─── Open-Ended Feedback ─────────────────────────────────── */
+
+.eval-feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 14px;
+}
+
+.eval-feedback-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eval-feedback-prompt {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text-header);
+  line-height: 1.45;
+}
+
+.eval-feedback-input {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 13.5px;
+  outline: none;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.eval-feedback-input:focus {
+  border-color: #FF6B00;
+}
+
+/* Lined style matching paper look when desired */
+.eval-feedback-lines {
+  border: none;
+  border-bottom: 1.5px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.eval-feedback-lines:focus {
+  border-bottom-color: #FF6B00;
+}
+
+.eval-footer-message {
+  margin-top: 32px;
+  padding: 16px 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  border-top: 1px dashed var(--color-border);
+}
+
+/* ─── Evaluation Builder / Editor Styles ───────────────────── */
+
+.eval-builder-wrapper {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.eval-builder-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.eval-builder-tab-btn {
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.eval-builder-tab-btn.active {
+  background: #FF6B00;
+  color: #ffffff;
+}
+
+.eval-builder-tab-btn:hover:not(.active) {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+.eval-card-part {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.eval-card-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eval-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.eval-input-text {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  outline: none;
+}
+
+.eval-input-text:focus {
+  border-color: #FF6B00;
+}
+
+.eval-btn-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.eval-btn-icon:hover {
+  background: #FFF0F0;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.eval-btn-add {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: #FF6B00;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.eval-btn-add:hover {
+  background: rgba(255, 107, 0, 0.08);
+  border-color: #FF6B00;
+}
+
+/* Narrow inputs (numbers/letters) must not stretch */
+.eval-input-text[style*="width"] { flex: 0 0 auto; }
+
+/* Rating dropdown */
+.eval-table th.eval-rating-head { width: 110px; }
+.eval-table td.eval-rating-cell { text-align: center; cursor: default; }
+.eval-rating-select {
+  min-width: 72px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: inherit;
+  text-align: center;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-input-bg);
+  color: #FF6B00;
+  cursor: pointer;
+  outline: none;
+}
+.eval-rating-select:focus { border-color: #FF6B00; }
+:root[data-theme="dark"] .eval-rating-select, .dark .eval-rating-select { color: #FF8533; }
+.eval-rating-readonly {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: rgba(255, 107, 0, 0.1);
+  border: 1px solid rgba(255, 107, 0, 0.3);
+  font-size: 14px;
+  font-weight: 800;
+  color: #FF6B00;
+}
+:root[data-theme="dark"] .eval-rating-readonly,
+.dark .eval-rating-readonly {
+  background: rgba(255, 107, 0, 0.18);
+  border-color: rgba(255, 107, 0, 0.4);
+  color: #FF8533;
+}
+

@@ -11,6 +11,8 @@ import { useCourseById } from "../../hooks/useCourses";
 import { supabase } from "../../lib/supabase";
 import PageTransition from "../../components/common/PageTransition";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
+import { EvaluationFormView } from "../../components/common/Evaluation";
+import { parseEvaluationConfig, EvaluationAnswer } from "../../types/evaluation";
 
 const MAX_ATTEMPTS = 3;
 
@@ -115,6 +117,10 @@ const ModuleAttempts = () => {
 
   const isReady = !courseLoading && !loadingAttempts && courseData && moduleData;
 
+  const isEvaluationModule = assessmentTitle?.toLowerCase().includes('evaluation') ||
+    moduleData?.title?.toLowerCase().includes('evaluation') ||
+    reviewQuestions.some((q: any) => q.question_type === 'evaluation');
+
   const hasPassingAttempt = attempts.some((a) => a.score >= passingScore);
   const bestScore = attempts.length > 0 ? Math.max(...attempts.map((a) => a.score)) : 0;
 
@@ -164,6 +170,17 @@ const ModuleAttempts = () => {
   // Helper: check correctness of learner's answer
   const checkIsCorrect = (q: any, ans: any) => {
     if (!ans) return false;
+    const isEval = q.question_type === 'evaluation' ||
+      q.question_text?.toLowerCase().includes('evaluation') ||
+      q.question_text?.toLowerCase().includes('feedback') ||
+      (ans?.text_answer && (
+        typeof ans.text_answer === 'object' ||
+        String(ans.text_answer).includes('ratings') ||
+        String(ans.text_answer).includes('feedback')
+      ));
+    if (isEval) {
+      return true;
+    }
     if (q.question_type === 'multiple_choice' || q.question_type === 'true_false' || !q.question_type) {
       const chosenChoice = (q.assessment_choices || []).find((c: any) => String(c.id) === String(ans.choice_id));
       return !!chosenChoice?.is_correct;
@@ -273,19 +290,22 @@ const ModuleAttempts = () => {
                     Module {moduleIndex + 1} Assessment — {assessmentTitle || moduleData?.title}
                   </h2>
                   <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>
-                    Attempt {reviewAttempt.id} taken on {reviewAttempt.date} at {reviewAttempt.time} · Passing score: <strong style={{ color: "#FF6B00" }}>{passingScore}%</strong>
+                    Attempt {reviewAttempt.id} taken on {reviewAttempt.date} at {reviewAttempt.time}
+                    {!isEvaluationModule && <> · Passing score: <strong style={{ color: "#FF6B00" }}>{passingScore}%</strong></>}
                   </p>
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{
                     display: "inline-flex", alignItems: "center", gap: 8,
-                    background: "#e0ffec", color: "#27ae60",
+                    background: isEvaluationModule ? "rgba(255, 107, 0, 0.1)" : "#e0ffec",
+                    color: isEvaluationModule ? "#FF6B00" : "#27ae60",
                     padding: "8px 20px", borderRadius: 99,
-                    fontWeight: 700, fontSize: 14, border: "1px solid #a3dfb8"
+                    fontWeight: 700, fontSize: 14,
+                    border: isEvaluationModule ? "1px solid rgba(255, 107, 0, 0.25)" : "1px solid #a3dfb8"
                   }}>
-                    <CheckCircle2 size={16} color="#27ae60" />
-                    Score: {reviewAttempt.score}% (Passed)
+                    <CheckCircle2 size={16} color={isEvaluationModule ? "#FF6B00" : "#27ae60"} />
+                    {isEvaluationModule ? "Evaluation Completed" : `Score: ${reviewAttempt.score}% (Passed)`}
                   </div>
                   <Button variant="outline" size="sm" rounded="pill" onClick={() => setReviewAttempt(null)}>
                     Back to Attempts
@@ -315,6 +335,17 @@ const ModuleAttempts = () => {
                 const currentQuestion = reviewQuestions[currentQIndex];
                 const currentAnswer = currentQuestion ? reviewAnswersMap[currentQuestion.id] : null;
                 const isCurrentCorrect = currentQuestion ? checkIsCorrect(currentQuestion, currentAnswer) : false;
+                const isCurrentEval = currentQuestion ? (
+                  currentQuestion.question_type === 'evaluation' ||
+                  isEvaluationModule ||
+                  currentQuestion.question_text?.toLowerCase().includes('evaluation') ||
+                  currentQuestion.question_text?.toLowerCase().includes('feedback') ||
+                  (currentAnswer?.text_answer && (
+                    typeof currentAnswer.text_answer === 'object' ||
+                    String(currentAnswer.text_answer).includes('ratings') ||
+                    String(currentAnswer.text_answer).includes('feedback')
+                  ))
+                ) : false;
                 const correctCount = reviewQuestions.filter((q) => checkIsCorrect(q, reviewAnswersMap[q.id])).length;
                 const incorrectCount = reviewQuestions.length - correctCount;
 
@@ -329,120 +360,153 @@ const ModuleAttempts = () => {
                       {/* Question Top Meta */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                         <div style={{ fontSize: 12, fontWeight: 800, color: "#FF6B00", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                          QUESTION {currentQIndex + 1} OF {reviewQuestions.length}
+                          {isCurrentEval ? "EVALUATION FORM" : `QUESTION ${currentQIndex + 1} OF ${reviewQuestions.length}`}
                         </div>
-                        <div>
-                          {isCurrentCorrect ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#e0ffec", color: "#27ae60", padding: "4px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700 }}>
-                              <CheckCircle2 size={14} /> Correct (+1)
-                            </span>
-                          ) : (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fee2e2", color: "#dc2626", padding: "4px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700 }}>
-                              <XCircle size={14} /> Incorrect (0)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Question Text */}
-                      <div style={{ fontSize: 17, fontWeight: 600, color: "var(--color-text-header)", lineHeight: 1.5, marginBottom: 28 }}>
-                        {currentQuestion.question_text}
-                      </div>
-
-                      {/* Choices / Answers */}
-                      {(currentQuestion.question_type === 'multiple_choice' || currentQuestion.question_type === 'true_false' || !currentQuestion.question_type) && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
-                          {(currentQuestion.assessment_choices || []).map((choice: any, cIdx: number) => {
-                            const isUserChoice = String(currentAnswer?.choice_id) === String(choice.id);
-                            const isCorrectChoice = !!choice.is_correct;
-
-                            let border = "1px solid var(--color-border)";
-                            let bg = "var(--color-bg-muted)";
-                            let textColor = "var(--color-text)";
-                            let badge = null;
-
-                            if (isUserChoice && isCorrectChoice) {
-                              border = "2px solid #22c55e";
-                              bg = "rgba(34, 197, 94, 0.08)";
-                              textColor = "#15803d";
-                              badge = (
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#22c55e", color: "white", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
-                                  <Check size={13} strokeWidth={3} /> Your Answer (Correct)
+                            <div>
+                              {isCurrentEval ? (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255, 107, 0, 0.12)", color: "#FF6B00", padding: "4px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700 }}>
+                                  <CheckCircle2 size={14} /> Evaluation Completed
                                 </span>
-                              );
-                            } else if (isUserChoice && !isCorrectChoice) {
-                              border = "2px solid #ef4444";
-                              bg = "rgba(239, 68, 68, 0.08)";
-                              textColor = "#b91c1c";
-                              badge = (
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ef4444", color: "white", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
-                                  <X size={13} strokeWidth={3} /> Your Answer (Incorrect)
+                              ) : isCurrentCorrect ? (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#e0ffec", color: "#27ae60", padding: "4px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700 }}>
+                                  <CheckCircle2 size={14} /> Correct (+1)
                                 </span>
-                              );
-                            } else if (isCorrectChoice) {
-                              border = "2px dashed #22c55e";
-                              bg = "rgba(34, 197, 94, 0.04)";
-                              textColor = "#166534";
-                              badge = (
-                                <span style={{ color: "#16a34a", fontSize: 12, fontWeight: 700 }}>
-                                  ✓ Correct Answer
+                              ) : (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fee2e2", color: "#dc2626", padding: "4px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700 }}>
+                                  <XCircle size={14} /> Incorrect (0)
                                 </span>
-                              );
-                            }
-
-                            return (
-                              <div
-                                key={choice.id || cIdx}
-                                style={{
-                                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                                  padding: "14px 18px", borderRadius: 10, border, background: bg,
-                                  transition: "all 0.15s ease", gap: 12
-                                }}
-                              >
-                                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                                  <div style={{
-                                    width: 22, height: 22, borderRadius: "50%",
-                                    border: `2px solid ${isUserChoice ? (isCorrectChoice ? '#22c55e' : '#ef4444') : (isCorrectChoice ? '#22c55e' : 'var(--color-border)')}`,
-                                    background: isUserChoice ? (isCorrectChoice ? '#22c55e' : '#ef4444') : 'transparent',
-                                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                                  }}>
-                                    {isUserChoice && <span style={{ color: "white", fontSize: 11, fontWeight: 800 }}>✓</span>}
-                                  </div>
-                                  <span style={{ fontSize: 14, fontWeight: isUserChoice ? 700 : 500, color: textColor }}>
-                                    {choice.choice_text}
-                                  </span>
-                                </div>
-                                {badge}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Identification / Enumeration / Essay */}
-                      {(currentQuestion.question_type === 'identification' || currentQuestion.question_type === 'enumeration' || currentQuestion.question_type === 'essay') && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)" }}>
-                            Your Submitted Response:
+                              )}
+                            </div>
                           </div>
-                          <div style={{
-                            padding: "14px 18px", borderRadius: 10,
-                            border: `2px solid ${isCurrentCorrect ? '#22c55e' : '#ef4444'}`,
-                            background: isCurrentCorrect ? 'rgba(34, 197, 94, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                            fontSize: 14, fontWeight: 700, color: isCurrentCorrect ? '#15803d' : '#b91c1c'
-                          }}>
-                            {currentAnswer?.text_answer || <span style={{ color: "var(--color-text-muted)", fontStyle: "italic" }}>No answer submitted</span>}
-                          </div>
-                          {currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0 && (
-                            <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(34, 197, 94, 0.06)", borderLeft: "4px solid #22c55e" }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "#166534", textTransform: "uppercase", marginBottom: 2 }}>Correct Answer:</div>
-                              <div style={{ fontSize: 14, fontWeight: 600, color: "#15803d" }}>
-                                {Array.isArray(currentQuestion.correct_answers) ? currentQuestion.correct_answers.join(", ") : String(currentQuestion.correct_answers)}
-                              </div>
+
+                          {/* Question Text */}
+                          {!isCurrentEval && (
+                            <div style={{ fontSize: 17, fontWeight: 600, color: "var(--color-text-header)", lineHeight: 1.5, marginBottom: 28 }}>
+                              {currentQuestion.question_text}
                             </div>
                           )}
-                        </div>
-                      )}
+
+                          {/* Choices / Answers */}
+                          {!isCurrentEval && (currentQuestion.question_type === 'multiple_choice' || currentQuestion.question_type === 'true_false' || !currentQuestion.question_type) && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+                              {(currentQuestion.assessment_choices || []).map((choice: any, cIdx: number) => {
+                                const isUserChoice = String(currentAnswer?.choice_id) === String(choice.id);
+                                const isCorrectChoice = !!choice.is_correct;
+
+                                let border = "1px solid var(--color-border)";
+                                let bg = "var(--color-bg-muted)";
+                                let textColor = "var(--color-text)";
+                                let badge = null;
+
+                                if (isUserChoice && isCorrectChoice) {
+                                  border = "2px solid #22c55e";
+                                  bg = "rgba(34, 197, 94, 0.08)";
+                                  textColor = "#15803d";
+                                  badge = (
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#22c55e", color: "white", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
+                                      <Check size={13} strokeWidth={3} /> Your Answer (Correct)
+                                    </span>
+                                  );
+                                } else if (isUserChoice && !isCorrectChoice) {
+                                  border = "2px solid #ef4444";
+                                  bg = "rgba(239, 68, 68, 0.08)";
+                                  textColor = "#b91c1c";
+                                  badge = (
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ef4444", color: "white", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
+                                      <X size={13} strokeWidth={3} /> Your Answer (Incorrect)
+                                    </span>
+                                  );
+                                } else if (isCorrectChoice) {
+                                  border = "2px dashed #22c55e";
+                                  bg = "rgba(34, 197, 94, 0.04)";
+                                  textColor = "#166534";
+                                  badge = (
+                                    <span style={{ color: "#16a34a", fontSize: 12, fontWeight: 700 }}>
+                                      ✓ Correct Answer
+                                    </span>
+                                  );
+                                }
+
+                                return (
+                                  <div
+                                    key={choice.id || cIdx}
+                                    style={{
+                                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                                      padding: "14px 18px", borderRadius: 10, border, background: bg,
+                                      transition: "all 0.15s ease", gap: 12
+                                    }}
+                                  >
+                                    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+                                      <div style={{
+                                        width: 22, height: 22, borderRadius: "50%",
+                                        border: `2px solid ${isUserChoice ? (isCorrectChoice ? '#22c55e' : '#ef4444') : (isCorrectChoice ? '#22c55e' : 'var(--color-border)')}`,
+                                        background: isUserChoice ? (isCorrectChoice ? '#22c55e' : '#ef4444') : 'transparent',
+                                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                                      }}>
+                                        {isUserChoice && <span style={{ color: "white", fontSize: 11, fontWeight: 800 }}>✓</span>}
+                                      </div>
+                                      <span style={{ fontSize: 14, fontWeight: isUserChoice ? 700 : 500, color: textColor }}>
+                                        {choice.choice_text}
+                                      </span>
+                                    </div>
+                                    {badge}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Identification / Enumeration / Essay */}
+                          {!isCurrentEval && (currentQuestion.question_type === 'identification' || currentQuestion.question_type === 'enumeration' || currentQuestion.question_type === 'essay') && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-header)" }}>
+                                Your Submitted Response:
+                              </div>
+                              <div style={{
+                                padding: "14px 18px", borderRadius: 10,
+                                border: `2px solid ${isCurrentCorrect ? '#22c55e' : '#ef4444'}`,
+                                background: isCurrentCorrect ? 'rgba(34, 197, 94, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                                fontSize: 14, fontWeight: 700, color: isCurrentCorrect ? '#15803d' : '#b91c1c'
+                              }}>
+                                {currentAnswer?.text_answer || <span style={{ color: "var(--color-text-muted)", fontStyle: "italic" }}>No answer submitted</span>}
+                              </div>
+                              {currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0 && (
+                                <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(34, 197, 94, 0.06)", borderLeft: "4px solid #22c55e" }}>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: "#166534", textTransform: "uppercase", marginBottom: 2 }}>Correct Answer:</div>
+                                  <div style={{ fontSize: 14, fontWeight: 600, color: "#15803d" }}>
+                                    {Array.isArray(currentQuestion.correct_answers) ? currentQuestion.correct_answers.join(", ") : String(currentQuestion.correct_answers)}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Evaluation Form Review */}
+                          {isCurrentEval && (() => {
+                            let evalAns: EvaluationAnswer = { ratings: {}, feedback: {} };
+                            try {
+                              if (currentAnswer?.text_answer) {
+                                evalAns = typeof currentAnswer.text_answer === 'object'
+                                  ? currentAnswer.text_answer
+                                  : JSON.parse(currentAnswer.text_answer);
+                              }
+                            } catch (e) {
+                              console.error("Failed to parse evaluation answer", e);
+                            }
+                            const evalConfig = parseEvaluationConfig(
+                              currentQuestion.evaluation_config ||
+                              (Array.isArray(currentQuestion.correct_answers) ? currentQuestion.correct_answers[0] : currentQuestion.correct_answers)
+                            );
+                            return (
+                              <div style={{ marginBottom: 28 }}>
+                                <EvaluationFormView
+                                  config={evalConfig}
+                                  answers={evalAns}
+                                  readOnly={true}
+                                />
+                              </div>
+                            );
+                          })()}
 
                       {/* Feedback (if they have) — Never display empty box if absent */}
                       {(() => {
@@ -571,13 +635,17 @@ const ModuleAttempts = () => {
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}>
                           <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ color: "var(--color-text-muted)" }}>Score:</span>
-                            <span style={{ fontWeight: 800, color: "#27ae60" }}>{reviewAttempt.score}% (Passed)</span>
+                            <span style={{ color: "var(--color-text-muted)" }}>Status:</span>
+                            <span style={{ fontWeight: 800, color: "#27ae60" }}>
+                              {isEvaluationModule ? "Completed" : `${reviewAttempt.score}% (Passed)`}
+                            </span>
                           </div>
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ color: "var(--color-text-muted)" }}>Passing Score:</span>
-                            <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>{passingScore}%</span>
-                          </div>
+                          {!isEvaluationModule && (
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "var(--color-text-muted)" }}>Passing Score:</span>
+                              <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>{passingScore}%</span>
+                            </div>
+                          )}
                           <div style={{ display: "flex", justifyContent: "space-between" }}>
                             <span style={{ color: "var(--color-text-muted)" }}>Total Questions:</span>
                             <span style={{ fontWeight: 700, color: "var(--color-text-header)" }}>{reviewQuestions.length}</span>
@@ -637,16 +705,27 @@ const ModuleAttempts = () => {
                         Module {moduleIndex + 1} Assessment — {moduleData.title}
                       </h2>
                       <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)" }}>
-                        Passing score: <strong style={{ color: "#FF6B00" }}>{passingScore}%</strong> · 
-                        {" "}Attempts: <strong style={{ color: (attempts.length >= MAX_ATTEMPTS && !hasPassingAttempt) ? "#dc2626" : "var(--color-text-header)" }}>{attempts.length} / {MAX_ATTEMPTS}</strong> · 
-                        {" "}Best score: <strong style={{ color: bestScore >= passingScore ? "#27ae60" : "#e74c3c" }}>{bestScore}%</strong>
+                        {!isEvaluationModule && (
+                          <>Passing score: <strong style={{ color: "#FF6B00" }}>{passingScore}%</strong> · </>
+                        )}
+                        {" "}Attempts: <strong style={{ color: (attempts.length >= MAX_ATTEMPTS && !hasPassingAttempt && !isEvaluationModule) ? "#dc2626" : "var(--color-text-header)" }}>{attempts.length} / {MAX_ATTEMPTS}</strong>
+                        {!isEvaluationModule && (
+                          <> · Best score: <strong style={{ color: bestScore >= passingScore ? "#27ae60" : "#e74c3c" }}>{bestScore}%</strong></>
+                        )}
                       </p>
                     </div>
 
                 {assessmentCompleted ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#e0ffec", padding: "10px 24px", borderRadius: 99 }}>
-                    <Check size={18} color="#27ae60" strokeWidth={3} />
-                    <span style={{ fontWeight: 700, color: "#27ae60", fontSize: 14 }}>Assessment Completed</span>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    background: isEvaluationModule ? "rgba(255, 107, 0, 0.1)" : "#e0ffec",
+                    padding: "10px 24px", borderRadius: 99,
+                    border: isEvaluationModule ? "1px solid rgba(255, 107, 0, 0.25)" : "1px solid #a3dfb8"
+                  }}>
+                    <Check size={18} color={isEvaluationModule ? "#FF6B00" : "#27ae60"} strokeWidth={3} />
+                    <span style={{ fontWeight: 700, color: isEvaluationModule ? "#FF6B00" : "#27ae60", fontSize: 14 }}>
+                      {isEvaluationModule ? "Evaluation Completed" : "Assessment Completed"}
+                    </span>
                   </div>
                 ) : attempts.length >= MAX_ATTEMPTS ? (
                   <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
