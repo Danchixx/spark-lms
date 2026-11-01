@@ -3,7 +3,8 @@ import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { 
   BookOpen, Users, ChevronRight, ChevronDown, ArrowLeft, Search, 
   CheckCircle, CheckCircle2, Clock, Play, FileText, PenTool, 
-  Download, Eye, User as UserIcon, AlertCircle, X, Award, ExternalLink, Edit3
+  Download, Eye, User as UserIcon, AlertCircle, X, Award, ExternalLink, Edit3,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -20,6 +21,21 @@ import { FileBlockViewer } from "../../components/common/LessonCard/FileBlock";
 import { EvaluationFormView } from "../../components/common/Evaluation";
 import { parseEvaluationConfig } from "../../types/evaluation";
 import "./CourseOverview.css";
+
+interface CourseAssessmentItem {
+  id: number;
+  lessonId: number;
+  moduleId: number;
+  moduleTitle: string;
+  moduleOrder: number;
+  lessonPosition: number;
+  title: string;
+  displayTitle: string;
+  passingScore: number;
+  timeLimit: number | null;
+  itemsCount: number;
+  questions: any[];
+}
 
 interface CourseOverviewProps {
   embedded?: boolean;
@@ -53,6 +69,14 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
   const [userSearch, setUserSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [userCurrentPage, setUserCurrentPage] = useState(1);
+
+  // Assessments Feature Data & Filter States
+  const [courseAssessments, setCourseAssessments] = useState<CourseAssessmentItem[]>([]);
+  const [assessmentAttemptsList, setAssessmentAttemptsList] = useState<any[]>([]);
+  const [loadingAssessments, setLoadingAssessments] = useState(false);
+  const [selectedModuleAssessment, setSelectedModuleAssessment] = useState<string>("all");
+  const [assessmentSortOrder, setAssessmentSortOrder] = useState<"desc" | "asc">("desc");
+  const [targetLessonIdToSelect, setTargetLessonIdToSelect] = useState<number | null>(null);
 
   // Level 3 Data (Modules, Lessons, Responses)
   const [courseStructure, setCourseStructure] = useState<{ course: any; modules: any[] } | null>(null);
@@ -249,7 +273,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
           let statusColor = "var(--color-text-muted)";
           if (progress === 100 || a.status === 'completed') {
             status = "Completed";
-            statusColor = "var(--color-success, #27ae60)";
+            statusColor = "#FF6B00";
           } else if (progress > 0 || a.status === 'in_progress' || a.status === 'in-progress') {
             status = "In Progress";
             statusColor = "#FF9800";
@@ -290,6 +314,141 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
     loadEnrolledUsers();
   }, [selectedCourse, isSparkCpd]);
 
+  // Fetch course assessments & attempts for all enrolled learners
+  useEffect(() => {
+    if (!selectedCourse?.id) {
+      setCourseAssessments([]);
+      setAssessmentAttemptsList([]);
+      return;
+    }
+
+    const loadAssessmentsData = async () => {
+      setLoadingAssessments(true);
+      try {
+        const { data: mods, error: modErr } = await supabase
+          .from('course_modules')
+          .select('id, title, order')
+          .eq('course_id', selectedCourse.id)
+          .eq('is_archived', false)
+          .order('order', { ascending: true });
+
+        if (modErr) throw modErr;
+        const modulesList = mods || [];
+        const moduleIds = modulesList.map((m: any) => m.id);
+
+        if (moduleIds.length === 0) {
+          setCourseAssessments([]);
+          setAssessmentAttemptsList([]);
+          return;
+        }
+
+        const { data: lessons, error: lesErr } = await supabase
+          .from('course_lessons')
+          .select('id, module_id, title, type, position')
+          .in('module_id', moduleIds)
+          .eq('type', 'assessment')
+          .eq('is_archived', false)
+          .order('position', { ascending: true });
+
+        if (lesErr) throw lesErr;
+        const lessonsList = lessons || [];
+        const lessonIds = lessonsList.map((l: any) => l.id);
+
+        if (lessonIds.length === 0) {
+          setCourseAssessments([]);
+          setAssessmentAttemptsList([]);
+          return;
+        }
+
+        const { data: assessList, error: aErr } = await supabase
+          .from('assessments')
+          .select(`
+            id,
+            lesson_id,
+            title,
+            passing_score,
+            time_limit,
+            assessment_questions (
+              id,
+              position,
+              question_type,
+              question_text
+            )
+          `)
+          .in('lesson_id', lessonIds)
+          .eq('is_archived', false);
+
+        if (aErr) throw aErr;
+
+        const mapped: CourseAssessmentItem[] = (assessList || []).map((a: any) => {
+          const les = lessonsList.find((l: any) => l.id === a.lesson_id);
+          const mod = modulesList.find((m: any) => m.id === les?.module_id);
+          const rawModTitle = mod?.title || 'Unknown Module';
+          const rawTitle = a.title || les?.title || 'Assessment';
+
+          const isEvaluation = 
+            rawModTitle.toLowerCase().includes('evaluation') || 
+            rawModTitle.toLowerCase().includes('feedback') ||
+            rawTitle.toLowerCase().includes('evaluation') || 
+            rawTitle.toLowerCase().includes('feedback');
+
+          const displayTitle = isEvaluation 
+            ? 'Course Evaluation & Feedback' 
+            : `${rawModTitle} – ${rawTitle}`;
+
+          return {
+            id: a.id,
+            lessonId: a.lesson_id,
+            moduleId: mod?.id || 0,
+            moduleTitle: rawModTitle,
+            moduleOrder: mod?.order ?? 999,
+            lessonPosition: les?.position ?? 999,
+            title: rawTitle,
+            displayTitle,
+            passingScore: a.passing_score ?? 70,
+            timeLimit: a.time_limit,
+            itemsCount: a.assessment_questions?.length || 0,
+            questions: a.assessment_questions || []
+          };
+        });
+
+        mapped.sort((x, y) => {
+          if (x.moduleOrder !== y.moduleOrder) return x.moduleOrder - y.moduleOrder;
+          return x.lessonPosition - y.lessonPosition;
+        });
+
+        setCourseAssessments(mapped);
+
+        const assessIds = mapped.map(a => a.id);
+        if (assessIds.length > 0) {
+          const { data: atts, error: attErr } = await supabase
+            .from('assessment_attempts')
+            .select('id, assessment_id, user_id, score, passed, attempted_at')
+            .in('assessment_id', assessIds)
+            .order('attempted_at', { ascending: false });
+
+          if (attErr) throw attErr;
+          setAssessmentAttemptsList(atts || []);
+        } else {
+          setAssessmentAttemptsList([]);
+        }
+      } catch (err) {
+        console.error("Error loading course assessments data:", err);
+      } finally {
+        setLoadingAssessments(false);
+      }
+    };
+
+    loadAssessmentsData();
+  }, [selectedCourse?.id]);
+
+  const handleViewLearner = (learner: any, targetLessonId?: number) => {
+    setSelectedUser(learner);
+    if (targetLessonId) {
+      setTargetLessonIdToSelect(targetLessonId);
+    }
+  };
+
   // When selectedUser & selectedCourse are active, fetch course structure and user's responses
   useEffect(() => {
     if (!selectedCourse || !selectedUser) {
@@ -306,17 +465,31 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
         const { course, modules } = await courseService.fetchCourseWithModules(Number(selectedCourse.id));
         setCourseStructure({ course, modules });
 
-        // Auto-expand only the first module initially
+        // Auto-expand module & auto-select lesson
         const expanded: Record<number, boolean> = {};
-        if (modules.length > 0) {
+        const allLessons = (modules || []).flatMap((m: any) => m.lessons || []);
+        let lessonToSelect: any = null;
+
+        if (targetLessonIdToSelect) {
+          const match = allLessons.find((l: any) => l.id === targetLessonIdToSelect);
+          if (match) {
+            lessonToSelect = match;
+            expanded[match.module_id] = true;
+          }
+          setTargetLessonIdToSelect(null);
+        }
+
+        if (!lessonToSelect && modules.length > 0 && modules[0].lessons?.length > 0) {
+          lessonToSelect = modules[0].lessons[0];
           expanded[modules[0].id] = true;
         }
-        setExpandedModules(expanded);
 
-        // Auto-select first lesson if available
-        if (modules.length > 0 && modules[0].lessons?.length > 0) {
-          setSelectedLesson(modules[0].lessons[0]);
+        if (modules.length > 0 && Object.keys(expanded).length === 0) {
+          expanded[modules[0].id] = true;
         }
+
+        setExpandedModules(expanded);
+        setSelectedLesson(lessonToSelect);
 
         const allLessonIds = modules.flatMap(m => (m.lessons || []).map((l: any) => l.id));
 
@@ -439,9 +612,9 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
 
 
 
-  // Filtered enrolled users for Level 2
+  // Filtered enrolled users for Level 2 (Standard View)
   const filteredEnrolled = enrolledUsers.filter(u => {
-    if (statusFilter !== "All" && u.status.toLowerCase() !== statusFilter.toLowerCase()) {
+    if (statusFilter !== "All" && statusFilter !== "Assessments" && u.status.toLowerCase() !== statusFilter.toLowerCase()) {
       return false;
     }
     if (!userSearch.trim()) return true;
@@ -453,17 +626,221 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
   const totalUserPages = Math.ceil(filteredEnrolled.length / PAGE_SIZE) || 1;
   const pagedEnrolledUsers = filteredEnrolled.slice((userCurrentPage - 1) * PAGE_SIZE, userCurrentPage * PAGE_SIZE);
 
-  const getUserPageNumbers = () => {
-    if (totalUserPages <= 7) {
-      return Array.from({ length: totalUserPages }, (_, i) => i + 1);
+  // ─────────────────────────────────────────────────────────────
+  // ASSESSMENTS FILTER COMPUTATIONS
+  // ─────────────────────────────────────────────────────────────
+
+  // Total items in all assessments for this course
+  const grandTotalCourseItems = useMemo(() => {
+    return courseAssessments.reduce((sum, a) => sum + a.itemsCount, 0);
+  }, [courseAssessments]);
+
+  // Aggregate each learner's assessments scores
+  const assessmentLearners = useMemo(() => {
+    const userAttemptsMap: Record<string, Record<number, any[]>> = {};
+    (assessmentAttemptsList || []).forEach(att => {
+      const uid = String(att.user_id);
+      const userMap = userAttemptsMap[uid] || (userAttemptsMap[uid] = {});
+      const assessAttempts = userMap[att.assessment_id] || (userMap[att.assessment_id] = []);
+      assessAttempts.push(att);
+    });
+
+    return enrolledUsers.map(learner => {
+      const uid = String(learner.user.id);
+      const userAssessMap = userAttemptsMap[uid] || {};
+
+      let grandTotalScore = 0;
+      let assessmentsAttempted = 0;
+      let assessmentsPassed = 0;
+
+      const breakdown: Record<number, {
+        assessment: CourseAssessmentItem;
+        attemptsCount: number;
+        bestScore: number | null;
+        correctItems: number;
+        totalItems: number;
+        passed: boolean;
+        latestAttemptedAt: string | null;
+      }> = {};
+
+      courseAssessments.forEach(a => {
+        const atts = userAssessMap[a.id] || [];
+        if (atts.length > 0) {
+          assessmentsAttempted++;
+          const bestAtt = atts.reduce((prev, curr) => (curr.score > prev.score ? curr : prev), atts[0]);
+          const bestScore = bestAtt.score ?? 0;
+          const correctItems = Math.round((bestScore / 100) * a.itemsCount);
+          const isPassed = bestAtt.passed ?? (bestScore >= a.passingScore);
+          if (isPassed) assessmentsPassed++;
+
+          grandTotalScore += correctItems;
+
+          breakdown[a.id] = {
+            assessment: a,
+            attemptsCount: atts.length,
+            bestScore,
+            correctItems,
+            totalItems: a.itemsCount,
+            passed: isPassed,
+            latestAttemptedAt: atts[0].attempted_at
+          };
+        } else {
+          breakdown[a.id] = {
+            assessment: a,
+            attemptsCount: 0,
+            bestScore: null,
+            correctItems: 0,
+            totalItems: a.itemsCount,
+            passed: false,
+            latestAttemptedAt: null
+          };
+        }
+      });
+
+      const overallPercentage = grandTotalCourseItems > 0 
+        ? Math.round((grandTotalScore / grandTotalCourseItems) * 100) 
+        : 0;
+
+      return {
+        rawUser: learner,
+        grandTotalScore,
+        grandTotalCourseItems,
+        overallPercentage,
+        assessmentsAttempted,
+        assessmentsPassed,
+        breakdown
+      };
+    });
+  }, [enrolledUsers, courseAssessments, assessmentAttemptsList, grandTotalCourseItems]);
+
+  // Filter & Sort assessment learners
+  const filteredAndSortedAssessmentLearners = useMemo(() => {
+    let list = assessmentLearners.filter(item => {
+      if (!userSearch.trim()) return true;
+      const q = userSearch.toLowerCase();
+      const u = item.rawUser.user;
+      return (
+        (u.name || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q) ||
+        (u.department || "").toLowerCase().includes(q) ||
+        (u.school || "").toLowerCase().includes(q)
+      );
+    });
+
+    const isAll = selectedModuleAssessment === "all";
+    const targetAid = Number(selectedModuleAssessment);
+
+    list.sort((a, b) => {
+      let scoreA = 0;
+      let scoreB = 0;
+
+      if (isAll) {
+        scoreA = a.grandTotalScore;
+        scoreB = b.grandTotalScore;
+      } else {
+        const dataA = a.breakdown[targetAid];
+        const dataB = b.breakdown[targetAid];
+        scoreA = dataA?.bestScore != null ? dataA.bestScore : -1;
+        scoreB = dataB?.bestScore != null ? dataB.bestScore : -1;
+      }
+
+      if (assessmentSortOrder === "desc") {
+        if (scoreB !== scoreA) return scoreB - scoreA;
+      } else {
+        if (scoreA !== scoreB) return scoreA - scoreB;
+      }
+
+      return (a.rawUser.user.name || "").localeCompare(b.rawUser.user.name || "");
+    });
+
+    return list;
+  }, [assessmentLearners, userSearch, selectedModuleAssessment, assessmentSortOrder]);
+
+  const totalAssessmentPages = Math.ceil(filteredAndSortedAssessmentLearners.length / PAGE_SIZE) || 1;
+  const pagedAssessmentLearners = filteredAndSortedAssessmentLearners.slice(
+    (userCurrentPage - 1) * PAGE_SIZE,
+    userCurrentPage * PAGE_SIZE
+  );
+
+  const selectedAssessmentObj = useMemo(() => {
+    if (selectedModuleAssessment === "all") return null;
+    return courseAssessments.find(a => a.id === Number(selectedModuleAssessment)) || null;
+  }, [selectedModuleAssessment, courseAssessments]);
+
+  const assessmentStats = useMemo(() => {
+    const list = assessmentLearners;
+    const totalEnrolled = list.length;
+    const isAll = selectedModuleAssessment === "all";
+    const targetAid = Number(selectedModuleAssessment);
+
+    if (totalEnrolled === 0) {
+      return { 
+        avgScore: 0, 
+        attemptedCount: 0, 
+        passedCount: 0, 
+        failedCount: 0, 
+        passRatePct: 0, 
+        participationRatePct: 0, 
+        totalItems: 0 
+      };
     }
-    if (userCurrentPage <= 4) {
-      return [1, 2, 3, 4, 5, '...', totalUserPages];
+
+    if (isAll) {
+      const attemptedList = list.filter(l => l.assessmentsAttempted > 0);
+      const avgScore = attemptedList.length > 0 
+        ? Math.round(attemptedList.reduce((sum, l) => sum + l.overallPercentage, 0) / attemptedList.length) 
+        : 0;
+      const passedCount = list.filter(l => l.assessmentsPassed === courseAssessments.length && courseAssessments.length > 0).length;
+      const attemptedCount = attemptedList.length;
+      const passRatePct = attemptedCount > 0 ? Math.round((passedCount / attemptedCount) * 100) : 0;
+      const failedCount = Math.max(0, attemptedCount - passedCount);
+      const participationRatePct = totalEnrolled > 0 ? Math.round((attemptedCount / totalEnrolled) * 100) : 0;
+
+      return {
+        avgScore,
+        attemptedCount,
+        passedCount,
+        failedCount,
+        passRatePct,
+        participationRatePct,
+        totalItems: grandTotalCourseItems
+      };
+    } else {
+      const targetAssess = courseAssessments.find(a => a.id === targetAid);
+      const totalItems = targetAssess?.itemsCount || 0;
+      const attemptedList = list.filter(l => (l.breakdown[targetAid]?.attemptsCount || 0) > 0);
+      const avgScore = attemptedList.length > 0
+        ? Math.round(attemptedList.reduce((sum, l) => sum + (l.breakdown[targetAid]?.bestScore || 0), 0) / attemptedList.length)
+        : 0;
+      const passedCount = list.filter(l => l.breakdown[targetAid]?.passed).length;
+      const attemptedCount = attemptedList.length;
+      const passRatePct = attemptedCount > 0 ? Math.round((passedCount / attemptedCount) * 100) : 0;
+      const failedCount = Math.max(0, attemptedCount - passedCount);
+      const participationRatePct = totalEnrolled > 0 ? Math.round((attemptedCount / totalEnrolled) * 100) : 0;
+
+      return {
+        avgScore,
+        attemptedCount,
+        passedCount,
+        failedCount,
+        passRatePct,
+        participationRatePct,
+        totalItems
+      };
     }
-    if (userCurrentPage >= totalUserPages - 3) {
-      return [1, '...', totalUserPages - 4, totalUserPages - 3, totalUserPages - 2, totalUserPages - 1, totalUserPages];
+  }, [assessmentLearners, selectedModuleAssessment, courseAssessments, grandTotalCourseItems]);
+
+  const getPageNumbers = (totalPages: number, currentPage: number) => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-    return [1, '...', userCurrentPage - 1, userCurrentPage, userCurrentPage + 1, '...', totalUserPages];
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 3) {
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
   };
 
   // Helper: Lesson Icon
@@ -529,7 +906,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                   color: "#FF6B00", cursor: "pointer", fontFamily: "inherit", fontWeight: 700
                 }}
               >
-                <ArrowLeft size={14} /> Back to Enrolled Learners
+                <ArrowLeft size={14} /> Back to {statusFilter === "Assessments" ? "Assessments" : "Enrolled Learners"}
               </button>
               <ChevronRight size={14} color="var(--color-text-muted)" />
               <span style={{ color: "var(--color-text-muted)" }}>Course Overview</span>
@@ -585,9 +962,9 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
               <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Overall Completion</div>
               <div className="overview-completion-row" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, margin: "2px 0" }}>
                 <div style={{ width: 90, height: 8, background: "var(--color-bg-muted, #eee)", borderRadius: 4, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${selectedUser.progress}%`, background: selectedUser.progress === 100 ? "#27ae60" : "#FF6B00", borderRadius: 4 }} />
+                  <div style={{ height: "100%", width: `${selectedUser.progress}%`, background: "#FF6B00", borderRadius: 4 }} />
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: selectedUser.progress === 100 ? "#27ae60" : "#FF6B00" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#FF6B00" }}>
                   {selectedUser.progress}%
                 </div>
               </div>
@@ -657,8 +1034,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                           <span style={{ 
                             padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700,
-                            background: moduleCompletedCount === moduleLessons.length && moduleLessons.length > 0 ? "#E8F5E9" : "var(--color-bg-subtle)",
-                            color: moduleCompletedCount === moduleLessons.length && moduleLessons.length > 0 ? "#2E7D32" : "var(--color-text-muted)"
+                            background: moduleCompletedCount === moduleLessons.length && moduleLessons.length > 0 ? "rgba(255, 107, 0, 0.12)" : "var(--color-bg-subtle)",
+                            color: moduleCompletedCount === moduleLessons.length && moduleLessons.length > 0 ? "#FF6B00" : "var(--color-text-muted)"
                           }}>
                             {moduleCompletedCount}/{moduleLessons.length}
                           </span>
@@ -700,8 +1077,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
 
                                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                                   {isCompleted ? (
-                                    <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 12, background: "#E8F5E9", color: "#2E7D32", fontSize: 11, fontWeight: 700 }}>
-                                      <CheckCircle2 size={12} /> Completed
+                                    <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 12, background: "rgba(255, 107, 0, 0.12)", color: "#FF6B00", fontSize: 11, fontWeight: 700 }}>
+                                      <CheckCircle2 size={12} color="#FF6B00" /> Completed
                                     </div>
                                   ) : (
                                     <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 12, background: "var(--color-bg-subtle)", color: "var(--color-text-muted)", fontSize: 11, fontWeight: 600 }}>
@@ -737,8 +1114,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                           {selectedLesson.type} LESSON CONTENT & RESPONSES
                         </span>
                         {lessonProgressMap[selectedLesson.id]?.is_completed ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#E8F5E9", color: "#2E7D32", padding: "3px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
-                            <CheckCircle2 size={12} /> Finished
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255, 107, 0, 0.12)", color: "#FF6B00", padding: "3px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                            <CheckCircle2 size={12} color="#FF6B00" /> Finished
                           </span>
                         ) : (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--color-bg-subtle)", color: "var(--color-text-muted)", padding: "3px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
@@ -770,7 +1147,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                           </div>
                         )}
                         <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
-                          Learner Status: {lessonProgressMap[selectedLesson.id]?.is_completed ? <strong style={{ color: "#27ae60" }}>Watched / Completed</strong> : <span>Not yet completed</span>}
+                          Learner Status: {lessonProgressMap[selectedLesson.id]?.is_completed ? <strong style={{ color: "#FF6B00" }}>Watched / Completed</strong> : <span>Not yet completed</span>}
                         </div>
                       </div>
                     )}
@@ -783,7 +1160,7 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                           dangerouslySetInnerHTML={{ __html: selectedLesson.content || "<i>No reading text content provided.</i>" }}
                         />
                         <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
-                          Learner Status: {lessonProgressMap[selectedLesson.id]?.is_completed ? <strong style={{ color: "#27ae60" }}>Read / Completed</strong> : <span>Not yet completed</span>}
+                          Learner Status: {lessonProgressMap[selectedLesson.id]?.is_completed ? <strong style={{ color: "#FF6B00" }}>Read / Completed</strong> : <span>Not yet completed</span>}
                         </div>
                       </div>
                     )}
@@ -843,9 +1220,9 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                     </div>
                                   </div>
                                 ) : (
-                                  <div style={{ background: attempt.passed ? "rgba(46, 125, 50, 0.08)" : "rgba(211, 47, 47, 0.08)", border: `1.5px solid ${attempt.passed ? "#2E7D32" : "#D32F2F"}`, borderRadius: 12, padding: 16, marginBottom: 4 }}>
+                                  <div style={{ background: attempt.passed ? "rgba(255, 107, 0, 0.08)" : "rgba(211, 47, 47, 0.08)", border: `1.5px solid ${attempt.passed ? "#FF6B00" : "#D32F2F"}`, borderRadius: 12, padding: 16, marginBottom: 4 }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                                      <span style={{ fontSize: 13, fontWeight: 700, color: attempt.passed ? "#2E7D32" : "#D32F2F" }}>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: attempt.passed ? "#FF6B00" : "#D32F2F" }}>
                                         {attempt.passed ? "PASSED" : "FAILED"}
                                       </span>
                                       <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
@@ -904,8 +1281,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                                             <span style={{
                                               padding: "2px 8px",
                                               borderRadius: 10,
-                                              background: isEvalQ ? "rgba(255, 107, 0, 0.12)" : "#E8F5E9",
-                                              color: isEvalQ ? "#FF6B00" : "#2E7D32",
+                                              background: "rgba(255, 107, 0, 0.12)",
+                                              color: "#FF6B00",
                                               fontSize: 10,
                                               fontWeight: 700,
                                               whiteSpace: "nowrap"
@@ -1245,8 +1622,8 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                 </h2>
                 <span style={{
                   padding: "2px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700,
-                  background: selectedCourse.status === "published" ? "#E8F5E9" : "#FFF3E0",
-                  color: selectedCourse.status === "published" ? "#2E7D32" : "#E65100"
+                  background: selectedCourse.status === "published" ? "rgba(255, 107, 0, 0.12)" : "#FFF3E0",
+                  color: selectedCourse.status === "published" ? "#FF6B00" : "#E65100"
                 }}>
                   {selectedCourse.status === "published" ? "Published" : "Draft"}
                 </span>
@@ -1261,23 +1638,52 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                 <span>•</span>
                 <span><strong>{selectedCourse.lessonsCount}</strong> {selectedCourse.lessonsCount === 1 ? "Lesson" : "Lessons"}</span>
                 <span>•</span>
-                <span><strong>{selectedCourse.assessmentsCount || 0}</strong> {selectedCourse.assessmentsCount === 1 ? "Assessment" : "Assessments"}</span>
+                <span 
+                  className="overview-badge-link"
+                  onClick={() => {
+                    setStatusFilter("Assessments");
+                    setUserCurrentPage(1);
+                  }}
+                  title="Click to view assessments filter"
+                  style={{
+                    cursor: "pointer",
+                    padding: "2px 8px",
+                    borderRadius: 8,
+                    background: statusFilter === "Assessments" ? "rgba(255, 107, 0, 0.12)" : "transparent",
+                    color: statusFilter === "Assessments" ? "#FF6B00" : "inherit"
+                  }}
+                >
+                  <strong>{selectedCourse.assessmentsCount || 0}</strong> {selectedCourse.assessmentsCount === 1 ? "Assessment" : "Assessments"}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Enrolled Users Table */}
+          {/* Enrolled Users / Assessments Table Card */}
           <div className="overview-table-card">
             <div className="overview-table-header">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Users size={20} color="#FF6B00" />
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--color-text-header)" }}>Enrolled Learners</h3>
+                {statusFilter === "Assessments" ? (
+                  <PenTool size={20} color="#FF6B00" />
+                ) : (
+                  <Users size={20} color="#FF6B00" />
+                )}
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--color-text-header)" }}>
+                  {statusFilter === "Assessments"
+                    ? (selectedModuleAssessment === "all" 
+                        ? "Assessments Overview" 
+                        : (selectedAssessmentObj ? selectedAssessmentObj.displayTitle : "Module Assessment Scores"))
+                    : "Enrolled Learners"}
+                </h3>
                 <span style={{ padding: "2px 10px", borderRadius: 12, border: "1px solid var(--color-border)", fontSize: 12, color: "var(--color-text-muted)" }}>
-                  {filteredEnrolled.length} learners
+                  {statusFilter === "Assessments" 
+                    ? `${filteredAndSortedAssessmentLearners.length} learners` 
+                    : `${filteredEnrolled.length} learners`}
                 </span>
               </div>
 
               <div className="overview-table-controls">
+                {/* Primary Filter dropdown with Assessments option */}
                 <select
                   value={statusFilter}
                   onChange={(e) => {
@@ -1288,21 +1694,79 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
                     padding: "8px 14px",
                     fontSize: 13,
                     borderRadius: 20,
-                    border: "1px solid var(--color-border)",
+                    border: statusFilter === "Assessments" ? "1.5px solid #FF6B00" : "1px solid var(--color-border)",
                     outline: "none",
-                    background: "var(--color-bg-subtle)",
-                    color: "var(--color-text-header)",
+                    background: statusFilter === "Assessments" ? "rgba(255, 107, 0, 0.08)" : "var(--color-bg-subtle)",
+                    color: statusFilter === "Assessments" ? "#FF6B00" : "var(--color-text-header)",
                     cursor: "pointer",
-                    fontWeight: 600
+                    fontWeight: 700
                   }}
                 >
-                  <option value="All">All Status</option>
-                  <option value="Completed">Completed</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Not Started">Not Started</option>
+                  <option value="All" style={{ color: "#111827", backgroundColor: "#ffffff" }}>All Status</option>
+                  <option value="Completed" style={{ color: "#111827", backgroundColor: "#ffffff" }}>Completed</option>
+                  <option value="In Progress" style={{ color: "#111827", backgroundColor: "#ffffff" }}>In Progress</option>
+                  <option value="Not Started" style={{ color: "#111827", backgroundColor: "#ffffff" }}>Not Started</option>
+                  <option value="Assessments" style={{ color: "#111827", backgroundColor: "#ffffff" }}>Assessments</option>
                 </select>
 
-                <div className="overview-search-wrap" style={{ position: "relative", width: 240 }}>
+                {/* Inside Filter: Per Module Assessment */}
+                {statusFilter === "Assessments" && (
+                  <>
+                    <select
+                      value={selectedModuleAssessment}
+                      onChange={(e) => {
+                        setSelectedModuleAssessment(e.target.value);
+                        setUserCurrentPage(1);
+                      }}
+                      style={{
+                        padding: "8px 14px",
+                        fontSize: 13,
+                        borderRadius: 20,
+                        border: "1px solid var(--color-border)",
+                        outline: "none",
+                        background: "var(--color-bg-subtle)",
+                        color: "var(--color-text-header)",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        maxWidth: 270
+                      }}
+                      title="Filter by module's assessment"
+                    >
+                      <option value="all" style={{ color: "#111827", backgroundColor: "#ffffff" }}>All Assessments (Total: {grandTotalCourseItems} items)</option>
+                      {courseAssessments.map((ca) => (
+                        <option key={ca.id} value={String(ca.id)} style={{ color: "#111827", backgroundColor: "#ffffff" }}>
+                          {ca.displayTitle} ({ca.itemsCount} {ca.itemsCount === 1 ? 'item' : 'items'})
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Arrange list from highest to lowest or vise versa */}
+                    <select
+                      value={assessmentSortOrder}
+                      onChange={(e) => {
+                        setAssessmentSortOrder(e.target.value as 'desc' | 'asc');
+                        setUserCurrentPage(1);
+                      }}
+                      style={{
+                        padding: "8px 14px",
+                        fontSize: 13,
+                        borderRadius: 20,
+                        border: "1px solid var(--color-border)",
+                        outline: "none",
+                        background: "var(--color-bg-subtle)",
+                        color: "var(--color-text-header)",
+                        cursor: "pointer",
+                        fontWeight: 600
+                      }}
+                      title="Arrange list by score"
+                    >
+                      <option value="desc" style={{ color: "#111827", backgroundColor: "#ffffff" }}>Highest to Lowest</option>
+                      <option value="asc" style={{ color: "#111827", backgroundColor: "#ffffff" }}>Lowest to Highest</option>
+                    </select>
+                  </>
+                )}
+
+                <div className="overview-search-wrap" style={{ position: "relative", width: 220 }}>
                   <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--color-text-muted)" }} />
                   <input 
                     type="text" 
@@ -1318,139 +1782,480 @@ export default function CourseOverview({ embedded = false, initialCourseId }: Co
               </div>
             </div>
 
+            {/* Assessment Mode: Summary Statistics Banner */}
+            {statusFilter === "Assessments" && (
+              <div className="overview-stats-grid">
+                <div className="overview-stat-card">
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    {selectedModuleAssessment === "all" ? "Total Items (All Assessments)" : "Assessment Items"}
+                  </span>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "#FF6B00", marginTop: 4 }}>
+                    {assessmentStats.totalItems} Items
+                  </div>
+                  <span style={{ fontSize: 11.5, color: "var(--color-text-muted)", marginTop: 2 }}>
+                    {selectedModuleAssessment === "all" ? `${courseAssessments.length} assessments total` : `Passing requirement: ${selectedAssessmentObj?.passingScore}%`}
+                  </span>
+                </div>
+
+                <div className="overview-stat-card">
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    Class Average Score
+                  </span>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "var(--color-text-header)", marginTop: 4 }}>
+                    {assessmentStats.avgScore}%
+                  </div>
+                  <span style={{ fontSize: 11.5, color: "var(--color-text-muted)", marginTop: 2 }}>
+                    Across {assessmentStats.attemptedCount} active {assessmentStats.attemptedCount === 1 ? 'learner' : 'learners'}
+                  </span>
+                </div>
+
+                <div className="overview-stat-card">
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    Passing Rate
+                  </span>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "#FF6B00", marginTop: 4 }}>
+                    {assessmentStats.attemptedCount === 0 ? "0%" : `${assessmentStats.passRatePct}%`}
+                  </div>
+                  <span style={{ fontSize: 11.5, color: "var(--color-text-muted)", marginTop: 2 }}>
+                    {assessmentStats.attemptedCount === 0 
+                      ? "No attempts yet" 
+                      : (selectedModuleAssessment === "all" 
+                          ? `${assessmentStats.passedCount} of ${assessmentStats.attemptedCount} passed all assessments` 
+                          : `${assessmentStats.passedCount} of ${assessmentStats.attemptedCount} passed · ${assessmentStats.failedCount} failed`)}
+                  </span>
+                </div>
+
+                <div className="overview-stat-card">
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    Participation Rate
+                  </span>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "var(--color-text-header)", marginTop: 4 }}>
+                    {assessmentStats.attemptedCount} / {filteredAndSortedAssessmentLearners.length}
+                  </div>
+                  <span style={{ fontSize: 11.5, color: "var(--color-text-muted)", marginTop: 2 }}>
+                    {filteredAndSortedAssessmentLearners.length > 0 ? `${assessmentStats.participationRatePct}% of enrolled learners` : '0%'}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Table */}
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 650 }}>
-                <thead>
-                  <tr style={{ background: "var(--color-bg-subtle)", color: "var(--color-text-header)", borderBottom: "1px solid var(--color-border)", textAlign: "left" }}>
-                    <th style={{ padding: "12px 24px", fontWeight: 800 }}>LEARNER</th>
-                    <th style={{ padding: "12px 16px", fontWeight: 800 }}>{isSparkCpd ? "SCHOOL" : "DEPARTMENT"}</th>
-                    <th style={{ padding: "12px 16px", fontWeight: 800 }}>PROGRESS</th>
-                    <th style={{ padding: "12px 16px", fontWeight: 800 }}>STATUS</th>
-                    <th style={{ padding: "12px 16px", fontWeight: 800 }}>ASSIGNED</th>
-                    <th style={{ padding: "12px 24px", fontWeight: 800, textAlign: "center", width: 120 }}>ACTION</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingUsers ? (
-                    <tr>
-                      <td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>Loading enrolled learners...</td>
-                    </tr>
-                  ) : pagedEnrolledUsers.map((u, idx) => (
-                    <tr key={idx} style={{ borderBottom: "1px solid var(--color-border)", transition: "background 0.15s" }}>
-                      <td style={{ padding: "12px 24px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          {u.user.avatar ? (
-                            <img src={u.user.avatar} alt={u.user.name} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--color-border)" }} />
+            {statusFilter === "Assessments" ? (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 700, tableLayout: "fixed" }}>
+                  <colgroup>
+                    <col style={{ width: "27%" }} />
+                    <col style={{ width: "23%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "11%" }} />
+                    <col style={{ width: "9%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr style={{ background: "var(--color-bg-subtle)", color: "var(--color-text-header)", borderBottom: "1px solid var(--color-border)", textAlign: "left" }}>
+                      <th style={{ padding: "12px 20px", fontWeight: 800, textAlign: "left" }}>LEARNER</th>
+                      <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}>{isSparkCpd ? "SCHOOL" : "DEPARTMENT"}</th>
+                      {selectedModuleAssessment === "all" ? (
+                        <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}>ASSESSMENTS TAKEN</th>
+                      ) : (
+                        <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}>ATTEMPTS</th>
+                      )}
+                      <th 
+                        className="overview-sortable-th"
+                        onClick={() => setAssessmentSortOrder(prev => prev === "desc" ? "asc" : "desc")}
+                        title="Click to toggle sort order (Highest to Lowest / Lowest to Highest)"
+                        style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span>{selectedModuleAssessment === "all" ? "TOTAL SCORE / ITEMS" : "SCORE / ITEMS"}</span>
+                          {assessmentSortOrder === "desc" ? (
+                            <ArrowDown size={14} color="#FF6B00" />
                           ) : (
-                            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#111", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>
-                              {u.user.name.charAt(0)}
-                            </div>
+                            <ArrowUp size={14} color="#FF6B00" />
                           )}
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontWeight: 700, color: "var(--color-text-header)", fontSize: 13 }}>{u.user.name}</span>
-                            <span style={{ color: "var(--color-text-muted)" }}>{u.user.email}</span>
-                          </div>
                         </div>
-                      </td>
-                      <td style={{ padding: "12px 16px", color: "var(--color-text-muted)", fontWeight: 500 }}>
-                        {u.user.department}
-                      </td>
-                      <td style={{ padding: "12px 16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ flex: 1, height: 6, background: "var(--color-bg-muted, #eee)", borderRadius: 3, overflow: "hidden", minWidth: 60 }}>
-                            <div style={{ width: `${u.progress}%`, height: "100%", background: u.progress === 100 ? "#27ae60" : u.progress > 0 ? "#FF9800" : "transparent" }} />
+                      </th>
+                      <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}>STATUS</th>
+                      <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "center" }}>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingUsers || loadingAssessments ? (
+                      <tr>
+                        <td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>
+                          Loading assessment scores and learners...
+                        </td>
+                      </tr>
+                    ) : pagedAssessmentLearners.map((item, idx) => {
+                      const u = item.rawUser.user;
+                      const isAll = selectedModuleAssessment === "all";
+                      const targetAid = Number(selectedModuleAssessment);
+                      const breakdown = item.breakdown[targetAid];
+
+                      return (
+                        <tr key={idx} style={{ borderBottom: "1px solid var(--color-border)", transition: "background 0.15s" }}>
+                          {/* Col 1: Learner Info (27%) */}
+                          <td style={{ padding: "12px 20px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                              {u.avatar ? (
+                                <img src={u.avatar} alt={u.name} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--color-border)", flexShrink: 0 }} />
+                              ) : (
+                                <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#111", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                                  {u.name.charAt(0)}
+                                </div>
+                              )}
+                              <div style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+                                <span style={{ fontWeight: 700, color: "var(--color-text-header)", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={u.name}>{u.name}</span>
+                                <span style={{ color: "var(--color-text-muted)", fontSize: 11.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={u.email}>{u.email}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Col 2: School / Department (23%) */}
+                          <td style={{ padding: "12px 16px", color: "var(--color-text-muted)", fontWeight: 500 }}>
+                            <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={u.department}>
+                              {u.department}
+                            </div>
+                          </td>
+
+                          {/* Col 3: Assessments Taken or Attempts (14%) */}
+                          {isAll ? (
+                            <td style={{ padding: "12px 16px" }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                <span style={{ fontWeight: 700, color: "var(--color-text-header)", fontSize: 13 }}>
+                                  {item.assessmentsAttempted} of {courseAssessments.length}
+                                </span>
+                                <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                                  {item.assessmentsPassed} passed
+                                </span>
+                              </div>
+                            </td>
+                          ) : (
+                            <td style={{ padding: "12px 16px" }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                <span style={{ fontWeight: 700, color: "var(--color-text-header)", fontSize: 13 }}>
+                                  {breakdown?.attemptsCount || 0} {(breakdown?.attemptsCount === 1) ? 'attempt' : 'attempts'}
+                                </span>
+                                {breakdown?.latestAttemptedAt && (
+                                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                                    {new Date(breakdown.latestAttemptedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          )}
+
+                          {/* Col 4: Score / Items (16%) */}
+                          <td style={{ padding: "12px 16px" }}>
+                            {isAll ? (
+                              <div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-text-header)" }}>
+                                    {item.grandTotalScore} / {item.grandTotalCourseItems} items
+                                  </span>
+                                  <span style={{
+                                    padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700,
+                                    background: item.assessmentsAttempted === 0 
+                                      ? "var(--color-bg-subtle)" 
+                                      : item.overallPercentage >= 60 
+                                        ? "rgba(255, 107, 0, 0.12)" 
+                                        : "#FFEBEE",
+                                    color: item.assessmentsAttempted === 0 
+                                      ? "var(--color-text-muted)" 
+                                      : item.overallPercentage >= 60 
+                                        ? "#FF6B00" 
+                                        : "#C62828"
+                                  }}>
+                                    {item.assessmentsAttempted === 0 ? "No attempts" : `${item.overallPercentage}%`}
+                                  </span>
+                                </div>
+                                {item.assessmentsAttempted > 0 && (
+                                  <div style={{ height: 5, width: "100%", maxWidth: 120, background: "var(--color-bg-subtle)", borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
+                                    <div style={{
+                                      width: `${item.overallPercentage}%`,
+                                      height: "100%",
+                                      background: item.overallPercentage >= 60 ? "#FF6B00" : "#D32F2F"
+                                    }} />
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div>
+                                {breakdown && breakdown.attemptsCount > 0 && breakdown.bestScore != null ? (
+                                  <div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                      <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-text-header)" }}>
+                                        {breakdown.correctItems} / {breakdown.totalItems} items
+                                      </span>
+                                      <span style={{
+                                        padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700,
+                                        background: breakdown.passed ? "rgba(255, 107, 0, 0.12)" : "#FFEBEE",
+                                        color: breakdown.passed ? "#FF6B00" : "#C62828"
+                                      }}>
+                                        {breakdown.bestScore}%
+                                      </span>
+                                    </div>
+                                    <div style={{ height: 5, width: "100%", maxWidth: 120, background: "var(--color-bg-subtle)", borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
+                                      <div style={{
+                                        width: `${breakdown.bestScore}%`,
+                                        height: "100%",
+                                        background: breakdown.passed ? "#FF6B00" : "#D32F2F"
+                                      }} />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={{ color: "var(--color-text-muted)", fontStyle: "italic", fontSize: 13 }}>
+                                    -- / {selectedAssessmentObj?.itemsCount || 0} items
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Col 5: Status (11%) */}
+                          <td style={{ padding: "12px 16px" }}>
+                            {isAll ? (
+                              <div>
+                                {item.assessmentsAttempted === 0 ? (
+                                  <span style={{ color: "var(--color-text-muted)", fontWeight: 600 }}>Not Started</span>
+                                ) : item.assessmentsPassed === courseAssessments.length && courseAssessments.length > 0 ? (
+                                  <span style={{
+                                    display: "inline-flex", alignItems: "center", gap: 4,
+                                    padding: "3px 8px", borderRadius: 12, background: "rgba(255, 107, 0, 0.12)",
+                                    color: "#FF6B00", fontSize: 11, fontWeight: 700
+                                  }}>
+                                    <CheckCircle2 size={12} color="#FF6B00" /> All Passed
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    display: "inline-flex", alignItems: "center", gap: 4,
+                                    padding: "3px 8px", borderRadius: 12, background: "#FFF3E0",
+                                    color: "#E65100", fontSize: 11, fontWeight: 700
+                                  }}>
+                                    <Clock size={12} /> {item.assessmentsPassed}/{courseAssessments.length} Passed
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <div>
+                                {!breakdown || breakdown.attemptsCount === 0 ? (
+                                  <span style={{ color: "var(--color-text-muted)", fontWeight: 600 }}>Not Attempted</span>
+                                ) : breakdown.passed ? (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                    <span style={{
+                                      display: "inline-flex", alignItems: "center", gap: 4,
+                                      padding: "3px 8px", borderRadius: 12, background: "rgba(255, 107, 0, 0.12)",
+                                      color: "#FF6B00", fontSize: 11, fontWeight: 700, width: "fit-content"
+                                    }}>
+                                      <CheckCircle2 size={12} color="#FF6B00" /> Passed
+                                    </span>
+                                    <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>Min: {selectedAssessmentObj?.passingScore}%</span>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                    <span style={{
+                                      display: "inline-flex", alignItems: "center", gap: 4,
+                                      padding: "3px 8px", borderRadius: 12, background: "#FFEBEE",
+                                      color: "#C62828", fontSize: 11, fontWeight: 700, width: "fit-content"
+                                    }}>
+                                      <X size={12} /> Failed
+                                    </span>
+                                    <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>Min: {selectedAssessmentObj?.passingScore}%</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Col 6: Action (9%) */}
+                          <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              rounded="pill"
+                              onClick={() => handleViewLearner(item.rawUser, selectedAssessmentObj?.lessonId)}
+                              style={{ fontSize: 12, padding: "5px 18px", whiteSpace: "nowrap" }}
+                            >
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!loadingUsers && !loadingAssessments && filteredAndSortedAssessmentLearners.length === 0 && (
+                      <tr>
+                        <td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>
+                          {assessmentLearners.length === 0 ? "No enrolled learners in this course." : "No learners match your assessment search and filter criteria."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 700, tableLayout: "fixed" }}>
+                  <colgroup>
+                    <col style={{ width: "27%" }} />
+                    <col style={{ width: "23%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "11%" }} />
+                    <col style={{ width: "9%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr style={{ background: "var(--color-bg-subtle)", color: "var(--color-text-header)", borderBottom: "1px solid var(--color-border)", textAlign: "left" }}>
+                      <th style={{ padding: "12px 20px", fontWeight: 800, textAlign: "left" }}>LEARNER</th>
+                      <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}>{isSparkCpd ? "SCHOOL" : "DEPARTMENT"}</th>
+                      <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}>PROGRESS</th>
+                      <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}>STATUS</th>
+                      <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "left" }}>ASSIGNED</th>
+                      <th style={{ padding: "12px 16px", fontWeight: 800, textAlign: "center" }}>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingUsers ? (
+                      <tr>
+                        <td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>Loading enrolled learners...</td>
+                      </tr>
+                    ) : pagedEnrolledUsers.map((u, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid var(--color-border)", transition: "background 0.15s" }}>
+                        {/* Col 1: Learner Info (27%) */}
+                        <td style={{ padding: "12px 20px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                            {u.user.avatar ? (
+                              <img src={u.user.avatar} alt={u.user.name} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--color-border)", flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#111", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                                {u.user.name.charAt(0)}
+                              </div>
+                            )}
+                            <div style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+                              <span style={{ fontWeight: 700, color: "var(--color-text-header)", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={u.user.name}>{u.user.name}</span>
+                              <span style={{ color: "var(--color-text-muted)", fontSize: 11.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={u.user.email}>{u.user.email}</span>
+                            </div>
                           </div>
-                          <span style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: 700 }}>{u.progress}%</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 16px", fontWeight: 700, color: u.statusColor }}>
-                        {u.status}
-                      </td>
-                      <td style={{ padding: "12px 16px", color: "var(--color-text-muted)" }}>
-                        {u.assignedAt}
-                      </td>
-                      <td style={{ padding: "12px 24px", textAlign: "center" }}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          rounded="pill"
-                          onClick={() => setSelectedUser(u)}
-                          style={{ fontSize: 12, padding: "5px 18px", whiteSpace: "nowrap" }}
-                        >
-                          View
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                  {!loadingUsers && filteredEnrolled.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>
-                        {enrolledUsers.length === 0 ? "No learners enrolled in this course yet." : "No learners match your search and filter criteria."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+
+                        {/* Col 2: School / Department (23%) */}
+                        <td style={{ padding: "12px 16px", color: "var(--color-text-muted)", fontWeight: 500 }}>
+                          <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={u.user.department}>
+                            {u.user.department}
+                          </div>
+                        </td>
+
+                        {/* Col 3: Progress (14%) */}
+                        <td style={{ padding: "12px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ flex: 1, height: 6, background: "var(--color-bg-muted, #eee)", borderRadius: 3, overflow: "hidden", minWidth: 50 }}>
+                              <div style={{ width: `${u.progress}%`, height: "100%", background: u.progress > 0 ? "#FF6B00" : "transparent" }} />
+                            </div>
+                            <span style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: 700 }}>{u.progress}%</span>
+                          </div>
+                        </td>
+
+                        {/* Col 4: Status (16%) */}
+                        <td style={{ padding: "12px 16px", fontWeight: 700, color: u.statusColor }}>
+                          {u.status}
+                        </td>
+
+                        {/* Col 5: Assigned (11%) */}
+                        <td style={{ padding: "12px 16px", color: "var(--color-text-muted)" }}>
+                          {u.assignedAt}
+                        </td>
+
+                        {/* Col 6: Action (9%) */}
+                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            rounded="pill"
+                            onClick={() => handleViewLearner(u)}
+                            style={{ fontSize: 12, padding: "5px 18px", whiteSpace: "nowrap" }}
+                          >
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    {!loadingUsers && filteredEnrolled.length === 0 && (
+                      <tr>
+                        <td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>
+                          {enrolledUsers.length === 0 ? "No learners enrolled in this course yet." : "No learners match your search and filter criteria."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Pagination Footer */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px 0 24px", flexWrap: "wrap", gap: 12 }}>
-              <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                Showing {filteredEnrolled.length === 0 ? 0 : (userCurrentPage - 1) * PAGE_SIZE + 1} to {Math.min(userCurrentPage * PAGE_SIZE, filteredEnrolled.length)} of {filteredEnrolled.length} learners
-              </span>
+            {(() => {
+              const isAssess = statusFilter === "Assessments";
+              const currentTotalCount = isAssess ? filteredAndSortedAssessmentLearners.length : filteredEnrolled.length;
+              const currentTotalPages = isAssess ? totalAssessmentPages : totalUserPages;
+              const currentPages = getPageNumbers(currentTotalPages, userCurrentPage);
 
-              {totalUserPages > 1 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <button
-                    disabled={userCurrentPage === 1}
-                    onClick={() => setUserCurrentPage(p => Math.max(1, p - 1))}
-                    style={{
-                      padding: "4px 8px", background: "var(--color-surface)",
-                      border: "1px solid var(--color-border)", borderRadius: 6,
-                      cursor: userCurrentPage === 1 ? "default" : "pointer",
-                      fontSize: 12, opacity: userCurrentPage === 1 ? 0.4 : 1
-                    }}
-                  >
-                    &lt;
-                  </button>
+              return (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px 0 24px", flexWrap: "wrap", gap: 12 }}>
+                  <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                    Showing {currentTotalCount === 0 ? 0 : (userCurrentPage - 1) * PAGE_SIZE + 1} to {Math.min(userCurrentPage * PAGE_SIZE, currentTotalCount)} of {currentTotalCount} learners
+                  </span>
 
-                  {getUserPageNumbers().map((item, i) => (
-                    typeof item === 'number' ? (
+                  {currentTotalPages > 1 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <button
-                        key={i}
-                        onClick={() => setUserCurrentPage(item)}
+                        disabled={userCurrentPage === 1}
+                        onClick={() => setUserCurrentPage(p => Math.max(1, p - 1))}
                         style={{
-                          minWidth: 28, height: 28, padding: "0 6px",
-                          background: userCurrentPage === item ? "#FF6B00" : "var(--color-surface)",
-                          border: `1px solid ${userCurrentPage === item ? "#FF6B00" : "var(--color-border)"}`,
-                          borderRadius: 6, cursor: "pointer", fontSize: 12,
-                          color: userCurrentPage === item ? "white" : "var(--color-text)",
-                          fontWeight: userCurrentPage === item ? 700 : 500
+                          padding: "4px 8px", background: "var(--color-surface)",
+                          border: "1px solid var(--color-border)", borderRadius: 6,
+                          cursor: userCurrentPage === 1 ? "default" : "pointer",
+                          fontSize: 12, opacity: userCurrentPage === 1 ? 0.4 : 1
                         }}
                       >
-                        {item}
+                        &lt;
                       </button>
-                    ) : (
-                      <span key={i} style={{ padding: "0 4px", fontSize: 12, color: "var(--color-text-muted)" }}>...</span>
-                    )
-                  ))}
 
-                  <button
-                    disabled={userCurrentPage === totalUserPages}
-                    onClick={() => setUserCurrentPage(p => Math.min(totalUserPages, p + 1))}
-                    style={{
-                      padding: "4px 8px", background: "var(--color-surface)",
-                      border: "1px solid var(--color-border)", borderRadius: 6,
-                      cursor: userCurrentPage === totalUserPages ? "default" : "pointer",
-                      fontSize: 12, opacity: userCurrentPage === totalUserPages ? 0.4 : 1
-                    }}
-                  >
-                    &gt;
-                  </button>
+                      {currentPages.map((item, i) => (
+                        typeof item === 'number' ? (
+                          <button
+                            key={i}
+                            onClick={() => setUserCurrentPage(item)}
+                            style={{
+                              minWidth: 28, height: 28, padding: "0 6px",
+                              background: userCurrentPage === item ? "#FF6B00" : "var(--color-surface)",
+                              border: `1px solid ${userCurrentPage === item ? "#FF6B00" : "var(--color-border)"}`,
+                              borderRadius: 6, cursor: "pointer", fontSize: 12,
+                              color: userCurrentPage === item ? "white" : "var(--color-text)",
+                              fontWeight: userCurrentPage === item ? 700 : 500
+                            }}
+                          >
+                            {item}
+                          </button>
+                        ) : (
+                          <span key={i} style={{ padding: "0 4px", fontSize: 12, color: "var(--color-text-muted)" }}>...</span>
+                        )
+                      ))}
+
+                      <button
+                        disabled={userCurrentPage === currentTotalPages}
+                        onClick={() => setUserCurrentPage(p => Math.min(currentTotalPages, p + 1))}
+                        style={{
+                          padding: "4px 8px", background: "var(--color-surface)",
+                          border: "1px solid var(--color-border)", borderRadius: 6,
+                          cursor: userCurrentPage === currentTotalPages ? "default" : "pointer",
+                          fontSize: 12, opacity: userCurrentPage === currentTotalPages ? 0.4 : 1
+                        }}
+                      >
+                        &gt;
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         </div>
     );
