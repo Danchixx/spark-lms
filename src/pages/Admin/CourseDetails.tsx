@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, User, Search, UserPlus, CheckCircle, X, ChevronLeft, ChevronRight, Briefcase, UserMinus, Flame } from "lucide-react";
+import { ArrowLeft, User, Search, UserPlus, CheckCircle, X, ChevronLeft, ChevronRight, Briefcase, UserMinus, Flame, Award } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
@@ -13,6 +13,7 @@ import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import Skeleton from "../../components/ui/Skeleton/Skeleton";
 import { useAdminCourseContext } from "../../context/AdminCourseContext";
+import PrcExportModal from "../../components/common/PrcExportModal/PrcExportModal";
 import "./CourseDetails.css";
 
 const AdminCourseDetails = () => {
@@ -32,6 +33,9 @@ const AdminCourseDetails = () => {
   
   const { fetchCourseDetails, loadingDetails: loading, assignUsersToCourse } = useAdminCourseContext();
   const [course, setCourse] = useState<any>(null);
+
+  // PRC Export Modal State
+  const [isPrcModalOpen, setIsPrcModalOpen] = useState(false);
 
   // Assign Modal State
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -261,21 +265,38 @@ const AdminCourseDetails = () => {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px", position: "relative" }}>
           <PageTransition>
-            {/* Breadcrumb */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, fontSize: 13, fontWeight: 600 }}>
-              <button 
-                onClick={() => navigate(`/${slug}/courses`)}
+            {/* Breadcrumb & Action Row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <button 
+                  onClick={() => navigate(`/${slug}/courses`)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: "6px 12px", borderRadius: 20,
+                    border: `1px solid var(--color-border)`, background: "var(--color-surface)",
+                    color: "#FF6B00", cursor: "pointer"
+                  }}
+                >
+                  <ArrowLeft size={14} /> Courses
+                </button>
+                <ChevronRight size={14} color="var(--color-text-muted)" />
+                <span style={{ color: "var(--color-text-header)" }}>Course Details</span>
+              </div>
+
+              <Button
+                variant="primary"
+                rounded="pill"
+                leftIcon={<Award size={16} />}
+                onClick={() => setIsPrcModalOpen(true)}
                 style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "6px 12px", borderRadius: 20,
-                  border: `1px solid var(--color-border)`, background: "var(--color-surface)",
-                  color: "#FF6B00", cursor: "pointer"
+                  background: "linear-gradient(135deg, #FF6B00 0%, #EA580C 100%)",
+                  borderColor: "#FF6B00",
+                  fontWeight: 700,
+                  boxShadow: "0 2px 8px rgba(255, 107, 0, 0.3)"
                 }}
               >
-                <ArrowLeft size={14} /> Courses
-              </button>
-              <ChevronRight size={14} color="var(--color-text-muted)" />
-              <span style={{ color: "var(--color-text-header)" }}>Course Details</span>
+                Export PRC CPD Evidence
+              </Button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -751,6 +772,17 @@ const AdminCourseDetails = () => {
            </motion.div>
         )}
       </AnimatePresence>
+
+      {/* PRC Export Modal */}
+      {course && (
+        <PrcExportModal
+          isOpen={isPrcModalOpen}
+          onClose={() => setIsPrcModalOpen(false)}
+          courseId={Number(course.id)}
+          courseTitle={course.title}
+          companyName={companyData?.name || company?.name}
+        />
+      )}
 
     </div>
   );

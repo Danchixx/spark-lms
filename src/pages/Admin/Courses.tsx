@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User } from "lucide-react";
+import { User, Award } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanySlug } from "../../utils/slug";
 import Sidebar from "../../components/layout/Sidebar/Sidebar";
@@ -12,6 +12,7 @@ import PageTransition from "../../components/common/PageTransition";
 import StatusBadge from "../../components/ui/StatusBadge/StatusBadge";
 import CourseCardSkeleton from "../../components/common/CourseCard/CourseCardSkeleton";
 import { useAdminCourseContext } from "../../context/AdminCourseContext";
+import PrcExportModal from "../../components/common/PrcExportModal/PrcExportModal";
 
 // ─── UTILITY COMPONENTS ──────────────────────────────────────────
 
@@ -69,7 +70,7 @@ const AdminCourseFilterNav = ({ counts, active, onChange }: any) => {
   );
 };
 
-const AdminCourseCard = ({ course, onViewDetails }: any) => {
+const AdminCourseCard = ({ course, onViewDetails, onExportPrc }: any) => {
   const isPending = course.status === "Pending";
   const statusColor = isPending ? "#f39c12" : "#27ae60";
 
@@ -144,14 +145,27 @@ const AdminCourseCard = ({ course, onViewDetails }: any) => {
             </div>
         </div>
 
-        <Button
-            size="sm"
-            rounded="pill"
-            variant={isPending ? "outline" : "primary"}
-            onClick={() => onViewDetails(course.id)}
-        >
-            View Details
-        </Button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Button
+              size="sm"
+              rounded="pill"
+              variant="outline"
+              onClick={() => onExportPrc(course)}
+              title="Export PRC CPD Evidence Dossier"
+              style={{ padding: "0 10px" }}
+          >
+              <Award size={14} style={{ color: "#FF6B00", marginRight: 4 }} /> PRC
+          </Button>
+
+          <Button
+              size="sm"
+              rounded="pill"
+              variant={isPending ? "outline" : "primary"}
+              onClick={() => onViewDetails(course.id)}
+          >
+              View Details
+          </Button>
+        </div>
       </div>
 
     </div>
@@ -165,6 +179,7 @@ const AdminCourses = () => {
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen, toggle: toggleSidebar } = useSidebar();
   const [activeFilter, setActiveFilter] = useState("All");
+  const [selectedPrcCourse, setSelectedPrcCourse] = useState<any | null>(null);
   
   const { adminCourses: dbCourses, loadingList: loading, fetchAdminCourses } = useAdminCourseContext();
 
@@ -213,10 +228,15 @@ const AdminCourses = () => {
             ) : (
               <div className="admin-courses-grid">
                 {filteredCourses.map((course) => (
-                  <AdminCourseCard key={course.id} course={course} onViewDetails={(id: string) => {
-                    sessionStorage.setItem("admin_course_id", id);
-                    navigate(`/${slug}/courses/details`, { state: { id } });
-                  }} />
+                  <AdminCourseCard
+                    key={course.id}
+                    course={course}
+                    onExportPrc={(c: any) => setSelectedPrcCourse(c)}
+                    onViewDetails={(id: string) => {
+                      sessionStorage.setItem("admin_course_id", id);
+                      navigate(`/${slug}/courses/details`, { state: { id } });
+                    }}
+                  />
                 ))}
                 {filteredCourses.length === 0 && (
                   <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 0", color: "var(--color-text-muted)", fontSize: 14 }}>
@@ -229,6 +249,17 @@ const AdminCourses = () => {
           </PageTransition>
         </div>
       </div>
+
+      {/* PRC CPD Export Modal */}
+      {selectedPrcCourse && (
+        <PrcExportModal
+          isOpen={Boolean(selectedPrcCourse)}
+          onClose={() => setSelectedPrcCourse(null)}
+          courseId={Number(selectedPrcCourse.id)}
+          courseTitle={selectedPrcCourse.name || selectedPrcCourse.title}
+          companyName={company?.name}
+        />
+      )}
     </div>
   );
 };
